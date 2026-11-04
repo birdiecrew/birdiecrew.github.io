@@ -42,3 +42,20 @@ One difference: Snowball's list of codes is public. Student scores are personal,
 
 ## Not verified yet
 - The speed and limits of the Google script. A class of 10 to 50 students should be fine; check before step 2.
+
+## Status so far (2026-11-04)
+Done:
+- Name chosen: **Birdie Crew**, at `birdiecrew.github.io`.
+- GitHub account `birdiecrew` and repo `birdiecrew/birdiecrew.github.io` created. The repo is **public**, because free GitHub Pages needs a public repo. No student data lives in the repo; it stays in the private Google Sheet.
+- Plan committed (this file).
+- `main` is protected: changes go through a pull request, and force pushes are blocked.
+- Placeholder `index.html` opened as PR #1, to test publishing with GitHub Pages.
+
+Next:
+1. Merge PR #1, turn on GitHub Pages for `main`, and check that the site loads.
+2. Build step 1, the student card with fake data.
+3. Answer the three open questions above before step 2.
+
+Working notes:
+- Commits use `birdiecrew <lewisozera@gmail.com>`.
+- This repo pushes with its own SSH key, set in the local git config (not stored in the repo), so it does not use the key of any other GitHub account on the same computer.
