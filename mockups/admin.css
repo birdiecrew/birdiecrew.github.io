@@ -79,3 +79,6 @@ button.li:hover { background: var(--surface2); }
 .qr-preview { width: 150px; border: 1px solid var(--line); border-radius: 12px; padding: 5px; background: #fff; }
 .empty { text-align: center; color: var(--muted); padding: 24px 8px; }
 .tick { color: var(--text); }
+
+/* the amount is the edit target: no extra pencil button */
+button.amt-edit { border: 0; background: transparent; padding: 2px 0; color: inherit; font: inherit; font-weight: 800; text-decoration: underline dotted var(--muted); text-underline-offset: 4px; }

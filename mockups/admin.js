@@ -107,14 +107,16 @@
     else {
       if (ses.over) pills += '<span class="tag bad">' + t('Over capacity') + '</span>';
       else if (ses.free === 0) pills += '<span class="tag warn">' + t('Full') + '</span>';
-      if (ses.extra) pills += '<span class="tag info">' + t('+{n} extra seat', { n: ses.extra }) + '</span>';
-      if (ses.courts < cfg.venue_courts) pills += '<span class="tag info">' + t('{n} courts only', { n: ses.courts }) + '</span>';
-      if (ses.locked) pills += '<span class="tag ok">' + icon('lock', 'sm') + ' ' + t('Headcount final') + '</span>';
     }
     var courts = ses.cancelled ? '<div class="courts zero"><div class="big">0</div><div class="l">' + t('courts') + '</div></div>' : '<div class="courts ' + (ses.over ? 'bad' : '') + '"><div class="big">' + ses.courtsToBook + '</div><div class="l">' + t('courts to book') + '</div></div>';
     var body = '';
     if (open) {
       body = '<div class="ses-b">';
+      var notes = '';
+      if (ses.extra) notes += '<span class="tag">' + t('+{n} extra seat', { n: ses.extra }) + '</span> ';
+      if (ses.courts < cfg.venue_courts) notes += '<span class="tag">' + t('{n} courts only', { n: ses.courts }) + '</span> ';
+      if (ses.locked && !ses.cancelled) notes += '<span class="tag">' + icon('lock', 'sm') + ' ' + t('Headcount final') + '</span>';
+      if (notes) body += '<div class="row wrap" style="margin-top:10px;gap:6px">' + notes + '</div>';
       if (ses.coming.length) body += '<h3>' + t('Coming ({n})', { n: ses.count }) + '</h3><div class="names">' + names(ses.regular) + names(ses.makeups, 'mk') + names(ses.joins, 'jn') + '</div>';
       if (ses.makeups.length || ses.joins.length) body += '<p class="tiny muted">' + (ses.makeups.length ? '<span class="nm mk">' + t('make-up') + '</span> ' : '') + (ses.joins.length ? '<span class="nm jn">' + t('flexible') + '</span>' : '') + '</p>';
       if (ses.skipped.length) body += '<h3>' + t('Skipped ({n})', { n: ses.skipped.length }) + '</h3><div class="names">' + names(ses.skipped, 'sk') + '</div>';
@@ -127,7 +129,7 @@
       body += '</div>';
     }
     return '<div class="ses"><button class="ses-h" data-a="toggle" data-x="' + ses.iso + '" aria-expanded="' + open + '"><div class="d"><b>' + dt(ses.iso) + '</b> <span class="muted small">' + ses.start + '–' + ses.end + '</span>' +
-      '<div class="row wrap" style="margin-top:6px;gap:6px">' + pills + '</div></div><div class="right"><div class="big">' + ses.count + ' <small>/ ' + ses.seats + '</small></div><div class="muted tiny">' + t('coming') + '</div></div>' + courts + '</button>' + body + '</div>';
+      (pills ? '<div class="row wrap" style="margin-top:6px;gap:6px">' + pills + '</div>' : '') + '</div><div class="right"><div class="big">' + ses.count + ' <small>/ ' + ses.seats + '</small></div><div class="muted tiny">' + t('coming') + '</div></div>' + courts + '</button>' + body + '</div>';
   }
   function stepper(key, val, min, max) {
     return '<div class="stepper"><button data-a="step" data-x="' + key + '" data-y="-1" aria-label="-"' + (val <= min ? ' disabled' : '') + '>−</button><output>' + val + '</output><button data-a="step" data-x="' + key + '" data-y="1" aria-label="+"' + (val >= max ? ' disabled' : '') + '>+</button></div>';
@@ -152,16 +154,16 @@
       var rec = BC.payRec(s.id, ym), late = BC.isLate(s.id), started = BC.ym(s.start) <= ym;
       var days = s.type === 'flexible' ? t('Flexible') : s.days.slice().sort(function (a, b) { return ((a + 6) % 7) - ((b + 6) % 7); }).map(function (d) { return BC.wd(d, S.lang); }).join(' · ');
       var tags = '';
-      if (!s.active) tags += '<span class="tag">' + t('Paused') + '</span>';
-      else if (late) tags += '<span class="tag bad">' + t('Late') + '</span>';
-      else if (started && !rec.paid) tags += '<span class="tag warn">' + t('Unpaid') + '</span>';
-      if (s.start > BC.today) tags += '<span class="tag info">' + t('Starts {date}', { date: BC.fmtDay(s.start, S.lang) }) + '</span>';
+      if (!s.active) tags = '<span class="tag">' + t('Paused') + '</span>';
+      else if (late) tags = '<span class="tag bad">' + t('Late') + '</span>';
+      else if (s.start > BC.today) tags = '<span class="tag">' + t('Starts {date}', { date: BC.fmtDay(s.start, S.lang) }) + '</span>';
+      else if (started && !rec.paid) tags = '<span class="tag warn">' + t('Unpaid') + '</span>';
       return '<button class="li" data-a="stu" data-x="' + s.id + '"><div class="avatar ' + (late ? 'late' : '') + '">' + initials(s.name) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="muted small">' + h(s.code) + ' · ' + days + '</span></div><div class="row" style="gap:4px;flex-wrap:wrap;justify-content:flex-end">' + tags + '</div></button>';
     }).join('');
   }
   function studentsView() {
     var ym = ymNow(), n = function (f) { return BC.students.filter(f).length; };
-    var chips = [['all', 'All', BC.students.length], ['fixed', 'Fixed', n(function (s) { return s.type === 'fixed'; })], ['flexible', 'Flexible', n(function (s) { return s.type === 'flexible'; })],
+    var chips = [['all', 'All', BC.students.length],
       ['unpaid', 'Unpaid', n(function (s) { return s.active && BC.ym(s.start) <= ym && !BC.payRec(s.id, ym).paid; })], ['paused', 'Paused', n(function (s) { return !s.active; })]];
     return '<div class="view-h row between"><h2>' + t('Students') + '</h2><button class="btn primary" data-a="addstu">' + icon('plus', 'sm') + ' ' + t('Add student') + '</button></div>' +
       '<input class="inp" type="search" id="q" placeholder="' + t('Search name or code') + '" value="' + h(S.q) + '" style="margin-bottom:10px">' +
@@ -280,7 +282,7 @@
       return ra - rb || a.s.name.localeCompare(b.s.name, 'vi');
     });
     var nav = '<div class="row between" style="margin-bottom:12px"><button class="btn icon sm" data-a="pm" data-x="-1" aria-label="Previous month"' + (ym <= '2026-09' ? ' disabled' : '') + '>' + icon('chevL') + '</button><b>' + BC.monthName(ym, S.lang) + '</b><button class="btn icon sm" data-a="pm" data-x="1" aria-label="Next month"' + (ym >= '2026-12' ? ' disabled' : '') + '>' + icon('chevR') + '</button></div>';
-    var tiles = '<div class="tiles"><div class="tile"><div class="v">' + money(collected) + '</div><div class="l">' + t('Collected') + '</div></div><div class="tile"><div class="v">' + money(outstanding) + '</div><div class="l">' + t('Still to collect') + '</div></div><div class="tile"><div class="v">' + unpaidN + '</div><div class="l">' + t('Unpaid') + '</div></div><div class="tile"><div class="v" style="color:' + (lateN ? 'var(--danger)' : 'inherit') + '">' + lateN + '</div><div class="l">' + t('Late') + '</div></div></div>';
+    var tiles = '<div class="tiles"><div class="tile"><div class="v">' + money(collected) + '</div><div class="l">' + t('Collected') + '</div></div><div class="tile"><div class="v">' + money(outstanding) + '</div><div class="l">' + t('Still to collect') + ' · ' + unpaidN + (lateN ? ' · <span style="color:var(--danger)">' + t('Late') + ' ' + lateN + '</span>' : '') + '</div></div></div>';
     var list = rows.map(function (r) {
       var s = r.s, note = '';
       if (r.billed < r.full) note += t('{a} of {b} lessons', { a: r.billed, b: r.full }) + ' · ';
@@ -288,8 +290,7 @@
       if (r.rec.creditIn > 0 && cfg.credit_carry) note += t('credit -{amount}', { amount: money(r.rec.creditIn) }) + ' · ';
       var status = r.rec.paid ? '<span class="tag ok">' + icon('check', 'sm') + ' ' + t('Paid {date}', { date: BC.fmtDay(r.rec.paidDate, S.lang) }) + '</span>' : (r.late ? '<span class="tag bad">' + t('Late since {date}', { date: BC.fmtDay(BC.addDays(r.due, 1), S.lang) }) + '</span>' : '<span class="tag warn">' + t('Due {date}', { date: BC.fmtDay(r.due, S.lang) }) + '</span>');
       return '<div class="li pay"><div class="avatar ' + (r.late ? 'late' : (r.rec.paid ? '' : 'warn')) + '">' + initials(s.name) + '</div><div class="who"><b>' + h(s.name) + '</b> <span class="muted small">' + h(s.code) + '</span></div>' +
-        '<div class="amt">' + money(r.amount) + '</div><div class="st small">' + note + status + '</div><div class="acts">' +
-        '<button class="btn icon sm" data-a="editamt" data-x="' + s.id + '" aria-label="' + t('Change amount') + '">' + icon('pencil', 'sm') + '</button>' +
+        '<button class="amt amt-edit" data-a="editamt" data-x="' + s.id + '" aria-label="' + t('Change amount') + '">' + money(r.amount) + '</button><div class="st small">' + note + status + '</div><div class="acts">' +
         (r.rec.paid ? '<button class="btn sm paid-btn" data-a="undopaid" data-x="' + s.id + '">' + t('Undo') + '</button>' : '<button class="btn primary paid-btn" data-a="paid" data-x="' + s.id + '">' + icon('check', 'sm') + ' ' + t('Paid') + '</button>') + '</div></div>';
     }).join('');
     return '<div class="view-h"><h2>' + t('Payments') + '</h2><p class="muted small">' + t('Check your bank app, then tap Paid.') + '</p></div>' + nav + tiles + '<div>' + list + '</div>';
@@ -312,15 +313,14 @@
 
   /* ---------- 4. To remind ---------- */
   function remindView() {
-    var d = remindData(), out = '<div class="view-h"><h2>' + t('To remind') + '</h2><p class="muted small">' + t('Tap a language to copy the message, then paste it into Zalo.') + '</p></div>';
+    var d = remindData(), out = '<div class="view-h"><h2>' + t('To remind') + '</h2><p class="muted small">' + t('Copy the message, then paste it into Zalo.') + '</p></div>';
     var group = function (title, sub, rows, kind) {
       if (!rows.length) return '';
       return '<h3 style="margin:14px 0 8px">' + title + ' <span class="tag">' + rows.length + '</span></h3><p class="muted small" style="margin-bottom:8px">' + sub + '</p>' + rows.map(function (r) {
         var key = kind + r.s.id, done = S.reminded[key];
         return '<div class="li pay"><div class="avatar ' + (kind === 'late' ? 'late' : 'warn') + '">' + (done ? icon('check') : initials(r.s.name)) + '</div><div class="who"><b>' + h(r.s.name) + '</b> <span class="muted small">' + h(r.s.code) + '</span></div><div class="amt">' + money(BC.amountDue(r.s, ymNow())) + '</div>' +
           '<div class="st small muted">' + (kind === 'late' ? t('Late since {date}', { date: BC.fmtDay(BC.addDays(r.due, 1), S.lang) }) : t('Due {date}', { date: BC.fmtDay(r.due, S.lang) })) + (done ? ' · <span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
-          '<button class="btn sm" data-a="copymsg" data-x="' + kind + '|' + r.s.id + '|vi">' + icon('copy', 'sm') + ' VI</button><button class="btn sm" data-a="copymsg" data-x="' + kind + '|' + r.s.id + '|en">' + icon('copy', 'sm') + ' EN</button>' +
-          '<button class="btn sm icon" data-a="prevmsg" data-x="' + kind + '|' + r.s.id + '" aria-label="' + t('Preview') + '">' + icon('info', 'sm') + '</button></div></div>';
+          '<button class="btn sm primary" data-a="prevmsg" data-x="' + kind + '|' + r.s.id + '">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button></div></div>';
       }).join('');
     };
     out += group(t('Friendly heads-up'), t('Unpaid and due within 2 days (from the 3rd).'), d.soft, 'soft');
@@ -330,7 +330,7 @@
         var key = 'canc' + iso;
         return '<div class="li pay"><div class="avatar late">' + icon('ban') + '</div><div class="who"><b>' + t('{date} is cancelled', { date: dt(iso) }) + '</b></div><div class="amt"></div>' +
           '<div class="st small muted">' + h(BC.overrides[iso].note || '') + (S.reminded[key] ? ' · <span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
-          '<button class="btn sm" data-a="copymsg" data-x="cancel|' + iso + '|vi">' + icon('copy', 'sm') + ' VI</button><button class="btn sm" data-a="copymsg" data-x="cancel|' + iso + '|en">' + icon('copy', 'sm') + ' EN</button></div></div>';
+          '<button class="btn sm primary" data-a="prevmsg" data-x="cancel|' + iso + '">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button></div></div>';
       }).join('');
     }
     if (!d.soft.length && !d.late.length && !d.canc.length) out += '<div class="empty">' + icon('check') + '<p>' + t('Nothing to remind right now.') + '</p><p class="small">' + t('Reminders start on the 3rd for unpaid fees.') + '</p></div>';
@@ -346,9 +346,9 @@
     UI.copy(msgFromKey(x, lang), t('Message copied. Paste it into Zalo.')); S.reminded[key] = true; render();
   }
   function openPreview(x) {
-    var p = x.split('|'), s = BC.student(Number(p[1])), lang = S.msgLang, el;
+    var p = x.split('|'), isC = p[0] === 'cancel', s = isC ? null : BC.student(Number(p[1])), lang = S.msgLang, el;
     var draw = function () {
-      el.innerHTML = '<div class="grab"></div><div class="sheet-h"><div><h2>' + t('Message to {name}', { name: h(s.name) }) + '</h2></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
+      el.innerHTML = '<div class="grab"></div><div class="sheet-h"><div><h2>' + (isC ? t('Announcement') : t('Message to {name}', { name: h(s.name) })) + '</h2></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
         '<div class="seg full" style="margin-bottom:12px"><button data-l="vi" aria-pressed="' + (lang === 'vi') + '">Tiếng Việt</button><button data-l="en" aria-pressed="' + (lang === 'en') + '">English</button></div>' +
         '<div class="msgbox">' + h(msgFromKey(x, lang)) + '</div><button class="btn primary block" style="margin-top:12px" id="pv-copy">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button><p class="muted small" style="margin-top:10px">' + t('You can reword these texts in Settings.') + '</p>';
     };
@@ -356,7 +356,7 @@
     el.addEventListener('click', function (e) {
       var b = e.target.closest('[data-l]');
       if (b) { lang = b.getAttribute('data-l'); S.msgLang = lang; draw(); }
-      else if (e.target.closest('#pv-copy')) { UI.copy(msgFromKey(x, lang), t('Message copied. Paste it into Zalo.')); S.reminded[p[0] + p[1]] = true; UI.sheet.close(); render(); }
+      else if (e.target.closest('#pv-copy')) { UI.copy(msgFromKey(x, lang), t('Message copied. Paste it into Zalo.')); S.reminded[isC ? 'canc' + p[1] : p[0] + p[1]] = true; UI.sheet.close(); render(); }
     });
     draw();
   }

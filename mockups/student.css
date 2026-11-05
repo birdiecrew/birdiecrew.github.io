@@ -83,3 +83,13 @@ div.cd { cursor: default; }
 .brk { padding: 10px 12px; border-radius: 12px; background: var(--surface2); }
 .langbtn { min-height: 56px; font-size: 1.05rem; }
 .foot { text-align: center; color: var(--muted); font-size: .78rem; padding: 18px 0 6px; }
+
+/* topic rows: one line each, details open on tap */
+.menu-list { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.menu-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 10px 14px; border: 0; background: transparent; text-align: left; }
+.menu-row + .menu-row { border-top: 1px solid var(--line); }
+.menu-row:hover { background: var(--surface2); }
+.menu-row .mt { font-weight: 650; }
+.menu-row .ms { flex: 1; min-width: 0; text-align: right; color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-row .ico { color: var(--muted); }
+.cal-nav + .cal-grid { margin-top: 0; }
