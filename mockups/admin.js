@@ -3,7 +3,7 @@
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
   var cfg = BC.config;
-  var PASSWORD = 'badminton';
+  var PASSWORD = 'admin';
   var S = {
     auth: false, lang: 'en', tab: 'sessions', sub: null, open: {}, filter: 'all', q: '', payMonth: BC.ym(BC.today),
     scoreSid: null, draft: null, cancelIso: null, msgLang: 'vi', reminded: {}, tries: 0, loginErr: '', checking: false
@@ -55,7 +55,7 @@
       '<label class="field"><span class="lbl">' + t('Admin password') + '</span><input class="inp" type="password" id="pw" autocomplete="current-password" placeholder="••••••••"></label>' +
       (S.loginErr ? '<div class="banner bad" role="alert">' + icon('ban') + '<div>' + S.loginErr + '</div></div>' : '') +
       '<button class="btn primary block" id="login-go"' + (S.checking ? ' disabled' : '') + '>' + (S.checking ? t('Checking...') : t('Sign in')) + '</button>' +
-      '<div class="mock-hint">' + t('Mockup: the password is "badminton". Wrong tries answer a little slower each time, like the real script.') + '</div></div></div>';
+      '<div class="mock-hint">' + t('Mockup: the password is "admin". Wrong tries answer a little slower each time, like the real script.') + '</div></div></div>';
   }
   function doLogin() {
     var pw = $('#pw').value;

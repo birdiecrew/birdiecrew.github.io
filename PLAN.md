@@ -118,6 +118,7 @@ The venue has **4 courts** and the coach books courts after she knows who is com
 - The make-up can be on any session that month with a free seat (before or after the skipped lesson), as long as it follows the rules below.
 - **Sudden absence = no make-up.** If a student does not show up, or tries to skip inside the notice window, the lesson counts as attended and nothing is owed. The site locks the button, so the coach never has to argue about it.
 - All of this is **self-service and instant**. No coach approval. The coach sees every skip and make-up in the admin page.
+- **Changing their mind:** a student can **undo a skip** ("I will attend after all") up to the same `advance_days` cutoff as skipping. Their seat comes back, the credit goes away, and a later skip that got no credit (because of the cap of 3) takes the freed one. If that credit was already used for a make-up, the student must cancel the make-up first. A skip that comes from a planned break is undone by removing the break. The Changes row is not deleted: it gets a cancelled time.
 - **Moving or cancelling a make-up** that is already booked is limited to `max_makeup_changes_per_month` per month (default 3, set to 0 for no limit).
 
 ### Planned breaks (long vacations)
@@ -323,6 +324,8 @@ Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and th
 - Use the credit on a session 10 days away in the same month: allowed. Next month: refused.
 - Use a second credit when only one skip was made: refused.
 - Four skips in a month, all with notice: all four allowed, but only the first three give a credit. The fourth gives none.
+- Undo a skip 8 days away: allowed, the credit goes away. 6 days away: refused (locked). Undo a skip whose credit is already used for a make-up: refused until that make-up is cancelled.
+- Four skips (the fourth had no credit), then undo one of the first three: the fourth now gets the credit.
 - Three make-ups taken: a fourth make-up is refused even if a credit is somehow left.
 - Pick a make-up on a full session (16 seats taken): refused. After the coach sets extra seats to 1: allowed.
 - A session with 9 people shows "courts to book: 3". With 8 people: 2.

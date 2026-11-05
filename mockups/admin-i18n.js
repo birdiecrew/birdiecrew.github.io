@@ -5,7 +5,7 @@ window.VI = {
   'Admin password': 'Mật khẩu quản trị',
   'Checking...': 'Đang kiểm tra...',
   'Sign in': 'Đăng nhập',
-  'Mockup: the password is "badminton". Wrong tries answer a little slower each time, like the real script.': 'Bản mẫu: mật khẩu là "badminton". Nhập sai càng nhiều thì phản hồi càng chậm, giống như thật.',
+  'Mockup: the password is "admin". Wrong tries answer a little slower each time, like the real script.': 'Bản mẫu: mật khẩu là "admin". Nhập sai càng nhiều thì phản hồi càng chậm, giống như thật.',
   'Wrong password.': 'Sai mật khẩu.',
   'Coach': 'Huấn luyện viên',
   'Back': 'Quay lại',

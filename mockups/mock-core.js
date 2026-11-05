@@ -381,6 +381,23 @@
     return { ok: true, credit: row.credit, row: row };
   };
 
+  /* Undo a skip ("I will attend after all"). Same notice rule as skipping. */
+  BC.unskip = function (sid, iso) {
+    if (BC.isLate(sid)) return fail('late');
+    var row = BC.skipRow(sid, iso);
+    if (!row) return fail('notFound');
+    if (row.breakId) return fail('fromBreak');
+    if (daysAhead(iso) < BC.config.advance_days) return fail('notice');
+    if (row.credit && BC.usedCreditIds(sid)[row.id]) return fail('creditUsed');
+    row.cancelled = true;
+    if (row.credit) {
+      /* the freed place under the monthly cap goes to the earliest skip that got no credit */
+      var ym = BC.ym(iso), none = BC.rows(sid, 'skip', function (c) { return !c.credit && !c.breakId && BC.ym(c.date) === ym; })[0];
+      if (none) none.credit = true;
+    }
+    return { ok: true };
+  };
+
   BC.pickCredit = function (sid, ym) {
     var left = BC.makeupsLeft(sid, ym);
     var sk = BC.availSkipCredits(sid, ym), cc = BC.availCancelCredits(sid, ym);

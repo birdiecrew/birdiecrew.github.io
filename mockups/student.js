@@ -250,7 +250,11 @@
         break;
       }
       case 'skipped':
-        body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month }));
+        seats = ''; body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month }));
+        if (i.past) break;
+        /* the undo button exists only for skips the student made themselves */
+        if (i.row.breakId) { body += why(t('r_fromBreak')); break; }
+        acts = disabled(t('btnUnskip'), 'unskip', st.off).replace('primary', '') + (st.off ? why(i.locked ? t('lockedNote', { n: noticeN(s) }) : st.why) : '');
         break;
       case 'makeup': {
         var free = i.row.source === 'cancel';
@@ -311,6 +315,7 @@
     if (act === 'skip') { r = BC.skip(S.sid, iso); ok = r.ok ? (r.credit ? t('okSkip') : t('okSkipNo')) : ''; }
     else if (act === 'makeup') { r = BC.makeup(S.sid, iso); ok = t('okMakeup'); }
     else if (act === 'join') { r = BC.join(S.sid, iso); ok = t('okJoin'); }
+    else if (act === 'unskip') { r = BC.unskip(S.sid, iso); ok = t('okUnskip'); }
     else if (act === 'leave') { r = BC.leave(S.sid, iso); ok = t('okLeave'); }
     else if (act === 'cancelmk') { r = BC.cancelMakeup(S.sid, iso); ok = t('okCancelMk'); }
     if (!r) return;
