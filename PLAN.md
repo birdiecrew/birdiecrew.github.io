@@ -2,6 +2,72 @@
 
 Site address: `birdiecrew.github.io` (GitHub Pages, free).
 
+## At a glance
+Five pictures. Everything after them is detail.
+
+**1. The parts.** Two pages, one referee, one private Sheet.
+```mermaid
+flowchart LR
+  S["Student phone<br/>personal link"] --> P1["Student page<br/>/"]
+  C["Coach phone<br/>admin password"] --> P2["Admin page<br/>/admin/"]
+  P1 -->|"key"| A
+  P2 -->|"token"| A
+  A["Google script<br/>the referee: checks every rule"] <--> G[("Private Google Sheet<br/>the only database")]
+  B["Bank app"] -.->|"coach sees the transfer, taps Paid"| P2
+```
+
+**2. A new student joins.**
+```mermaid
+sequenceDiagram
+  actor Coach
+  actor Student
+  participant Site as Admin page + script
+  Coach->>Site: Add student (name, days, start date)
+  Site-->>Coach: Secret link + payment code
+  Coach->>Student: Send link on Zalo
+  Student->>Site: Open link (browser remembers the key)
+  Site-->>Student: Card + first bill (prorated) + QR
+  Student->>Coach: Bank transfer with payment code
+  Coach->>Site: Tap Paid
+  Site-->>Student: Card fully open
+```
+
+**3. The coach's routine.**
+```mermaid
+flowchart LR
+  O["ONCE<br/>Settings, timetable, QR<br/>Add students, send links"] --> W["EVERY WEEK<br/>Open Next 14 days<br/>Book the courts<br/>Answer on Zalo"]
+  W --> M["EVERY MONTH<br/>1st: bills ready<br/>3rd: remind unpaid<br/>Tap Paid as money arrives<br/>6th: remind late"]
+  M --> N["NOW AND THEN<br/>Scores every 2-3 months<br/>Cancel a session 7+ days ahead<br/>Reset a leaked link"]
+```
+
+**4. A student skips or takes a make-up.** The script runs these checks on every tap.
+```mermaid
+flowchart LR
+  T["Student taps a day"] --> Q1{"Paid up?"}
+  Q1 -->|no| X["Refused<br/>reason shown"]
+  Q1 -->|yes| Q2{"7+ days ahead?"}
+  Q2 -->|no| X
+  Q2 -->|yes| Q3{"Skip or<br/>make-up?"}
+  Q3 -->|skip| S["Skipped<br/>+1 credit if under 3 this month"]
+  Q3 -->|make-up| Q4{"Credit left,<br/>same month,<br/>free seat?"}
+  Q4 -->|no| X
+  Q4 -->|yes| M["Make-up booked"]
+  style X fill:#fdd,stroke:#c33,color:#000
+  style S fill:#dfd,stroke:#3a3,color:#000
+  style M fill:#dfd,stroke:#3a3,color:#000
+```
+
+**5. One month of money.**
+```mermaid
+flowchart LR
+  A["1st<br/>Bill ready"] --> B["3rd<br/>Reminder to unpaid"] --> C["5th<br/>Pay by end of day"] --> D{"Paid?"}
+  D -->|yes| E["Calendar open"]
+  D -->|no| F["6th: late<br/>No new skips, joins or breaks<br/>Booked lessons stay"]
+  F -->|"coach taps Paid"| E
+  style F fill:#fdd,stroke:#c33,color:#000
+  style E fill:#dfd,stroke:#3a3,color:#000
+```
+
 ## The idea in one line
 A free website with two doors on the same address: each student opens **their own card** (schedule, skill polygon, bills, videos), and the coach runs the class from a **password-protected admin page**. A private Google Sheet is the database behind both.
 
@@ -91,29 +157,6 @@ Design rule: **click and click.** The coach manages all student data herself, fr
 10. **Settings:** every setting in the table below with a plain label and its default shown, plus the QR image.
 
 The Sheet behind it is storage. The coach does not edit it by hand.
-
-## Flows
-
-### New student onboarding
-1. **Coach adds the student** in the admin page: name, weekday chips, start date, fixed or flexible.
-2. **The script makes** a secret key and a short payment code, and shows the link.
-3. **Coach copies the link** and sends it on her private Zalo channel.
-4. **Student opens the link.** The page saves the key in the browser and hides it from the address bar. Next time, no link and no login are needed.
-5. **Student picks a language** and sees the class rules once.
-6. **Student sees the first bill**, prorated from the start date, with the QR and the payment code. It is due as described under "Payment".
-7. **Student pays.** The coach sees the transfer in her bank app and taps **Paid**.
-8. **The card is fully open:** skip, make-up, bills, break.
-
-### The coach's routine
-- **Once:** check the settings, set the timetable, add her QR image, add students and send their links.
-- **Every week:** open "Next 14 days", read the courts to book, book them, and answer requests on Zalo.
-- **Every month:** on the 1st the bills are ready. On the 3rd, copy the reminder to unpaid students. Tap Paid as money arrives. On the 6th, copy the late reminder.
-- **Now and then:** scores every 2 to 3 months, cancel a session at least 7 days ahead, reset a link that leaked.
-
-### The student's everyday use
-- **Skip a lesson:** tap the day. The script checks they are paid up and at least 7 days ahead. If yes, the lesson is skipped and they get 1 credit. If not, the reason is shown.
-- **Take a make-up:** tap a green day. The script checks they have a credit (3 a month at most), a free seat, and at least 7 days ahead in the same month. If yes, it is booked. If not, the reason is shown.
-- **Also:** see bills and pay, plan a long break, see the polygon and video.
 
 ## Rules and settings
 All numbers below are **settings in a Config tab of the Sheet**, so the coach can change them without touching code. Defaults are shown.
