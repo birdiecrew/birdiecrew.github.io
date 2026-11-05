@@ -76,17 +76,44 @@ The venue has **4 courts** and the coach books courts after she knows who is com
 
 Language toggle (Vietnamese / English) on every screen. **Vietnamese is the default**, because the class notice is in Vietnamese. Some students are English speakers. The page stays plain (no fancy browser features) so it works inside chat apps' built-in browsers.
 
-## What the coach sees (admin page, version 1)
-Only the daily jobs. Everything else stays in the Sheet for now.
+## What the coach sees (admin page)
+Design rule: **click and click.** The coach manages all student data herself, from her phone, with big buttons, pickers instead of typing, and about 3 taps per job. She never has to open the Sheet.
+
 1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, **courts to book**, and an "over capacity" warning.
-2. **Students:** add or edit a student (type, weekly days, start date, own fee), **copy the student's link**, **reset the link** if it leaks.
-3. **Payments:** the month's list with the amount each student owes (worked out by the proration rule), unpaid students first. One tap marks a student paid. She can overwrite an amount.
-4. **Scores:** enter the 6 numbers for a student.
+2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. The student's link appears with a **Copy** button. Also edit, pause a student, and **reset the link** if it leaks.
+3. **Payments:** the month's list with the amount each student owes (worked out by the proration rule), unpaid students first. **One tap marks a student paid.** A pencil changes the amount.
+4. **Scores:** pick a student, tap 1 to 10 for each of the 6 skills, Save.
 5. **Breaks:** planned breaks and the worked-out fee reduction.
 6. **Cancel a session:** pick a date (usually a public holiday). It warns if the date is inside the notice window, shows who gets compensation, and gives a message to paste into Zalo.
 7. **To remind:** today's reminder list with copy buttons (see "Reminders and messages").
+8. **Timetable and seats:** change class days and times with time pickers. Tap 0, 1 or 2 extra seats on a date.
+9. **Videos:** pick a skill, paste the link.
+10. **Settings:** every setting in the table below with a plain label and its default shown, plus the QR image.
 
-Edited directly in the Sheet in version 1: Config, Timetable, Videos, and extra seats on a session.
+The Sheet behind it is storage. The coach does not edit it by hand.
+
+## Flows
+
+### New student onboarding
+1. **Coach adds the student** in the admin page: name, weekday chips, start date, fixed or flexible.
+2. **The script makes** a secret key and a short payment code, and shows the link.
+3. **Coach copies the link** and sends it on her private Zalo channel.
+4. **Student opens the link.** The page saves the key in the browser and hides it from the address bar. Next time, no link and no login are needed.
+5. **Student picks a language** and sees the class rules once.
+6. **Student sees the first bill**, prorated from the start date, with the QR and the payment code. It is due as described under "Payment".
+7. **Student pays.** The coach sees the transfer in her bank app and taps **Paid**.
+8. **The card is fully open:** skip, make-up, bills, break.
+
+### The coach's routine
+- **Once:** check the settings, set the timetable, add her QR image, add students and send their links.
+- **Every week:** open "Next 14 days", read the courts to book, book them, and answer requests on Zalo.
+- **Every month:** on the 1st the bills are ready. On the 3rd, copy the reminder to unpaid students. Tap Paid as money arrives. On the 6th, copy the late reminder.
+- **Now and then:** scores every 2 to 3 months, cancel a session at least 7 days ahead, reset a link that leaked.
+
+### The student's everyday use
+- **Skip a lesson:** tap the day. The script checks they are paid up and at least 7 days ahead. If yes, the lesson is skipped and they get 1 credit. If not, the reason is shown.
+- **Take a make-up:** tap a green day. The script checks they have a credit (3 a month at most), a free seat, and at least 7 days ahead in the same month. If yes, it is booked. If not, the reason is shown.
+- **Also:** see bills and pay, plan a long break, see the polygon and video.
 
 ## Rules and settings
 All numbers below are **settings in a Config tab of the Sheet**, so the coach can change them without touching code. Defaults are shown.
@@ -96,6 +123,7 @@ All numbers below are **settings in a Config tab of the Sheet**, so the coach ca
 | Skip, take a make-up, or start a break at least this many **calendar days** before the lesson (weekends count) | 7 | `advance_days` |
 | Flexible students join a session at least this many days before it | 7 | `flex_notice_days` |
 | Monthly fee is paid by the end of this day of the month | 5 | `pay_by_day` |
+| A new student's first bill is due this many days after their start date (or on the pay-by day, whichever is later) | 3 | `first_bill_days` |
 | Make-ups per student per month | 3 | `max_makeups_per_month` |
 | Moves or cancels of a booked make-up per month (0 = no limit) | 3 | `max_makeup_changes_per_month` |
 | A break this many days or longer is a long break | 14 | `long_break_days` |
@@ -112,6 +140,7 @@ All numbers below are **settings in a Config tab of the Sheet**, so the coach ca
 **Payment (flat monthly fee, paid like rent):**
 - One fixed fee per month, set by the coach. A student can have their own fee in the Students tab. Paid by bank transfer, with the student's **short payment code** in the note.
 - Paid **by the end of the 5th** is on time. Late starts on the 6th. Paying late unlocks it again.
+- **A new student's first bill** is due on the later of the 5th and `first_bill_days` (3) after their start date. The late lock starts the day after. Example: starts on the 20th, due on the 23rd, locked from the 24th. Starts on the 3rd: due on the 6th.
 - The coach marks the month as paid in the admin page after checking the bank app. No receipt upload.
 - The lock looks at the **current month's** payment on the day the student acts. A student who skips a December lesson on 20 November is judged on November.
 
@@ -182,10 +211,24 @@ There is **no other database**. The private Google Sheet is it. Think of it as t
 - At most 16 seats per session, so two students fighting for a seat is rare. The script lock handles it anyway.
 - The coach already knows how to use a Sheet, and it stays as a fallback if the admin page ever breaks.
 
+**Why a Sheet and not another database**
+
+| Option | Good | Not so good |
+|---|---|---|
+| **Google Sheet + Apps Script** (chosen) | Free, no card. One Google account. One language (JavaScript) for the script and the pages. No server to run. Google keeps history and uptime. The rows can be viewed, exported and printed by anyone who knows spreadsheets. | The script can be slow (1 to 3 seconds when it wakes up). Daily limits exist, but are far above this class. No built-in database rules, so the script must guard seats and rows itself. The script's address is public, so every call must be checked. Calls from a web page have quirks. The code is edited in a browser editor unless we add git tools. |
+| **Supabase** (hosted Postgres) | A real database with rules built in. A seat limit can be enforced in one safe step. Real login for the coach. A spreadsheet-like table viewer. A generous free plan. | More to learn (SQL and access rules). Free projects can pause after a week of no use. Student-link access needs carefully written database functions. One more account and vendor. |
+| **Firebase** (Firestore) | Free tier, fast, live updates. | Safe student access needs server code, and that needs a paid plan with a card. Questions like "who is in this session" are awkward. |
+| **Cloudflare Workers + D1** | Free, fast, does not pause, real SQL. | The most to build and own: we write and deploy the server code, and there is no ready-made table editor. |
+| **Airtable or Notion** | Friendly tables. | Free limits, and an API token that must stay secret, which a static site cannot do without a server. |
+
+Free-plan limits change, so check the current ones before committing to anything.
+
+**Verdict:** the Sheet wins on cost and simplicity for about 100 students. One honest point: its best feature, "the coach can open and edit it", matters less now that she works through the admin page. Its real value is zero cost and zero servers. To keep the door open, all reading and writing goes through one small `store` module in the script, and the rules never touch the Sheet directly. If the class grows past a few hundred students, the Sheet feels slow, or we want a real login for the coach, we can swap the store for Supabase without touching the rules or the pages.
+
 **Who writes what**
-- **The admin page** (through the script) writes Students, Payments, Scores and the fee adjustment in Breaks.
-- **The coach by hand** edits Config, Timetable, Session overrides and Videos.
-- **The student pages** (through the script) write only the Changes tab (skips, make-ups, joins, leaves) and the Breaks they plan. The Changes tab is protected, with a warning "written by the site, do not edit by hand".
+- **The admin page** (through the script) writes everything the coach manages: Students, Payments, Scores, Videos, Timetable, Session overrides, Config, and cancelled sessions.
+- **The student pages** (through the script) write only the Changes tab (skips, make-ups, joins, leaves) and the Breaks they plan.
+- **Nobody edits the Sheet by hand.** Its tabs are protected with a warning "written by the site, do not edit by hand", so a stray typo cannot break the rules. A small Sheet menu (add student, reset link) is the emergency fallback.
 - Dates and times are stored as real dates, never as text, so sorting and filtering work.
 
 **Keeping it safe and tidy**
@@ -216,6 +259,7 @@ There is **no other database**. The private Google Sheet is it. Think of it as t
 | **The coach does not want to use it.** This is the biggest risk, and she has not been asked yet. | Step 0: show her the demo and the rules page before building more. The admin page does her daily jobs (courts to book, who paid) so it saves her time, not adds work. |
 | Students keep messaging the coach instead of using the site. | The coach shares each student's link in the class group chat. The card is simple and Vietnamese by default. |
 | Google's script is slow, or the browser blocks the call. | Step 2 proves a call from `github.io` works on iPhone, Android and inside a chat app's browser. The card shows a saved copy when the script is down. |
+| Someone edits the Sheet by hand and breaks a row. | The tabs are protected and the admin page does all the editing. |
 | The rules feel too complicated. | The class rules screen explains them in plain Vietnamese and English, with the real numbers. |
 | The coach burns out entering scores. | Scoring every 2 to 3 months, and the polygon is optional until a score exists. |
 
@@ -224,7 +268,7 @@ There is **no other database**. The private Google Sheet is it. Think of it as t
 1. **Student card with fake data.** Polygon, bills, calendar (read-only), language toggle (Vietnamese first), class rules screen. *Done when it looks right on a phone and in a chat app's built-in browser, and the coach has seen it.*
 2. **Sheet and script, read-only.** Create the tabs, a script that returns one student's card by key, and the admin password login. Test with 100 fake students and 3 months of rows, and check the speed. The Sheet also gets a small menu ("Birdie Crew") with **Add student** (makes the secret key, payment code and link) and **Reset link**, so the coach can run everything from the Sheet alone before the admin page exists, or if she prefers it. *Done when the page shows real Sheet data from `github.io`, a wrong key shows nothing, a wrong admin password is refused, and a student added from the Sheet menu can open their card.*
 3. **Skip and make-up with all the rules.** Seat count, notice lock, credit, the 3-make-up cap, and the unpaid lock. *Done when every example in the step 3 test list passes.*
-4. **Admin page, version 1.** Next 14 days with courts to book, students and links, payments with worked-out amounts, scores, breaks, cancel a session, and the reminder list. *Done when the coach can run a normal week without opening the Sheet.*
+4. **Admin page.** Click and click, phone first. Next 14 days with courts to book, students and links, payments with worked-out amounts, scores, breaks, cancel a session, the reminder list, timetable and seats, videos and settings. *Done when the coach can run a normal week without opening the Sheet.*
 5. **Flexible students and planned breaks.** Join or leave sessions, the break form.
 6. **Pay now page.** The coach's own QR image (she already has one), with the amount and the short payment code shown next to it to type into the transfer note. The QR image is kept in the private Sheet or Drive and handed out by the script, not committed to the repo. Late banner, and the reduced amount after a long break. Later, if she shares the bank and account number, the QR can be made in the browser with the amount and code already filled in.
 7. **Videos.**
@@ -243,6 +287,7 @@ Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and th
 - Move a booked make-up: counts toward `max_makeup_changes_per_month`. The fourth move: refused.
 - Skip inside the lock window by editing the page or the request: the script refuses.
 - Today is the 5th and the month is not paid: still allowed. Today is the 6th and not paid: refused.
+- A student starting on the 20th: first bill due on the 23rd, locked from the 24th. Starting on the 3rd: due on the 6th.
 - Coach marks the month paid on the 12th: the same student can skip again immediately.
 - The coach cancels a lesson: each affected fixed student gets 1 free credit. It does not count toward the cap of 3.
 - A cancelled-lesson credit from November can be used in December, but not in January.
@@ -279,6 +324,7 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 3. **Flexible students:** is the rule "each session at least 7 days ahead", or "the whole week's plan sent during the week before"? And do they pay the same fee? (Each session at least 7 days ahead, with a fee set per student.)
 4. **Cancelled sessions:** is the make-up credit outside the cap of 3, and may it be used one extra month? (Yes to both.)
 5. **Reminders:** is copy-and-paste into her Zalo channel fine for version 1? Does she want automatic emails later? (Copy-and-paste now, email later.)
+- **Phone or computer** for the admin page? (Phone first. It works on a computer too.)
 6. **Typical headcount per session and how many lessons a week each student takes.** This checks that free seats exist for make-ups. (Unknown. Four players per court. The admin page will show real numbers once it runs.)
 
 **Needs you**
@@ -295,12 +341,14 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 - Students open a personal secret link. No Google login for students. Another student's data is never reachable.
 - The coach logs in with an admin password checked by the script. Google sign-in is a later upgrade.
 - The bank-transfer code is a short public payment code, separate from the secret key.
-- The private Google Sheet is the only database. Up to about 100 students.
+- The private Google Sheet is the only database. Up to about 100 students. It stays behind a small `store` module, so it can be swapped for Supabase later.
+- Click and click: the coach manages all student data herself in the admin page, mostly on her phone. Nobody edits the Sheet by hand.
 - Everything is called Birdie Crew (repo, plan, code). The page title shown to students is **VM Badminton**, set by the `page_title` setting in Config.
 - Money is Vietnamese dong. Time zone is Vietnam (`Asia/Ho_Chi_Minh`).
 - Class timetable: Monday to Thursday 20:00 to 22:00, Saturday and Sunday 10:00 to 12:00, kept in a Timetable tab.
 - The venue has 4 courts. A session holds up to 16 seats plus 0 to 2 extra. The site tells the coach how many courts to book.
 - Flat monthly fee, paid by the end of the 5th (setting). Paid with the coach's own QR.
+- A new student's first bill is due 3 days after their start date, or on the 5th if that is later (setting `first_bill_days`).
 - A student pays only for the days they study. A mid-month joiner is prorated. A long break reduces the fee. No cash refunds: a credit goes on the next bill. All of it can be switched off or changed in Config (`proration`, `credit_carry`, `fee_round`).
 - Go ahead without waiting for the coach's yes. The Sheet and script work alone (with a Sheet menu to add students), and the admin page is an optional step.
 - Fixed weekly schedule per student, or flexible students who pick sessions in advance.
