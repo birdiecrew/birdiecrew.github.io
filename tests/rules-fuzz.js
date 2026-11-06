@@ -1,10 +1,10 @@
-/* Random-sequence test of the rules engine (mockups/mock-core.js).
+/* Random-sequence test of the rules engine (assets/core.js).
    Runs thousands of random actions (students and coach) and checks invariants after every step.
-   Usage: node mockups/tests/rules-fuzz.js <seed> <steps> [stats]
+   Usage: node tests/rules-fuzz.js <seed> <steps> [stats]
    The same invariants should be run against the real Apps Script when it exists. */
 global.window = global; global.document = undefined;
 const fs = require('fs');
-eval(fs.readFileSync(require('path').join(__dirname, '..', 'mock-core.js'), 'utf8'));
+for (const f of ['core.js', 'sample.js']) eval(fs.readFileSync(require('path').join(__dirname, '..', 'assets', f), 'utf8'));
 const BC = window.BC;
 
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }

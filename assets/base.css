@@ -1,4 +1,4 @@
-/* Birdie Crew mockup: shared look. Plain CSS, no libraries, so it works in chat apps' built-in browsers. */
+/* Birdie Crew: shared look. Plain CSS, no libraries, so it works in chat apps' built-in browsers. */
 :root {
   /* Neutral palette from Project Snowball (PaperMod): grays, ink as the accent.
      Two meaning colors only: red = wrong, late, error. Green = approved, done, paid. Everything else stays gray. */
@@ -169,31 +169,6 @@ textarea.inp { min-height: 96px; resize: vertical; }
 .radar .rv { fill: var(--muted); font-size: 11px; }
 .qr { width: 100%; height: auto; display: block; border-radius: 10px; }
 
-/* mockup-only controls (not part of the real UI) */
-.mock-fab {
-  position: fixed; right: 14px; bottom: 14px; z-index: 60; border: 0; border-radius: 999px; padding: 10px 14px; font-size: .8rem; font-weight: 700;
-  background: #2e2e33; color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); opacity: .92;
-}
-.mock-fab.up { bottom: 82px; }
-.mock-panel {
-  position: fixed; right: 14px; bottom: 60px; z-index: 61; width: min(320px, calc(100vw - 28px)); max-height: 70vh; overflow: auto;
-  background: #2e2e33; color: #ececed; border-radius: 16px; padding: 14px; box-shadow: 0 16px 50px rgba(0, 0, 0, .4); font-size: .88rem;
-}
-.mock-panel.up { bottom: 128px; }
-.mock-panel h3 { color: #fff; margin-bottom: 4px; }
-.mock-panel .note { color: #a0a0a4; font-size: .76rem; margin-bottom: 10px; }
-.mock-panel label { display: block; margin: 10px 0 4px; color: #c4c4c8; font-size: .78rem; font-weight: 650; }
-.mock-panel select, .mock-panel button.mb {
-  width: 100%; min-height: 38px; border-radius: 10px; border: 1px solid #55565c; background: #3b3c42; color: #fff; padding: 6px 10px;
-}
-.mock-panel .seg { background: #3b3c42; }
-.mock-panel .seg button { color: #c4c4c8; }
-.mock-panel .seg button[aria-pressed="true"] { background: #6c6c72; color: #fff; }
-.mock-panel .seg.full { width: 100%; }
-body.sheet-open .mock-fab, body.sheet-open .mock-panel { display: none; }
-.themebtn { flex: none; }
-.mock-tag { position: fixed; top: 0; left: 0; right: 0; z-index: 70; background: #2e2e33; color: #e4e4e6; font-size: .72rem; text-align: center; padding: 3px 8px; }
-body.has-mocktag { padding-top: 22px; }
 
 /* one pattern for "not yet": the control stays in place, dimmed, and a reserved line says why. Nothing appears or disappears, so nothing jumps. */
 .why { min-height: 2.7em; font-size: .82rem; line-height: 1.35; color: var(--muted); display: flex; align-items: flex-end; gap: 6px; }
@@ -209,7 +184,6 @@ body.has-mocktag { padding-top: 22px; }
 /* full-screen pages that slide in, like the iPhone's Settings. Small sheets stay for one-tap things. */
 .sheet-back.page { background: var(--bg); align-items: stretch; justify-content: center; animation: slidein .22s ease-out; z-index: 55; }
 .sheet.page { max-width: 720px; width: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none; background: var(--bg); padding: 0 16px 120px; animation: none; overflow: auto; }
-body.has-mocktag .sheet.page { padding-top: 22px; }
 .page-h { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0 8px; margin: 0 0 8px; }
 .page-h h2 { font-size: 1.25rem; }
 .page-h .btn { flex: none; }

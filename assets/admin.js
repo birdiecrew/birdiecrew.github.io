@@ -1,4 +1,4 @@
-/* Coach admin mockup. Made-up data, kept in this browser only (the real site keeps the coach's own save file the same way). */
+/* The coach's page. Her data is a working copy in this browser plus a save file she keeps (store.js). */
 (function () {
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
@@ -17,7 +17,8 @@
   function dt(iso) { return BC.fmtDate(iso, S.lang); }
   function ymNow() { return BC.ym(BC.today); }
   function monthWord(ym, lang) { return lang === 'vi' ? 'tháng ' + Number(ym.slice(5)) : BC.monthOnly(ym, 'en'); }
-  function cardBase() { try { return new URL('student.html', location.href).href; } catch (e) { return 'student.html'; } }
+  /* the card page is the site's front page, one folder up from the coach's page */
+  function cardBase() { try { return new URL('../', location.href).href; } catch (e) { return '../'; } }
   var app = $('#app');
   var SU = Setup.create({ t: t, h: h, icon: icon, money: money, S: S, $: $, render: function () { render(); }, toast: function (m, k) { if (m !== t('Saved')) UI.toast(m, k); } });
 
@@ -58,10 +59,11 @@
     var rd = remindData(), nRemind = rd.soft.length + rd.late.length, bk = BC.backup();
     var unpaid = payRows(ymNow()).filter(function (r) { return !r.rec.paid; }).length;
     var tabs = [['sessions', 'cal2', 'Sessions', 0], ['students', 'users', 'Students', 0], ['payments', 'wallet', 'Payments', unpaid], ['remind', 'bell', 'Remind', nRemind], ['more', 'more', 'More', 0]];
-    var isSample = !!(BC.meta && BC.meta.sample), nag = bk.dirty && !isSample, lbl = isSample ? t('Sample') : t('Save');
+    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = isSample ? t('Sample') : t('Save');
     var chip = '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : (isSample ? 'info' : 'check')) + '</button>';
     var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
-    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + sample +
+    var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + '</div></div>' : '';
+    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + pretend + sample +
       '<div id="view">' + view() + '</div>' +
       '<nav class="nav" aria-label="Main"><div class="nav-in">' + tabs.map(function (x) {
         return '<button data-tab="' + x[0] + '" aria-label="' + t(x[2]) + '" title="' + t(x[2]) + '" ' + ((!S.sub && S.tab === x[0]) || (S.sub && x[0] === 'more') ? 'aria-current="page"' : '') + '>' + icon(x[1]) + (x[3] ? '<span class="badge ' + (x[0] === 'payments' ? 'warn' : '') + '">' + x[3] + '</span>' : '') + '</button>';
@@ -343,6 +345,14 @@
     return { unskip: t('Skip undone. They attend.'), cancelmk: t('Make-up cancelled.'), join: t('Added to the session.'), leave: t('Removed from the session.') }[act];
   }
 
+  /* what was done, in a few words, for the reply message */
+  function whatText(act, iso, lang) {
+    var d = BC.fmtDay(iso, lang);
+    var vi = { skip: 'nghỉ buổi ' + d, unskip: 'đi học lại buổi ' + d, makeup: 'học bù buổi ' + d, cancelmk: 'hủy học bù buổi ' + d, join: 'đăng ký buổi ' + d, leave: 'hủy đăng ký buổi ' + d };
+    var en = { skip: 'skipped ' + d, unskip: 'back in on ' + d, makeup: 'make-up on ' + d, cancelmk: 'make-up on ' + d + ' cancelled', join: 'joined ' + d, leave: 'left ' + d };
+    return (lang === 'vi' ? vi : en)[act] || '';
+  }
+
   /* one day for one student: status, then only the actions that make sense */
   function openStudentDay(sid, iso, back) {
     var s = BC.student(sid), i = BC.dayInfo(s, iso), ses = i.ses, act = '', label = '', body = '';
@@ -367,9 +377,24 @@
       (act ? '<div id="day-res" style="margin-top:12px"></div><button class="btn primary block" id="day-go" style="margin-top:12px">' + label + '</button>' : ''), { onClose: back || null });
     if (!act) return;
     var pending = false;
+    /* after a change: say it is done, and offer the reply for Zalo in one paste (the fresh card is inside it) */
     var finish = function (r) {
-      UI.sheet.close(true); render(); UI.toast(doneText(act, r) + ((r.warned || []).length ? ' (' + t('rule bent') + ')' : ''));
-      if (back) back();
+      render();
+      var drawDone = function () {
+        el.innerHTML = shd(dt(iso), h(s.name)) + banner(icon('check') + '<div>' + doneText(act, r) + ((r.warned || []).length ? UI.SEP + t('rule bent') : '') + '</div>', 'ok') +
+          '<div class="stack" style="margin-top:12px"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div>' +
+          '<button class="btn primary block" data-reply>' + icon('copy', 'sm') + ' ' + t('Copy reply') + '</button><button class="btn block" data-close>' + t('Done') + '</button></div>';
+      };
+      drawDone();
+      el.addEventListener('click', function (e) {
+        var m = e.target.closest('[data-ml]');
+        if (m) { S.msgLang = m.getAttribute('data-ml'); drawDone(); return; }
+        if (!e.target.closest('[data-reply]')) return;
+        BC.cardLink(sid, cardBase()).then(function (link) {
+          UI.copy(BC.fill(BC.messages[S.msgLang].reply, { what: whatText(act, iso, S.msgLang), link: link }), t('Message copied. Paste it into Zalo.'));
+          BC.markCardSent(sid); render();
+        });
+      });
     };
     $('#day-go', el).addEventListener('click', function () {
       var box = $('#day-res', el), r;
@@ -604,15 +629,17 @@
   /* my data: the save file, whether it is up to date, earlier copies */
   function dataView() {
     var bk = BC.backup(), hist = BC.history().slice(0, -1).reverse();
-    var state = !bk.at ? ['warn', t('Not saved yet')] : bk.dirty ? ['warn', t('Not saved') + UI.SEP + t('Last file: {when}.', { when: ago(bk.at) })] : ['ok', t('Saved {when}', { when: ago(bk.at) })];
+    var state = !bk.at ? ['warn', t('Not saved yet')] : bk.dirty ? ['warn', t('Not saved') + UI.SEP + t('Last file: {when}.', { when: ago(bk.at) })] : [bk.old ? 'warn' : 'ok', t('Saved {when}', { when: ago(bk.at) })];
     var copies = hist.length ? '<h3 style="margin:18px 0 6px">' + t('Earlier copies') + '</h3><div class="card">' + hist.map(function (x, i) {
       return '<div class="hist"><b>' + new Date(x.t).toLocaleString(S.lang === 'vi' ? 'vi-VN' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</b><button class="btn sm" data-a="restorehist" data-x="' + (hist.length - 1 - i) + '">' + t('Restore') + '</button></div>';
     }).join('') + '</div>' : '';
     return subHead(t('My data')) +
       '<div class="banner ' + state[0] + '" style="margin-bottom:14px">' + icon(state[0] === 'ok' ? 'check' : 'info') + '<div><b>' + state[1] + '</b></div></div>' +
+      (BC.persisted === false ? '<div class="why" style="margin:-6px 0 8px;min-height:0">' + icon('info') + '<span>' + t('This browser may clear its data. Save a file.') + '</span></div>' : '') +
       '<div class="menu"><button class="li" data-a="savefile">' + icon('save') + '<div class="grow"><b>' + t('Save file') + '</b></div>' + icon('chevR') + '</button>' +
       '<button class="li" data-a="openfile">' + icon('plus') + '<div class="grow"><b>' + t('Open file') + '</b></div>' + icon('chevR') + '</button>' +
-      '<button class="li" data-a="report">' + icon('chart') + '<div class="grow"><b>' + t('Export report') + '</b></div>' + icon('chevR') + '</button></div>' + copies +
+      '<button class="li" data-a="report">' + icon('chart') + '<div class="grow"><b>' + t('Export report') + '</b></div>' + icon('chevR') + '</button>' +
+      '<button class="li" data-a="support">' + icon('copy') + '<div class="grow"><b>' + t('Support copy') + '</b></div>' + icon('chevR') + '</button></div>' + copies +
       '<div style="margin-top:24px"><button class="btn danger block" data-a="startover"' + (bk.dirty ? ' disabled' : '') + '>' + icon('trash', 'sm') + ' ' + t('Start over') + '</button>' +
       '<div class="why">' + (bk.dirty ? icon('info') + '<span>' + t('Save a file first.') + '</span>' : '') + '</div></div>';
   }
@@ -738,8 +765,8 @@
       }).join('') + '</div>';
     }).join('');
     var msgs = ['vi', 'en'].map(function (lg) {
-      return ['soft', 'late', 'cancel', 'card'].map(function (kind) {
-        var lbl = { soft: 'Friendly heads-up', late: 'Late reminder', cancel: 'Cancelled session', card: 'Class card message' }[kind];
+      return ['soft', 'late', 'cancel', 'card', 'reply'].map(function (kind) {
+        var lbl = { soft: 'Friendly heads-up', late: 'Late reminder', cancel: 'Cancelled session', card: 'Class card message', reply: 'Reply after a change' }[kind];
         return '<label class="field"><span class="lbl">' + t(lbl) + UI.SEP + (lg === 'vi' ? 'Tiếng Việt' : 'English') + '</span><textarea class="inp" data-bind="msg" data-k="' + lg + '.' + kind + '">' + h(BC.messages[lg][kind]) + '</textarea></label>';
       }).join('');
     }).join('');
@@ -764,7 +791,6 @@
     else if (S.mode === 'wizard') app.innerHTML = SU.wizardView();
     else { app.innerHTML = shell(); BC.autosave(); }
     window.scrollTo(0, y);
-    syncPanel();
     if (focus === 'q') { var q = $('#q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
   }
   function toast(msg, kind) { if (msg === t('Saved')) return; UI.toast(msg, kind); }
@@ -823,6 +849,7 @@
           else openIt();
           break;
         }
+        case 'support': BC.giveFile(BC.fileName('-support.json'), BC.supportText(), 'application/json').then(function (done) { if (done) toast(t('Support copy ready')); }); break;
         case 'report': BC.giveFile('birdie-crew-report-' + ymNow() + '.csv', BC.reportCSV(), 'text/csv').then(function (done) { if (done) toast(t('Report ready.')); }); break;
         case 'restorehist': {
           var hist = BC.history(), item = hist[Number(x)], rr = item && BC.parseFile(item.txt);
@@ -835,12 +862,12 @@
         case 'startover':
           if (BC.backup().dirty) { toast(t('Save a file first, so nothing is lost.'), 'bad'); break; }
           UI.confirm({ title: t('Start over?'), body: t('This clears everything on this phone. Your saved file is not touched.'), ok: t('Clear this phone'), cancel: t('Keep it'), danger: true }).then(function (yes) {
-            if (!yes) return; BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
+            if (!yes) return; BC.wipeLocal(); BC.blank(); BC.initToday(); S.payMonth = BC.ym(BC.today); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
           });
           break;
         case 'clearsample':
           UI.confirm({ title: t('Leave the sample class?'), body: t('The made-up students are cleared from this phone.'), ok: t('Start my own class'), cancel: t('Keep playing'), danger: true }).then(function (yes) {
-            if (!yes) return; BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
+            if (!yes) return; BC.wipeLocal(); BC.blank(); BC.initToday(); S.payMonth = BC.ym(BC.today); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
           });
           break;
         case 'score': { var q = x.split(':'); S.draft[q[0]] = Number(q[1]); render(); break; }
@@ -855,7 +882,7 @@
         case 'copycancel': UI.copy(msg('cancel', null, S.msgLang, S.cancelIso), t('Message copied. Paste it into Zalo.')); break;
         case 'docancel': {
           var iso = S.cancelIso, note = ($('#cx-note') || {}).value || '';
-          UI.confirm({ title: t('Cancel {date}?', { date: dt(iso) }), body: t('Booked students each get 1 free make-up lesson. You cannot undo this in the mockup.'), ok: t('Cancel session'), cancel: t('Keep it'), danger: true }).then(function (yes) {
+          UI.confirm({ title: t('Cancel {date}?', { date: dt(iso) }), body: t('Booked students each get 1 free make-up lesson. This cannot be undone.'), ok: t('Cancel session'), cancel: t('Keep it'), danger: true }).then(function (yes) {
             if (!yes) return; var r = BC.cancelSession(iso, note); if (!r.ok) { toast(t('This session is already cancelled.'), 'bad'); return; } S.cancelIso = null; S.reminded['canc' + iso] = false; S.sub = null; S.tab = 'remind'; render(); toast(t('Cancelled. {n} students got a free make-up.', { n: r.affected }));
           });
           break;
@@ -921,26 +948,15 @@
     else if (b === 'msg') { var m = k.split('.'); BC.messages[m[0]][m[1]] = el.value; toast(t('Saved')); }
   });
 
-  /* ---------- mockup-only controls ---------- */
-  var panel = UI.mockPanel(
-    '<h3>Mock controls</h3><div class="note">Only in the mockup. Jump between situations the coach meets.</div>' +
-    '<label>Pretend today is</label><div class="seg full" id="m-today"><button data-v="2026-11-03">3 Nov</button><button data-v="2026-11-05">5 Nov</button><button data-v="2026-11-06">6 Nov</button><button data-v="2026-11-12">12 Nov</button></div>' +
-    '<label>First run</label><button class="mb" id="m-start">Clear this browser and show the start screen</button>' +
-    '<label>Data</label><button class="mb" id="m-reset">Load the sample class again</button>', { up: true });
-  function syncPanel() { $$('#m-today button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === BC.today)); }); }
-  panel.addEventListener('click', function (e) {
-    var b = e.target.closest('button'); if (!b) return;
-    if (b.parentElement.id === 'm-today') { BC.today = b.getAttribute('data-v'); S.payMonth = BC.ym(BC.today); render(); }
-    else if (b.id === 'm-start') { BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; panel.classList.add('hide'); render(); window.scrollTo(0, 0); }
-    else if (b.id === 'm-reset') { S.mode = 'app'; BC.seed(); cfg = BC.config; S.open = {}; S.reminded = {}; S.draft = null; S.scoreSid = null; S.cancelIso = null; S.payMonth = BC.ym(BC.today); render(); UI.toast('Reset'); }
-  });
-
   /* start: use the working copy in this browser if there is one */
   var boot = BC.restore();
+  if (boot.ok && BC.meta && BC.meta.sample) BC.today = BC.SAMPLE_DAY;   /* the sample class lives on its own day */
+  S.payMonth = BC.ym(BC.today);
   if (boot.ok && BC.meta && BC.meta.setup) S.mode = 'app';
   else {
     BC.blank(); S.mode = 'start';
     if (!boot.ok && boot.reason !== 'none') SU.setErr('The copy saved on this phone could not be read. Open your file instead.');
   }
   render();
+  BC.persist().then(function (kept) { if (kept === false && S.mode === 'app') render(); });
 })();

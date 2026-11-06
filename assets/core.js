@@ -1,4 +1,4 @@
-/* Birdie Crew mockup: fake data and the class rules, shared by the student and admin mockups.
+/* Birdie Crew: the class rules, shared by the card and the coach's page.
    Everything lives in memory. Nothing here talks to a server. */
 (function () {
   'use strict';
@@ -76,13 +76,15 @@
         soft: 'Hi {name}, a friendly reminder: the {month} fee of {amount} is due by the end of {due}. Please transfer with the note {code}.',
         late: 'Hi {name}, the {month} fee ({amount}) is now overdue. Until it is paid you cannot skip, take make-ups or plan breaks (lessons already booked stay). Transfer note: {code}.',
         cancel: 'Notice: the {weekday} {date} session is cancelled. Everyone booked gets 1 free make-up lesson, valid until the end of {until}. Message me to pick a day.',
-        card: 'Hi {name}, here is your class card (as of {date}). Open it and bookmark it. When something changes I will send you a fresh one: {link}'
+        card: 'Hi {name}, here is your class card (as of {date}). Open it and bookmark it. When something changes I will send you a fresh one: {link}',
+        reply: 'Done: {what}. Your new card: {link}'
       },
       vi: {
         soft: 'Chào {name}, nhắc nhẹ: học phí {month} là {amount}, hạn đóng hết ngày {due}. Bạn chuyển khoản với nội dung {code} nhé.',
         late: 'Chào {name}, học phí {month} ({amount}) đã quá hạn. Khi chưa đóng, bạn chưa thể xin nghỉ, đặt học bù hay báo nghỉ dài (các buổi đã đặt vẫn giữ). Nội dung chuyển khoản: {code}.',
         cancel: 'Thông báo: buổi học {weekday} {date} được hủy. Mỗi bạn đã đăng ký được 1 buổi học bù miễn phí, dùng đến hết {until}. Nhắn cho HLV để chọn ngày học bù.',
-        card: 'Chào {name}, đây là thẻ lớp của bạn (cập nhật ngày {date}). Bạn mở và lưu lại nhé. Khi có thay đổi mình sẽ gửi thẻ mới: {link}'
+        card: 'Chào {name}, đây là thẻ lớp của bạn (cập nhật ngày {date}). Bạn mở và lưu lại nhé. Khi có thay đổi mình sẽ gửi thẻ mới: {link}',
+        reply: 'Đã xong: {what}. Thẻ mới của bạn: {link}'
       }
     };
   };
@@ -90,11 +92,10 @@
     return tpl.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? vars[k] : m; });
   };
 
-  /* ---------- seed ---------- */
-  BC.seed = function () {
-    BC.today = '2026-11-05';
+  /* ---------- a fresh, empty class with the usual rules ---------- */
+  BC.defaults = function () {
     BC.nextId = 1;
-    BC.meta = { sample: true, setup: true };
+    BC.meta = { sample: false, setup: false };
     BC.config = {
       advance_days: 7, flex_notice_days: 7, pay_by_day: 5, first_bill_days: 3,
       max_makeups_per_month: 3, long_break_days: 14,
@@ -110,115 +111,26 @@
       5: { on: false, start: '20:00', end: '22:00' },
       6: { on: true, start: '10:00', end: '12:00' }, 0: { on: true, start: '10:00', end: '12:00' }
     };
-    BC.overrides = {
-      '2026-11-12': { extra: 1 },
-      '2026-11-14': { courts: 3 },
-      '2026-11-24': { cancelled: true, cancelledOn: '2026-11-02', note: 'Venue closed for an event' }
-    };
-    BC.videos = {
-      smash: { title: 'Smash: power from the legs, not the arm', len: '8:12', url: 'https://youtu.be/example-smash' },
-      net: { title: 'Net shots: tumbling and tight lifts', len: '6:40', url: 'https://youtu.be/example-net' },
-      footwork: { title: 'Footwork: split step and the first move', len: '9:05', url: 'https://youtu.be/example-footwork' },
-      defense: { title: 'Defense: reading the smash, blocking low', len: '7:30', url: 'https://youtu.be/example-defense' },
-      serve: { title: 'Serve: short serve rules and routine', len: '5:48', url: '' },
-      stamina: { title: 'Stamina: 15-minute court conditioning', len: '12:20', url: 'https://youtu.be/example-stamina' }
-    };
-
-    var T = [2, 4], MW = [1, 3], SS = [6, 0], WS = [3, 6], MT = [1, 4], TS = [2, 0];
-    var specs = [
-      ['Minh', 'fixed', T], ['Hùng', 'fixed', T], ['Thảo', 'fixed', T], ['Quang', 'fixed', T],
-      ['Linh', 'fixed', T], ['Nam', 'fixed', T], ['Mai', 'fixed', T], ['Đức', 'fixed', T],
-      ['Trang', 'fixed', T], ['Khoa', 'fixed', T], ['Phong', 'fixed', T], ['Lan', 'fixed', T],
-      ['Bình', 'fixed', T, '2026-10-12'], ['Cường', 'fixed', T, '2026-10-12'], ['Hà', 'fixed', T, '2026-11-17'],
-      ['Dũng', 'fixed', T, '2026-11-10'], ['Hoa', 'fixed', T, '2026-11-10'],
-      ['Ngọc', 'fixed', MW], ['Alex', 'fixed', MW, null, 1000000], ['Yến', 'fixed', MW], ['Bảo', 'fixed', MW],
-      ['Chi', 'fixed', MW], ['Sơn', 'fixed', MW], ['Vy', 'fixed', MW], ['Long', 'fixed', MW],
-      ['Hạnh', 'fixed', SS], ['Duy', 'fixed', SS], ['My', 'fixed', SS], ['Hải', 'fixed', SS],
-      ['Thu', 'fixed', SS], ['Emma', 'fixed', SS],
-      ['Kiên', 'fixed', WS], ['Nhi', 'fixed', WS], ['Việt', 'fixed', WS], ['An', 'fixed', WS],
-      ['Tâm', 'fixed', MT], ['Oanh', 'fixed', [2]], ['Khánh', 'fixed', [0]],
-      ['Tuấn', 'flexible', []], ['Giang', 'flexible', [], null, 1300000]
-    ];
-    BC.students = specs.map(function (sp, i) {
-      var id = BC.nextId++;
-      return {
-        id: id, name: sp[0], type: sp[1], days: sp[2].slice(), start: sp[3] || '2026-09-01',
-        fee: sp[4] || null, active: true,
-        code: 'VM' + String(id + 30).padStart(3, '0')
-      };
-    });
-
-    BC.changes = []; BC.breaks = []; BC.payments = {}; BC.changeLog = []; BC.scores = {};
-    var by = function (name) { return BC.students.filter(function (s) { return s.name === name; })[0]; };
-    BC.byName = by;
-
-    // Skips, make-ups and joins already on the books
-    var skip = function (n, d, created) { BC.addSkipRow(by(n).id, d, created || '2026-10-20'); };
-    var makeup = function (n, d, fromSkipDate) {
-      var s = by(n);
-      var sk = BC.rows(s.id, 'skip', function (c) { return c.date === fromSkipDate; })[0];
-      BC.changes.push({ id: BC.nextId++, student: s.id, type: 'makeup', date: d, source: 'skip', creditId: sk.id, created: '2026-10-25', cancelled: false });
-    };
-    var join = function (n, d) { BC.changes.push({ id: BC.nextId++, student: by(n).id, type: 'join', date: d, created: '2026-10-28', cancelled: false }); };
-
-    skip('Lan', '2026-11-03', '2026-10-24');
-    makeup('Lan', '2026-11-08', '2026-11-03');
-    skip('Lan', '2026-11-19', '2026-11-01');
-    skip('Minh', '2026-11-10'); skip('Minh', '2026-11-12');
-    skip('Hùng', '2026-11-12'); skip('Thảo', '2026-11-10');
-    skip('Alex', '2026-11-09'); makeup('Alex', '2026-11-14', '2026-11-09');
-    skip('Hạnh', '2026-11-08'); skip('Duy', '2026-11-14'); skip('My', '2026-11-14');
-    skip('Việt', '2026-11-07'); makeup('Việt', '2026-11-15', '2026-11-07');
-    skip('Tâm', '2026-11-02'); makeup('Tâm', '2026-11-11', '2026-11-02');
-    join('Tuấn', '2026-11-07'); join('Tuấn', '2026-11-09'); join('Tuấn', '2026-11-14'); join('Tuấn', '2026-11-16');
-    join('Giang', '2026-11-10'); join('Giang', '2026-11-12'); join('Giang', '2026-11-15');
-
-    // A long break (Quang) and a short break (Mai)
-    BC.breaks.push({ id: BC.nextId++, student: by('Quang').id, from: '2026-11-17', to: '2026-11-30', notified: '2026-11-02', reduction: null, note: 'Family trip' });
-    var mb = { id: BC.nextId++, student: by('Mai').id, from: '2026-11-09', to: '2026-11-18', notified: '2026-10-28', reduction: null, note: 'Exams' };
-    BC.breaks.push(mb);
-    ['2026-11-10', '2026-11-12', '2026-11-17'].forEach(function (d) { BC.addSkipRow(mb.student, d, '2026-10-28', mb.id); });
-
-    // The coach cancelled 24 Nov: affected students got a free credit
-    BC.grantCancelCredits('2026-11-24', '2026-11-02');
-
-    // Payments: September and October paid for everyone; November partly
-    var unpaid = ['Hùng', 'Chi', 'Duy', 'Nhi', 'Tâm', 'Giang', 'Emma', 'Cường', 'Hà', 'Dũng'];
-    BC.students.forEach(function (s, i) {
-      ['2026-09', '2026-10'].forEach(function (ym) {
-        if (ym < BC.ym(s.start)) return;
-        var r = BC.payRec(s.id, ym); r.paid = true; r.paidDate = ym + '-0' + (1 + (i % 4)); r.amountPaid = BC.amountDue(s, ym);
-      });
-      if (unpaid.indexOf(s.name) < 0) {
-        var r2 = BC.payRec(s.id, '2026-11'); r2.paid = true; r2.paidDate = '2026-11-0' + (1 + (i % 4)); r2.amountPaid = BC.amountDue(s, '2026-11');
-      }
-    });
-
-    // Scores
-    var noScores = ['Bình', 'Cường', 'Hà', 'Dũng', 'Hoa'];
-    var keys = BC.skills.map(function (k) { return k.id; });
-    BC.students.forEach(function (s) {
-      if (noScores.indexOf(s.name) >= 0) return;
-      var cur = {}, prv = {};
-      keys.forEach(function (k, j) { cur[k] = 3 + ((s.id * 7 + j * 3) % 6); prv[k] = Math.max(1, cur[k] - (1 + ((s.id + j) % 2))); });
-      BC.scores[s.id] = [{ date: '2026-08-29', v: prv }, { date: s.id % 3 === 0 ? '2026-08-29' : '2026-10-28', v: cur }];
-      if (s.id % 3 === 0) BC.scores[s.id] = [{ date: '2026-08-29', v: cur }];
-    });
-    BC.scores[by('Lan').id] = [
-      { date: '2026-08-29', v: { smash: 5, net: 4, footwork: 3, defense: 5, serve: 6, stamina: 4 } },
-      { date: '2026-10-28', v: { smash: 6, net: 5, footwork: 4, defense: 6, serve: 7, stamina: 5 } }
-    ];
-  };
-
-  /* ---------- an empty class (the first-run wizard fills it in) ---------- */
-  BC.blank = function () {
-    var keep = BC.today;
-    BC.seed();
-    BC.today = keep;
+    BC.overrides = {};
+    BC.videos = {};
+    BC.skills.forEach(function (k) { BC.videos[k.id] = { title: '', len: '', url: '' }; });
     BC.students = []; BC.changes = []; BC.breaks = []; BC.payments = {}; BC.changeLog = []; BC.scores = {};
-    BC.overrides = {}; BC.nextId = 1; BC.qrImage = '';
-    Object.keys(BC.videos).forEach(function (k) { BC.videos[k] = { title: '', len: '', url: '' }; });
-    BC.meta = { sample: false, setup: false };
+    BC.qrImage = '';
+  };
+  BC.blank = function () { BC.defaults(); };   /* the date is left alone */
+
+  /* today in Vietnam, whatever time zone the phone is set to */
+  BC.realToday = function () {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+    catch (e) { return BC.iso(new Date()); }
+  };
+  /* pages call this once. Adding ?today=2026-12-01 to the address pretends it is that day (for trying things out). */
+  BC.initToday = function () {
+    BC.today = BC.realToday(); BC.pretend = false;
+    try {
+      var m = /[?&]today=(\d{4}-\d{2}-\d{2})(?:&|#|$)/.exec(window.location.search + '&');
+      if (m && BC.iso(BC.toDate(m[1])) === m[1]) { BC.today = m[1]; BC.pretend = true; }   /* a real calendar day only */
+    } catch (e) { /* not in a browser */ }
   };
 
   /* ---------- lookups ---------- */
@@ -674,5 +586,6 @@
     return s + '</svg>';
   };
 
-  BC.seed();
+  BC.defaults();
+  BC.initToday();
 })();

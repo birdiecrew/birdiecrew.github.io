@@ -85,7 +85,7 @@ Two differences. Snowball's list of codes is public, but student scores are pers
 ## How it works
 - **Website:** plain static pages on GitHub Pages. No server, no database, no script in anyone's account. Two pages: the **card page** (`/`) and the **coach admin page** (`/admin/`). The pages hold code only, never data.
 - **The coach's data:** one **save file** (JSON, in a format the app owns). She opens it, works, and saves it. Between saves, the admin page keeps a working copy in her browser, so nothing is lost on a refresh. She never edits the file by hand.
-- **Rules:** the rules (credits, the cap of 3, warnings, fees) run in the admin page, in her browser. It is the same code the mockups run, tested by a random-sequence test.
+- **Rules:** the rules (credits, the cap of 3, warnings, fees) run in the admin page, in her browser. It is the same code the first prototype ran, tested by a random-sequence test.
 - **Student card:** a link made by the admin page (**Send card**). The data is in the part after `#`, so it never reaches any server. The card is a **snapshot** with an "as of" date. When something changes, the coach sends a fresh one.
 - **Who changes lessons:** only the coach, in the admin page, after the student asks her on Zalo. The card cannot change anything.
 - **The admin page is the referee.** It checks every rule and warns her. A few rules are **soft** (she can say "Do it anyway"). The impossible ones are **hard** and always refused. See "Skip and make-up".
@@ -296,11 +296,11 @@ All numbers below are **settings in the Settings screen**, saved in her file, so
 
 **The coach's admin page**
 - **No password.** The data is on her device, so there is nothing for a password to protect, and someone who opens `/admin/` on another device sees an empty start screen. The phone's own lock protects the phone. A PIN on the page is a possible later add-on.
-- **The admin page makes no network calls.** Its security policy (Content-Security-Policy) forbids connections, so the browser itself blocks any attempt to send data out. There is no analytics and there are no third-party scripts or fonts. She can check it herself: switch on airplane mode and everything still works. (The policy is set in the page's `<meta>` tag, because GitHub Pages does not let us set headers. To be verified in step 2.)
+- **The admin page makes no network calls.** Its security policy (Content-Security-Policy) forbids connections, so the browser itself blocks any attempt to send data out. There is no analytics and there are no third-party scripts or fonts. She can check it herself: switch on airplane mode and everything still works. The policy is set in a `<meta>` tag, because GitHub Pages does not let us set headers: `default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'`. **Tried and it holds (Chrome, 2026-11-07):** `tests/csp-check.html` loads the real pages and attacks them from inside (fetch, XMLHttpRequest, WebSocket, sendBeacon, a tracking pixel, an outside script, an injected inline script, a form post): all 28 checks are blocked. The whole screen-test suite also passes under it, so the app works with no inline scripts and no connections. Still to confirm on iPhone Safari and in the Zalo browser. What the policy cannot stop is the page sending the user to another address, so the real guarantee is still the public code.
 - The file is a plain file. Opening a file from someone else loads their data into her phone, so the app checks the shape and refuses anything that is not a Birdie Crew file.
 
 **Other safety**
-- The repo is **public** (free Pages needs it). No student data, names or QR images are ever committed to it. The mockups use made-up names only.
+- The repo is **public** (free Pages needs it). No student data, names or QR images are ever committed to it. The sample class uses made-up names only.
 - **Names only.** The app keeps first names or nicknames, and nothing else personal: no phone, email, address or photo. Money is stored as "paid or not" with the amount the rules worked out, not as bank details.
 - Dates use one fixed time zone, set in the settings.
 - **File integrity:** every save file carries a version number and a fingerprint. If the file was changed outside the app, or damaged, the app says so in plain words and offers the last good copy. This catches mistakes. It is not a security feature.
@@ -393,18 +393,18 @@ There is **no database and no server.** Think of it as a notebook the coach carr
 | The coach burns out entering scores. | Scoring every 2 to 3 months, and the polygon is optional until a score exists. |
 
 ## Build order
-0. **Show the coach.** One page: the six rules, the demo, and the open questions below. *Done when she says yes and has answered the questions that are hers.* No code.
-1. **Mockups reviewed.** Click-through pages with made-up data (`mockups/`): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
-2. **Prove the risky parts on real phones.** One afternoon. (a) Save file and Open a file through the share sheet on her phone. (b) Storage survives a week, with and without the page on the Home Screen. (c) A card link opens in the Zalo in-app browser, and compression works there. (d) The security policy really blocks network calls. *Done when all four work on her phone, or we know the fallback.*
-3. **The rules and storage as real code, with tests.** Port the rules engine and the storage layer from the mockups. *Done when `node mockups/tests/run-all.js` passes (see "Tests" below) and the screen tests in `mockups/tests/ui-tests.html` pass in a browser.*
-4. **Admin page.** Click and click, phone first: the wizard, Next 14 days with courts to book, students, each student's calendar with lesson changes, payments with worked-out amounts, breaks, cancel a session, the reminder list, timetable and seats, settings, My data. *Done when the coach can run a normal week without anything else.*
-5. **Card page.** Read-only, Vietnamese first, opened from the link, with the "as of" line and the old-card banner. *Done when it looks right on a phone and in a chat app's built-in browser.*
-6. **Send card and Copy reply.** The message with the link after every change. Backup nudges. The report.
-7. **Skills.** Scores, the polygon, and videos. (Open question: skills are the most valuable part for keeping students, so this may move earlier.)
-8. **Pay now page.** The amount and payment code with copy buttons. Late banner, and the reduced amount after a long break. Later, if she shares the bank and account number, a QR can be made in the browser with the amount and code filled in.
+0. **Show the coach.** One page: the six rules, the demo, and the open questions below. *Done when she has tapped through it on her phone and said what felt wrong.* No code.
+1. **Mockups reviewed.** Click-through pages with made-up data (first prototype, now the real site): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
+2. **Prove the risky parts on real phones.** One afternoon. (a) Save file and Open a file through the share sheet on her phone. (b) Storage survives a week, with and without the page on the Home Screen. (c) A card link opens in the Zalo in-app browser, and compression works there. (d) The security policy blocks network calls: *tried in Chrome, passes; to confirm on iPhone Safari.* *Done when all four work on her phone, or we know the fallback.*
+3. **The rules and storage as real code, with tests.** Done: the prototype was moved into the real layout, so the rules engine and the storage layer are the shipped files. *Done when `node tests/run-all.js` passes (see "Tests" below) and the screen tests in `tests/ui-tests.html` pass in a browser.*
+4. **Skills first.** Scores, the polygon with the change since last time, and videos: the coach's scoring screen and the card's Skills page. (Decided: skills are what keeps students and brings new ones, so they come before payments and breaks.)
+5. **The rest of the admin page.** Click and click, phone first: the wizard, Next 14 days with courts to book, students, each student's calendar with lesson changes, payments with worked-out amounts, breaks, cancel a session, the reminder list, timetable and seats, settings, My data. *Done when the coach can run a normal week without anything else.*
+6. **The rest of the card page.** Read-only, Vietnamese first, opened from the link, with the old-card banner. *Done when it looks right on a phone and in a chat app's built-in browser.*
+7. **Send card and Copy reply.** The message with the link after every change. Save nudges. The report.
+8. **Pay now page.** The amount and payment code with copy buttons. Late banner, and the reduced amount after a long break. A QR on the card only if needed (see "Open questions").
 
 ## Tests
-Everything below is runnable now against the mockups. `node mockups/tests/run-all.js` runs all the command-line files (about a minute). The screen tests need a browser: serve `mockups/`, open `/tests/ui-tests.html`, and wait for "UI TESTS: N passed".
+Everything below runs against the real site code. `node tests/run-all.js` runs all the command-line files (about a minute). The screen tests need a browser: run `node tests/run-screens.js` (Playwright), or serve the repository root and open `/tests/ui-tests.html`, and wait for "UI TESTS: N passed".
 
 | File | What it covers |
 |---|---|
@@ -416,6 +416,7 @@ Everything below is runnable now against the mockups. `node mockups/tests/run-al
 | `store-test.js` | The save file, hand-edit detection, names pasted from Zalo, the report |
 | `i18n.test.js` | No untranslated text, matching placeholders, a message for every Ask button |
 | `rules-fuzz.js` | Thousands of random actions checked against rules that must never break (run on 8 seeds) |
+| `csp-check.html` | Attacks the real pages from inside to prove the security policy stops every way of sending data out |
 | `ui-tests.html` | The screens: Vietnamese by default, icon-only navigation, pages versus sheets, the laptop layout, first-run gating, no layout jumps, limits, the Flex chip and own fee, renaming the class, My data, cards to send, the student card and two cards, big fingers (every control tall enough), no sideways scrolling at 375 and 320 px |
 
 ## Test list for step 3
@@ -474,36 +475,40 @@ These run in `store-test.js`, `cards.test.js`, `timetable.test.js` and `ui-tests
 - A break planned after the month is already paid: the difference shows as a credit on the next bill.
 
 ## Open questions
-Each has a current guess in brackets, so nothing blocks the start. "Coach" means it is hers to answer. They are ordered by how much they could change the design.
+Answers marked **(owner)** were given by the developer on 2026-11-07 on the coach's behalf. The coach confirms them in ticket A1. If she disagrees, the plan changes.
 
-**Needs the coach (step 0)**
-0. **Coach-only changes (decided by the owner, to confirm with her):** students ask on Zalo and she records every skip, make-up and break. How many requests a day is that for her? Does the Ask the coach button fit how her students already write to her? (Applied: yes, with soft warnings so she can say yes to exceptions. A self-service mode for simple cases can be added later if the volume is too high.)
-1. **Is "the last card she sent" enough for students?** Or do they need a page that is always up to date? (Guess: enough. If not, a shared place is added later and the cost is a sign-in or a small service.)
-2. **Does she use one device or two?** (Guess: her phone. Two devices means moving the file between them, or the Drive upgrade.)
-3. **Is the extra step per request fine?** After recording a change she copies the reply with the fresh card. (The cards-to-send list is built. A one-tap **Copy reply** right after each change is planned.)
-4. **Does she agree with the fee rule?** A student pays only for the days they study (mid-month joiners and long breaks), rounded to the nearest 1,000 dong, with a credit on the next bill instead of a refund. (**Applied:** yes. It is flexible: `proration` and `credit_carry` in the settings.)
-5. **Flexible students:** is the rule "each session at least 7 days ahead", or "the whole week's plan sent during the week before"? And do they pay the same fee? (Each session at least 7 days ahead, with a fee set per student.)
-6. **Cancelled sessions:** is the make-up credit outside the cap of 3, and may it be used one extra month? (Yes to both.)
-7. **Reminders:** is copy-and-paste into her Zalo channel fine for version 1? (Copy-and-paste now.)
-8. **Typical headcount per session and how many lessons a week each student takes.** (Unknown. The admin page will show real numbers once it runs.)
+**Answered**
 
-**Needs you**
-9. **Skills first?** Skills are the most valuable part for keeping students and finding new ones. Should scores and the polygon come before payments and breaks? (Guess: build the order above, but keep skills small and early.)
-10. **A picture on the card.** Should students see her page picture? A card link is too short for one. (Guess: no, default shuttlecock. Alternative: a very small picture inside the link.)
-11. **The coach's QR image.** She pins it in Zalo, and keeps a copy in her file. Is that fine, or should the card show it? (Guess: pinned in Zalo.)
-12. **Hand-over model:** her own copy, or the developer's address with a support fee? (Guess: the developer's address first.)
+| Question | Answer |
+|---|---|
+| Requests a day, and one extra paste per request | Fine (owner) |
+| Is "the last card she sent" enough, or a live page | Enough for now. A live page can come later (ticket L2). |
+| One device or two | One at a time, mostly her phone |
+| Fee rule, cancelled-lesson credit, reminder style | They match how she works for now |
+| How many flexible students | Rarely. Keep what is built and add nothing more for them. |
+| Language | Vietnamese is the default on both pages. English is one tap away for students (the small button) and under More for her. |
+| Should skills come before payments | Yes. They move up in the build order. |
+| Hand-over model and fee | Discussed offline between the two of them |
+| A page picture on the card | No. The card keeps the default picture. Keep it simple. |
+| The QR | Pinned in her Zalo chat for now. On the card only if needed (banks allow showing it), by making it in the browser from her bank details (ticket L5). |
+| Losing the phone before saving | Not expected (owner). The save reminder stays anyway, because a browser can clear its storage with nobody forgetting. |
+| Decree 13 and children's first names | Judged not a problem: names only, kept on her own phone. Not legal advice. |
+| A brother and sister on one phone | Not a case: every student has their own phone. |
+| Does the security policy block network calls | **Tried: yes** (28 checks in Chrome). To confirm on iPhone Safari. |
 
-**Technical, answered by building (step 2)**
-13. **Do the share sheet, file picker and storage work as expected on her phone, with and without the Home Screen?**
-14. **Does the card link open inside the Zalo in-app browser, and does compression work there?** (A plain fallback is built in.)
-15. **Does a security policy in the page's `<meta>` tag really block network calls on GitHub Pages?**
-16. **A Google Drive sync or a shared place** if one device or live cards turn out not to be enough. (Not in version 1.)
+**Still open: answered by trying on real phones (epic B)**
+1. Does the share sheet, file picker and storage work as expected on her phone, with and without the Home Screen? (Expected to work.)
+2. Does the card link open inside the Zalo in-app browser, and does compression work there? (Expected to work. A plain fallback is built in.)
+3. Does the security policy also hold on iPhone Safari and in the Zalo browser?
+
+**Later, only if she asks**
+- A live card page, a second device (Drive sync), a PIN on the page, reminder emails, the QR on the card.
 
 ## Decided
 - Two static pages on one address: the card page and the coach admin page. **No server, no database, no script in anyone's account.**
 - The coach's data is a **save file she keeps**, with an automatic working copy in her browser. The file is in the app's own format (JSON with a version and a fingerprint). She never edits it by hand.
 - The developer never sees her data, by construction. The developer builds the bike, she brings the gasoline. The developer tests on a sample class of made-up students.
-- The rules run in the admin page and are tested by a random-sequence test. They are the same code in the mockups and the real site.
+- The rules run in the admin page and are tested by a random-sequence test. It is one code base: the prototype became the site.
 - Students get a **card link** made by the admin page, holding only their own rows. It is read-only and a snapshot, with an "as of" date. No Google login for students.
 - No admin password: the data is on her device. The admin page cannot make network calls.
 - The coach keeps **names only**: no phone, email, address or student photos.
@@ -541,6 +546,10 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 - A student's schedule is either fixed days or **Flex** (no fixed days). In the form, Flex is one chip at the end of the days row. A student can have their own monthly fee, which overrides the usual tiers.
 - The class name (the page title) is editable in Settings, like a student's name.
 - The page is one column on every screen. On a laptop it is centred and the icon bar moves to the top.
+- **Skills come first** in the build order.
+- The card keeps the default picture. The QR is pinned in Zalo for now and shown on the card only if needed.
+- One device at a time, mostly her phone. Students each have their own phone, so one card per phone is enough.
+- The security policy is in both pages as a `<meta>` tag, and it is tested. The pages have no inline scripts (the theme is applied by a small file).
 - No receipt upload.
 
 ## Status so far (2026-11-06)
@@ -552,11 +561,12 @@ Done:
 - PR #2 merged: the plan became a build-ready spec.
 - PR #3 open: the class's real notice applied.
 - The coach's answers applied: fee proration, long breaks, cancelled sessions, Zalo reminders, her own QR, dong and Vietnam time, and the VM Badminton page title.
-- Click-through HTML mockups of both pages (`mockups/`) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`mockups/tests/rules-fuzz.js`).
+- Click-through HTML mockups of both pages (first prototype, now the real site) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`tests/rules-fuzz.js`).
 - Changed to coach-only lesson changes, with soft and hard rules and fee tiers by days per week.
-- **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`mockups/tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
+- **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
 - Student card made quiet (no Key, no counters, extra lesson when there is no credit), newest card wins on a phone, the coach sees cards to send, and timetable changes start today. A full test suite (about 140 scenario checks, the random-sequence test on 8 seeds, and 33 screen tests) was added. Writing the tests found and fixed: a card opened from an old link replaced a newer one, a timetable change rewrote past bills and credits, forced changes were not recorded in the log, the court limit was only enforced on screen, and a few tap targets were too small.
 - **Simplified every screen** (this change): shorter labels, no instruction text, icon-only navigation, full-page forms that slide in, one language button on the card, Vietnamese default, Flex chip, positive "Focus" wording, the polygon carries the change since last time, and a laptop layout. About 150 command-line checks and 53 screen tests cover it.
+- **Answered the open questions** (owner's answers, to confirm with the coach) and **tried the security policy**: it blocks every way of sending data out in Chrome, and the app still passes all its screen tests under it. `TICKETS.md` splits the plan into 114 small tickets with progress.
 - Git push from this computer works over SSH.
 
 Next:

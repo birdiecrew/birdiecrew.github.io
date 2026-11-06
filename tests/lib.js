@@ -1,9 +1,8 @@
 /* A tiny test helper shared by the scenario tests. No libraries: run any test file with node. */
 global.window = global; global.document = undefined;
 const fs = require('fs'), path = require('path'), assert = require('assert');
-const dir = path.join(__dirname, '..');
-(0, eval)(fs.readFileSync(path.join(dir, 'mock-core.js'), 'utf8'));
-(0, eval)(fs.readFileSync(path.join(dir, 'store.js'), 'utf8'));
+const dir = path.join(__dirname, '..', 'assets');
+['core.js', 'store.js', 'sample.js'].forEach((f) => (0, eval)(fs.readFileSync(path.join(dir, f), 'utf8')));
 const BC = window.BC;
 
 const queue = [];

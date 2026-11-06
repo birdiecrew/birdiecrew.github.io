@@ -239,7 +239,6 @@ window.VI = {
   'reset': 'đặt lại',
   'Your QR image': 'Ảnh mã QR của bạn',
   'Students see this next to the amount and their payment code. It is kept in the private Sheet, never in the public repo.': 'Học viên thấy ảnh này cạnh số tiền và mã chuyển khoản. Ảnh được lưu trong Sheet riêng tư, không bao giờ để trong kho mã công khai.',
-  'Your image (not saved anywhere in this mockup).': 'Ảnh của bạn (bản mẫu không lưu ở đâu cả).',
   'Demo QR. Upload your own bank QR.': 'QR minh họa. Hãy tải lên mã QR ngân hàng của bạn.',
   'Choose image': 'Chọn ảnh',
   'Settings': 'Cài đặt',
@@ -251,7 +250,7 @@ window.VI = {
   'Back to unpaid': 'Đã chuyển lại thành chưa đóng',
   'Scores saved. The student sees the new polygon.': 'Đã lưu điểm. Học viên sẽ thấy biểu đồ mới.',
   'Cancel {date}?': 'Hủy buổi {date}?',
-  'Booked students each get 1 free make-up lesson. You cannot undo this in the mockup.': 'Mỗi học viên đã đăng ký được 1 buổi học bù miễn phí. Bản mẫu không hoàn tác được.',
+  'Booked students each get 1 free make-up lesson. This cannot be undone.': 'Mỗi học viên đã đăng ký được 1 buổi học bù miễn phí. Không hoàn tác được.',
   'Cancel session': 'Hủy buổi học',
   'Keep it': 'Giữ lại',
   'Cancelled. {n} students got a free make-up.': 'Đã hủy. {n} học viên được học bù miễn phí.',
@@ -524,5 +523,11 @@ window.VI = {
   "Overpaid becomes credit": "Đóng dư thành số dư",
   "Zalo": "Zalo",
   "Your Zalo number": "Số Zalo của bạn",
-  "Card language": "Ngôn ngữ thẻ"
+  "Card language": "Ngôn ngữ thẻ",
+  "Pretend date": "Ngày giả định",
+  "Copy reply": "Sao chép tin trả lời",
+  "Support copy": "Bản hỗ trợ",
+  "Support copy ready": "Bản hỗ trợ đã sẵn sàng",
+  "This browser may clear its data. Save a file.": "Trình duyệt này có thể xóa dữ liệu. Hãy lưu file.",
+  "Reply after a change": "Tin trả lời sau khi đổi lịch"
 };

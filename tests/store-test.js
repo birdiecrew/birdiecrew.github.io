@@ -1,9 +1,10 @@
-/* Tests for the storage layer (mockups/store.js): save file round trip, hand-edit detection, student card link, pasted names, report.
-   Run: node mockups/tests/store-test.js */
+/* Tests for the storage layer (assets/store.js): save file round trip, hand-edit detection, student card link, pasted names, report.
+   Run: node tests/store-test.js */
 global.window = global; global.document = undefined;
 const fs = require('fs'), path = require('path'), assert = require('assert');
-const dir = path.join(__dirname, '..');
-eval(fs.readFileSync(path.join(dir, 'mock-core.js'), 'utf8'));
+const dir = path.join(__dirname, '..', 'assets');
+eval(fs.readFileSync(path.join(dir, 'core.js'), 'utf8'));
+eval(fs.readFileSync(path.join(dir, 'sample.js'), 'utf8'));
 eval(fs.readFileSync(path.join(dir, 'store.js'), 'utf8'));
 const BC = window.BC;
 let n = 0;

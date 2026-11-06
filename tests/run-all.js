@@ -1,6 +1,6 @@
-/* Run every test: node mockups/tests/run-all.js
+/* Run every test: node tests/run-all.js
    Scenario tests, the storage test, and the random-sequence rules test on several seeds.
-   The screen tests need a browser: open mockups/tests/ui-tests.html (see the note in that file). */
+   The screen tests need a browser: run node tests/run-screens.js, or open tests/ui-tests.html (see the note in that file). */
 const { spawnSync } = require('child_process'), path = require('path'), fs = require('fs');
 const here = __dirname;
 let failed = 0, lines = [];
