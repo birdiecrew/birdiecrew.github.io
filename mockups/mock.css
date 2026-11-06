@@ -217,3 +217,5 @@ body.has-mocktag .sheet.page { padding-top: 22px; }
 @media (min-width: 900px) { .sheet.page { border-left: 1px solid var(--line); border-right: 1px solid var(--line); } }
 @media (prefers-reduced-motion: reduce) { .sheet-back.page, .sheet-back, .sheet, .toast { animation: none; } }
 .langbtn { min-width: var(--tap-sm); font-weight: 750; }
+
+.sep { color: var(--muted); opacity: .55; font-weight: 400; margin: 0 1px; }

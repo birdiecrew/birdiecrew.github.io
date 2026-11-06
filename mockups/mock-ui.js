@@ -3,6 +3,8 @@
   'use strict';
   var UI = (window.UI = {});
 
+  /* the divider between two different facts on one line. aria-hidden, so a screen reader does not read it out. */
+  UI.SEP = ' <span class="sep" aria-hidden="true">|</span> ';
   UI.h = function (s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];

@@ -35,7 +35,7 @@
   function header() {
     var s = me();
     return '<header class="hdr"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + UI.langBtn(S.lang) + '</div>' +
-      '<div class="me"><b>' + h(s.name) + '</b> <span class="muted">· ' + BC.fmtDay(asOf(), S.lang) + madeTime() + '</span></div></header>';
+      '<div class="me"><b>' + h(s.name) + '</b>' + UI.SEP + '<span class="muted">' + BC.fmtDay(asOf(), S.lang) + madeTime() + '</span></div></header>';
   }
   function asOf() { return (BC.meta && BC.meta.asOf) || BC.today; }
   function madeTime(m) {
@@ -96,7 +96,7 @@
   function menu() {
     var s = me(), arr = BC.scores[S.sid], now = BC.ym(BC.today), b = billInfo(s, now), list = BC.breaksOf(s.id), out = '';
     if (arr && arr.length) out += row('skills', t('skills'), t('focus', { skill: weakest(arr[arr.length - 1].v)[S.lang] }));
-    out += row('fees', t('fees'), money(b.amount) + ' · ' + (b.rec.paid ? t('paidOn', { date: BC.fmtDay(b.rec.paidDate, S.lang) }) : t('dueBy', { date: BC.fmtDay(BC.dueDate(s, now), S.lang) })));
+    out += row('fees', t('fees'), money(b.amount) + UI.SEP + (b.rec.paid ? t('paidOn', { date: BC.fmtDay(b.rec.paidDate, S.lang) }) : t('dueBy', { date: BC.fmtDay(BC.dueDate(s, now), S.lang) })));
     var next = list.slice().sort(function (a, c) { return a.from < c.from ? -1 : 1; })[0];
     if (next) out += row('breaks', t('breaks'), BC.fmtDay(next.from, S.lang) + ' – ' + BC.fmtDay(next.to, S.lang));
     out += row('rules', t('rules'), '');
@@ -108,7 +108,7 @@
   function render() {
     BC.lang = S.lang; document.documentElement.lang = S.lang; document.title = cfg.page_title;
     var y = window.scrollY, s = me();
-    app.innerHTML = header() + banners() + calendar() + menu() + '<div class="foot">' + t('footer') + ' · ' + h(s.code) + '</div>';
+    app.innerHTML = header() + banners() + calendar() + menu() + '<div class="foot">' + t('footer') + UI.SEP + h(s.code) + '</div>';
     window.scrollTo(0, y);
     syncPanel();
   }
@@ -165,7 +165,7 @@
   function breaksSheet() {
     var s = me(), list = BC.breaksOf(s.id).sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var items = list.map(function (b) {
-      return '<div class="brk"><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + ' · ' + (BC.isLong(b) ? t('longBreak') : t('shortBreak')) + '</div></div>';
+      return '<div class="brk"><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + UI.SEP + (BC.isLong(b) ? t('longBreak') : t('shortBreak')) + '</div></div>';
     }).join('<div style="height:8px"></div>');
     wire(UI.sheet.open(UI.pageHead(t('breaks')) + items, { page: true }));
   }

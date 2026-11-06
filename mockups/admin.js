@@ -138,7 +138,7 @@
     if (!rows.length) return '<div class="empty">' + t('Nobody matches.') + '</div>';
     return rows.map(function (s) {
       var rec = BC.payRec(s.id, ym), late = BC.isLate(s.id), started = BC.ym(s.start) <= ym;
-      var days = s.type === 'flexible' ? t('Flexible') : s.days.slice().sort(function (a, b) { return ((a + 6) % 7) - ((b + 6) % 7); }).map(function (d) { return BC.wd(d, S.lang); }).join(' · ');
+      var days = s.type === 'flexible' ? t('Flexible') : s.days.slice().sort(function (a, b) { return ((a + 6) % 7) - ((b + 6) % 7); }).map(function (d) { return BC.wd(d, S.lang); }).join(', ');
       var tags = '';
       if (!s.active) tags = '<span class="tag">' + t('Paused') + '</span>';
       else if (late) tags = '<span class="tag bad">' + t('Late') + '</span>';
@@ -172,7 +172,7 @@
     if (!ed.start) return '';
     var tmp = { id: -1, name: ed.name, type: ed.type, days: ed.days, start: ed.start, fee: ed.fee || null }, ym = BC.ym(ed.start);
     var amt = BC.calcAmount(tmp, ym), billed = BC.billedDates(tmp, ym).length, full = BC.lessonDates(tmp, ym).length;
-    return '<div class="banner">' + icon('wallet') + '<div><b>' + t('First bill') + ': ' + money(amt) + '</b> · ' + t('{a} of {b} lessons', { a: billed, b: full }) + '</div></div>';
+    return '<div class="banner">' + icon('wallet') + '<div><b>' + t('First bill') + ': ' + money(amt) + '</b>' + UI.SEP + t('{a} of {b} lessons', { a: billed, b: full }) + '</div></div>';
   }
   /* why the student cannot be saved yet, in the order the coach would fix it ('' = fine) */
   function studentReason(ed, selfId) {
@@ -351,7 +351,7 @@
     switch (i.kind) {
       case 'mine': body = banner(t('Regular lesson'), 'ok'); act = 'skip'; label = t('Skip this lesson'); break;
       case 'skipped':
-        body = banner(t('Skipped') + (i.row.credit ? ' · ' + t('1 make-up credit') : ' · ' + t('no credit')));
+        body = banner(t('Skipped') + (i.row.credit ? UI.SEP + t('1 make-up credit') : UI.SEP + t('no credit')));
         if (i.row.breakId) body += '<p class="muted small" style="margin-top:8px">' + reasonText('fromBreak') + '</p>'; else { act = 'unskip'; label = t('Undo skip: they attend'); }
         break;
       case 'makeup': body = banner(i.row.source === 'cancel' ? t('Free make-up (cancelled lesson)') : (i.row.source === 'courtesy' ? t('Courtesy make-up') : t('Make-up lesson')), 'ok'); act = 'cancelmk'; label = t('Cancel this make-up'); break;
@@ -363,7 +363,7 @@
       case 'break': body = banner(t('On a planned break')); break;
       default: body = banner(t('No class'));
     }
-    var el = UI.sheet.open(shd(dt(iso) + (ses.start ? ' · ' + ses.start + '–' + ses.end : ''), h(s.name) + ' · ' + h(s.code)) + body +
+    var el = UI.sheet.open(shd(dt(iso), h(s.name) + (ses.start ? UI.SEP + ses.start + '–' + ses.end : '')) + body +
       (act ? '<div id="day-res" style="margin-top:12px"></div><button class="btn primary block" id="day-go" style="margin-top:12px">' + label + '</button>' : ''), { onClose: back || null });
     if (!act) return;
     var pending = false;
@@ -421,7 +421,7 @@
       var list = BC.students.filter(function (s) { return s.active && (!q || s.name.toLowerCase().indexOf(q) >= 0 || s.code.toLowerCase().indexOf(q) >= 0); })
         .sort(function (a, b) { return a.name.localeCompare(b.name, 'vi'); }).slice(0, 30);
       $('#pk-list', el).innerHTML = list.map(function (s) {
-        return '<button class="li" data-id="' + s.id + '"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="muted small">' + h(s.code) + ' · ' + (s.type === 'fixed' ? t('Fixed days') : t('Flexible')) + '</span></div></button>';
+        return '<button class="li" data-id="' + s.id + '"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="muted small">' + h(s.code) + UI.SEP + (s.type === 'fixed' ? t('Fixed days') : t('Flexible')) + '</span></div></button>';
       }).join('') || '<div class="empty">' + t('Nobody matches.') + '</div>';
     };
     el.innerHTML = '<div class="grab"></div>' + shd(t('Add a student to {date}', { date: dt(iso) })) +
@@ -448,7 +448,7 @@
     };
     el = UI.sheet.open('', { page: true });
     el.innerHTML = UI.pageHead(t('Plan a break'), '', t('Back')) + '<div class="stack">' +
-      '<label class="field"><span class="lbl">' + t('Student') + '</span><select class="inp" id="bk-s">' + opts.map(function (s) { return '<option value="' + s.id + '">' + h(s.name) + ' · ' + h(s.code) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field"><span class="lbl">' + t('Student') + '</span><select class="inp" id="bk-s">' + opts.map(function (s) { return '<option value="' + s.id + '">' + h(s.name) + ' (' + h(s.code) + ')</option>'; }).join('') + '</select></label>' +
       '<label class="field"><span class="lbl">' + t('From') + '</span><input class="inp" type="date" id="bk-f" value="' + st.from + '"></label>' +
       '<label class="field"><span class="lbl">' + t('To') + '</span><input class="inp" type="date" id="bk-t" value="' + st.to + '"></label>' +
       '<div id="bk-prev"></div><div id="bk-res"></div><button class="btn primary block" id="bk-go">' + t('Save break') + '</button></div>';
@@ -510,12 +510,12 @@
     });
     var first = BC.students.reduce(function (m, st) { return BC.ym(st.start) < m ? BC.ym(st.start) : m; }, ymNow());
     var nav = '<div class="row between" style="margin-bottom:12px"><button class="btn icon sm" data-a="pm" data-x="-1" aria-label="‹"' + (ym <= first ? ' disabled' : '') + '>' + icon('chevL') + '</button><b>' + BC.monthName(ym, S.lang) + '</b><button class="btn icon sm" data-a="pm" data-x="1" aria-label="›"' + (ym >= ymNow() ? ' disabled' : '') + '>' + icon('chevR') + '</button></div>';
-    var tiles = '<div class="tiles"><div class="tile"><div class="v ok">' + money(collected) + '</div><div class="l">' + t('Collected') + '</div></div><div class="tile"><div class="v">' + money(outstanding) + '</div><div class="l">' + t('Still to collect') + ' · ' + unpaidN + (lateN ? ' · <span style="color:var(--danger)">' + t('Late') + ' ' + lateN + '</span>' : '') + '</div></div></div>';
+    var tiles = '<div class="tiles"><div class="tile"><div class="v ok">' + money(collected) + '</div><div class="l">' + t('Collected') + '</div></div><div class="tile"><div class="v">' + money(outstanding) + '</div><div class="l">' + t('Still to collect') + UI.SEP + unpaidN + (lateN ? UI.SEP + '<span style="color:var(--danger)">' + t('Late') + ' ' + lateN + '</span>' : '') + '</div></div></div>';
     var list = rows.map(function (r) {
       var s = r.s, note = '';
-      if (r.billed < r.full) note += t('{a} of {b} lessons', { a: r.billed, b: r.full }) + ' · ';
+      if (r.billed < r.full) note += t('{a} of {b} lessons', { a: r.billed, b: r.full }) + UI.SEP;
       if (r.rec.override != null) note += '<span class="tag accent">' + t('edited') + '</span> ';
-      if (r.rec.creditIn > 0 && cfg.credit_carry) note += t('credit -{amount}', { amount: money(r.rec.creditIn) }) + ' · ';
+      if (r.rec.creditIn > 0 && cfg.credit_carry) note += t('credit -{amount}', { amount: money(r.rec.creditIn) }) + UI.SEP;
       var status = r.rec.paid ? '<span class="tag ok">' + icon('check', 'sm') + ' ' + BC.fmtDay(r.rec.paidDate, S.lang) + '</span>' : (r.late ? '<span class="tag bad">' + t('Late') + '</span>' : '');
       return '<div class="li pay"><div class="avatar ' + (r.late ? 'late' : (r.rec.paid ? '' : 'warn')) + '">' + ava(s) + '</div><div class="who"><b>' + h(s.name) + '</b></div>' +
         '<button class="amt amt-edit" data-a="editamt" data-x="' + s.id + '" aria-label="' + t('Change amount') + '">' + money(r.amount) + icon('pencil', 'sm') + '</button><div class="st small">' + note + status + '</div><div class="acts">' +
@@ -525,8 +525,8 @@
   }
   function openEditAmount(sid) {
     var s = BC.student(sid), ym = S.payMonth, rec = BC.payRec(sid, ym), calc = BC.calcAmount(s, ym) - (cfg.credit_carry ? rec.creditIn : 0), cur = rec.paid ? rec.amountPaid : BC.amountDue(s, ym);
-    var el = UI.sheet.open('<div class="sheet-h"><div><h2>' + t('Change amount') + '</h2><div class="muted small">' + h(s.name) + ' · ' + BC.monthName(ym, S.lang) + '</div></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
-      '<div class="stack"><div class="banner">' + icon('info') + '<div>' + t('Worked out: {amount}', { amount: money(Math.max(0, calc)) }) + ' · ' + t('{a} of {b} lessons', { a: BC.billedDates(s, ym).length, b: BC.lessonDates(s, ym).length }) + '</div></div>' +
+    var el = UI.sheet.open('<div class="sheet-h"><div><h2>' + t('Change amount') + '</h2><div class="muted small">' + h(s.name) + UI.SEP + BC.monthName(ym, S.lang) + '</div></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
+      '<div class="stack"><div class="banner">' + icon('info') + '<div>' + t('Worked out: {amount}', { amount: money(Math.max(0, calc)) }) + UI.SEP + t('{a} of {b} lessons', { a: BC.billedDates(s, ym).length, b: BC.lessonDates(s, ym).length }) + '</div></div>' +
       '<label class="field"><span class="lbl">' + t('Amount') + '</span><input class="inp" type="number" id="amt" step="1000" min="0" value="' + cur + '"></label>' +
       '<button class="btn primary block" id="amt-save">' + t('Save') + '</button><button class="btn block" id="amt-reset">' + t('Reset') + '</button></div>');
     el.addEventListener('click', function (e) {
@@ -557,7 +557,7 @@
       out += '<h3 style="margin:14px 0 8px">' + t('Announcements') + '</h3>' + d.canc.map(function (iso) {
         var key = 'canc' + iso;
         return '<div class="li pay"><div class="avatar late">' + icon('ban') + '</div><div class="who"><b>' + t('{date} is cancelled', { date: dt(iso) }) + '</b></div><div class="amt"></div>' +
-          '<div class="st small muted">' + h(BC.overrides[iso].note || '') + (S.reminded[key] ? ' · <span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
+          '<div class="st small muted">' + h(BC.overrides[iso].note || '') + (S.reminded[key] ? UI.SEP + '<span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
           '<button class="btn sm primary" data-a="prevmsg" data-x="cancel|' + iso + '">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button></div></div>';
       }).join('');
     }
@@ -604,7 +604,7 @@
   /* my data: the save file, whether it is up to date, earlier copies */
   function dataView() {
     var bk = BC.backup(), hist = BC.history().slice(0, -1).reverse();
-    var state = !bk.at ? ['warn', t('Not saved yet')] : bk.dirty ? ['warn', t('Not saved') + ' · ' + t('Last file: {when}.', { when: ago(bk.at) })] : ['ok', t('Saved {when}', { when: ago(bk.at) })];
+    var state = !bk.at ? ['warn', t('Not saved yet')] : bk.dirty ? ['warn', t('Not saved') + UI.SEP + t('Last file: {when}.', { when: ago(bk.at) })] : ['ok', t('Saved {when}', { when: ago(bk.at) })];
     var copies = hist.length ? '<h3 style="margin:18px 0 6px">' + t('Earlier copies') + '</h3><div class="card">' + hist.map(function (x, i) {
       return '<div class="hist"><b>' + new Date(x.t).toLocaleString(S.lang === 'vi' ? 'vi-VN' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</b><button class="btn sm" data-a="restorehist" data-x="' + (hist.length - 1 - i) + '">' + t('Restore') + '</button></div>';
     }).join('') + '</div>' : '';
@@ -626,7 +626,7 @@
     var sid = S.scoreSid, l = lastScore(sid);
     if (!S.draft) { S.draft = {}; if (l) BC.skills.forEach(function (k) { S.draft[k.id] = l.v[k.id]; }); }
     var opts = BC.students.filter(function (s) { return s.active; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'vi'); }).map(function (s) {
-      return '<option value="' + s.id + '"' + (s.id === sid ? ' selected' : '') + '>' + h(s.name) + ' (' + s.code + ')' + (scoreDue(s.id) ? ' · ' + t('due') : '') + '</option>';
+      return '<option value="' + s.id + '"' + (s.id === sid ? ' selected' : '') + '>' + h(s.name) + ' (' + s.code + ')' + (scoreDue(s.id) ? ', ' + t('due') : '') + '</option>';
     }).join('');
     var complete = BC.skills.every(function (k) { return S.draft[k.id]; });
     var rows = BC.skills.map(function (k) {
@@ -653,7 +653,7 @@
     var list = BC.breaks.slice().sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var rows = list.map(function (b) {
       var s = BC.student(b.student), long = BC.isLong(b), red = breakReduction(b);
-      return '<div class="li"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="small muted">' + dt(b.from) + ' – ' + dt(b.to) + ' · ' + t('{n} days', { n: BC.breakLen(b) }) + '</span>' + (b.note ? '<span class="small muted">' + h(b.note) + '</span>' : '') + '</div>' +
+      return '<div class="li"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="small muted">' + dt(b.from) + ' – ' + dt(b.to) + UI.SEP + t('{n} days', { n: BC.breakLen(b) }) + '</span>' + (b.note ? '<span class="small muted">' + h(b.note) + '</span>' : '') + '</div>' +
         '<div class="right"><span class="tag ' + (long ? 'info' : '') + '">' + (long ? t('Long break') : t('Short break')) + '</span><div class="bold" style="margin-top:4px">' + (long ? '−' + money(red) : t('No fee change')) + '</div></div>' +
         (long ? '<button class="btn icon sm" data-a="adjbreak" data-x="' + b.student + '|' + BC.ym(b.from) + '" aria-label="' + t('Change amount') + '">' + icon('pencil', 'sm') + '</button>' : '') +
         '<button class="btn icon sm" data-a="rmbreak" data-x="' + b.student + '|' + b.id + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button></div>';
@@ -740,7 +740,7 @@
     var msgs = ['vi', 'en'].map(function (lg) {
       return ['soft', 'late', 'cancel', 'card'].map(function (kind) {
         var lbl = { soft: 'Friendly heads-up', late: 'Late reminder', cancel: 'Cancelled session', card: 'Class card message' }[kind];
-        return '<label class="field"><span class="lbl">' + t(lbl) + ' · ' + (lg === 'vi' ? 'Tiếng Việt' : 'English') + '</span><textarea class="inp" data-bind="msg" data-k="' + lg + '.' + kind + '">' + h(BC.messages[lg][kind]) + '</textarea></label>';
+        return '<label class="field"><span class="lbl">' + t(lbl) + UI.SEP + (lg === 'vi' ? 'Tiếng Việt' : 'English') + '</span><textarea class="inp" data-bind="msg" data-k="' + lg + '.' + kind + '">' + h(BC.messages[lg][kind]) + '</textarea></label>';
       }).join('');
     }).join('');
     var qr = '<div class="card stack"><h3>QR</h3>' +
@@ -910,7 +910,7 @@
     else if (b === 'set') {
       var v = el.type === 'number' ? Number(el.value) : el.value, L = BC.LIMITS;
       if (k === 'coach_zalo') v = v.replace(/[^0-9+]/g, '');
-      if (k === 'page_title') { v = v.trim() || DEFS.page_title; document.title = v + ' · Coach'; }
+      if (k === 'page_title') { v = v.trim() || DEFS.page_title; document.title = v + ' | Coach'; }
       if (k === 'fee_1day' || k === 'fee_2days') {
         v = Math.round(v / 1000) * 1000; if (!isFinite(v)) v = DEFS[k];
         var lo = k === 'fee_2days' ? Math.max(L.feeMin, cfg.fee_1day) : L.feeMin, hi = k === 'fee_1day' ? Math.min(L.feeMax, cfg.fee_2days) : L.feeMax;
