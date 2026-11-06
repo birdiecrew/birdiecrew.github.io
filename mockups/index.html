@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex">
 <title>Birdie Crew mockups</title>
 <script>try{var t=localStorage.getItem("bc_theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="icon" href="logo.svg">
 <link rel="stylesheet" href="mock.css">
 <style>
   .wrap-col { padding-top: 28px; }
@@ -13,32 +14,31 @@
   .big-link + .big-link { margin-top: 12px; }
   .big-link:hover { border-color: var(--brand); }
   .big-link b { display: block; font-size: 1.05rem; }
-  .logo { width: 44px; height: 44px; border-radius: 13px; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; font-weight: 800; flex: none; }
   ul.try { margin: 8px 0 0; padding-left: 20px; } ul.try li { margin: 5px 0; }
 </style>
 </head>
 <body>
 <main class="wrap-col">
   <div class="row between"><h1 style="font-size:1.5rem">Birdie Crew mockups</h1><span id="tb"></span></div>
-  <p class="muted" style="margin:6px 0 18px">Click-through screens with made-up data, for reviewing the layout. Nothing is saved and there is no server. The real site follows <code>PLAN.md</code>.</p>
+  <p class="muted" style="margin:6px 0 18px">Click-through screens with made-up data, for reviewing the layout. There is no server: the coach's data stays in her own browser and in a save file she keeps. The real site follows <code>PLAN.md</code>.</p>
 
-  <a class="big-link" href="student.html"><div class="logo">VM</div><div><b>Student card</b><span class="muted small">What a student sees on their phone. Vietnamese first, English toggle.</span></div></a>
-  <a class="big-link" href="admin.html"><div class="logo">VM</div><div><b>Coach admin page</b><span class="muted small">Sign in with the password <code>admin</code>. Phone first, works on a computer.</span></div></a>
+  <a class="big-link" href="admin.html"><span id="lg2"></span><div><b>Coach page</b><span class="muted small">Start here. First run: a 5-step wizard. Phone first, works on a computer.</span></div></a>
+  <a class="big-link" href="student.html"><span id="lg1"></span><div><b>Student card</b><span class="muted small">A demo student. A real card opens from the link the coach sends (Coach page, Students, Send card).</span></div></a>
 
   <div class="card" style="margin-top:20px">
     <h2>Things to try</h2>
     <ul class="try small">
-      <li><b>Student:</b> tap a day, skip a lesson 7 or more days ahead, then take a make-up on a day with a seat number.</li>
-      <li><b>Student:</b> tap a day inside 7 days: the button is locked and says why.</li>
-      <li><b>Student:</b> Mock controls (dark button): switch to Tuấn (flexible) or Hà (new), pretend it is the 6th to see the late lock, or turn the server off.</li>
-      <li><b>Coach:</b> open a session to see who is coming and how many courts to book. Tue 17 Nov is over capacity.</li>
-      <li><b>Coach:</b> Students, Add student: the link and the first bill appear.</li>
-      <li><b>Coach:</b> Payments, tap Paid. Remind, copy a Zalo message. More, Cancel a session.</li>
+      <li><b>Coach, first run:</b> New class. Try to go wrong: the later steps stay dimmed until the earlier ones are done, <b>Next</b> says why it is off, and the 2-day fee cannot drop below the 1-day fee. Paste names with numbers, repeats and a very long name.</li>
+      <li><b>Coach:</b> Finish the wizard, then Students, open one, <b>Send card</b>, <b>See it as ... sees it</b>. The link holds only that student's own rows.</li>
+      <li><b>Coach:</b> More, <b>My data</b>: save a file, open it again, export the report, see earlier copies. Change anything and the top-right chip turns into <b>Back up now</b>.</li>
+      <li><b>Coach:</b> Students, Add student: type a name that already exists, or pick a start date years away.</li>
+      <li><b>Coach:</b> <b>Try a sample class</b> for a full class with changes, breaks and warnings. Students, open one, <b>Lessons and changes</b>. Tap Tue 10 Nov to see a warning and <b>Do it anyway</b>.</li>
+      <li><b>Both pages:</b> use the dark button (Mock controls) to jump between situations, and the moon button for dark mode.</li>
     </ul>
   </div>
   <p class="muted small center" style="margin-top:18px">Mock controls on each page jump between situations. They are not part of the real site.</p>
 </main>
 <script src="mock-ui.js"></script>
-<script>document.getElementById("tb").innerHTML = UI.themeBtn();</script>
+<script>document.getElementById("tb").innerHTML = UI.themeBtn(); document.getElementById("lg1").innerHTML = document.getElementById("lg2").innerHTML = UI.logo(44);</script>
 </body>
 </html>

@@ -69,27 +69,20 @@
     { id: 'stamina', en: 'Stamina', vi: 'Thể lực' }
   ];
 
-  /* ---------- fake keys ---------- */
-  var ALPHA = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-  BC.makeKey = function (seed) {
-    var x = (seed * 9301 + 49297) % 2147483647, s = '';
-    for (var i = 0; i < 14; i++) { x = (x * 48271 + 11) % 2147483647; s += ALPHA[x % ALPHA.length]; }
-    return s;
-  };
-  BC.linkOf = function (s) { return 'birdiecrew.github.io/#k=' + s.key; };
-
   /* ---------- message texts (live in Config) ---------- */
   BC.defaultMessages = function () {
     return {
       en: {
-        soft: 'Hi {name}, a friendly reminder: the {month} fee of {amount} is due by the end of {due}. Please transfer with the note {code}. Your card: {link}',
-        late: 'Hi {name}, the {month} fee ({amount}) is now overdue. Until it is paid you cannot skip, take make-ups or plan breaks (lessons already booked stay). Transfer note: {code}. Your card: {link}',
-        cancel: 'Notice: the {weekday} {date} session is cancelled. Everyone booked gets 1 free make-up lesson, valid until the end of {until}. Open your card to pick a day.'
+        soft: 'Hi {name}, a friendly reminder: the {month} fee of {amount} is due by the end of {due}. Please transfer with the note {code}.',
+        late: 'Hi {name}, the {month} fee ({amount}) is now overdue. Until it is paid you cannot skip, take make-ups or plan breaks (lessons already booked stay). Transfer note: {code}.',
+        cancel: 'Notice: the {weekday} {date} session is cancelled. Everyone booked gets 1 free make-up lesson, valid until the end of {until}. Message me to pick a day.',
+        card: 'Hi {name}, here is your class card (as of {date}). Open it and bookmark it. When something changes I will send you a fresh one: {link}'
       },
       vi: {
-        soft: 'Chào {name}, nhắc nhẹ: học phí {month} là {amount}, hạn đóng hết ngày {due}. Bạn chuyển khoản với nội dung {code} nhé. Thẻ của bạn: {link}',
-        late: 'Chào {name}, học phí {month} ({amount}) đã quá hạn. Khi chưa đóng, bạn chưa thể xin nghỉ, đặt học bù hay báo nghỉ dài (các buổi đã đặt vẫn giữ). Nội dung chuyển khoản: {code}. Thẻ của bạn: {link}',
-        cancel: 'Thông báo: buổi học {weekday} {date} được hủy. Mỗi bạn đã đăng ký được 1 buổi học bù miễn phí, dùng đến hết {until}. Mở thẻ của bạn để chọn ngày học bù.'
+        soft: 'Chào {name}, nhắc nhẹ: học phí {month} là {amount}, hạn đóng hết ngày {due}. Bạn chuyển khoản với nội dung {code} nhé.',
+        late: 'Chào {name}, học phí {month} ({amount}) đã quá hạn. Khi chưa đóng, bạn chưa thể xin nghỉ, đặt học bù hay báo nghỉ dài (các buổi đã đặt vẫn giữ). Nội dung chuyển khoản: {code}.',
+        cancel: 'Thông báo: buổi học {weekday} {date} được hủy. Mỗi bạn đã đăng ký được 1 buổi học bù miễn phí, dùng đến hết {until}. Nhắn cho HLV để chọn ngày học bù.',
+        card: 'Chào {name}, đây là thẻ lớp của bạn (cập nhật ngày {date}). Bạn mở và lưu lại nhé. Khi có thay đổi mình sẽ gửi thẻ mới: {link}'
       }
     };
   };
@@ -101,12 +94,13 @@
   BC.seed = function () {
     BC.today = '2026-11-05';
     BC.nextId = 1;
+    BC.meta = { sample: true, setup: true };
     BC.config = {
       advance_days: 7, flex_notice_days: 7, pay_by_day: 5, first_bill_days: 3,
-      max_makeups_per_month: 3, max_makeup_changes_per_month: 3, long_break_days: 14,
-      seats_per_court: 4, venue_courts: 4, fee_round: 1000, proration: true, credit_carry: true,
+      max_makeups_per_month: 3, long_break_days: 14,
+      seats_per_court: 4, venue_courts: 4, proration: true, credit_carry: true,
       cancel_credit_months: 1, page_title: 'VM Badminton', timezone: 'Asia/Ho_Chi_Minh',
-      currency: 'VND', monthly_fee: 1000000, default_lang: 'vi'
+      coach_zalo: '', currency: 'VND', fee_1day: 800000, fee_2days: 1300000, default_lang: 'vi'
     };
     BC.messages = BC.defaultMessages();
     BC.timetable = {
@@ -136,20 +130,20 @@
       ['Trang', 'fixed', T], ['Khoa', 'fixed', T], ['Phong', 'fixed', T], ['Lan', 'fixed', T],
       ['Bình', 'fixed', T, '2026-10-12'], ['Cường', 'fixed', T, '2026-10-12'], ['Hà', 'fixed', T, '2026-11-17'],
       ['Dũng', 'fixed', T, '2026-11-10'], ['Hoa', 'fixed', T, '2026-11-10'],
-      ['Ngọc', 'fixed', MW], ['Alex', 'fixed', MW, null, 1200000], ['Yến', 'fixed', MW], ['Bảo', 'fixed', MW],
+      ['Ngọc', 'fixed', MW], ['Alex', 'fixed', MW, null, 1000000], ['Yến', 'fixed', MW], ['Bảo', 'fixed', MW],
       ['Chi', 'fixed', MW], ['Sơn', 'fixed', MW], ['Vy', 'fixed', MW], ['Long', 'fixed', MW],
       ['Hạnh', 'fixed', SS], ['Duy', 'fixed', SS], ['My', 'fixed', SS], ['Hải', 'fixed', SS],
-      ['Thu', 'fixed', SS], ['Emma', 'fixed', SS, null, 1200000],
+      ['Thu', 'fixed', SS], ['Emma', 'fixed', SS],
       ['Kiên', 'fixed', WS], ['Nhi', 'fixed', WS], ['Việt', 'fixed', WS], ['An', 'fixed', WS],
-      ['Tâm', 'fixed', MT], ['Oanh', 'fixed', TS], ['Khánh', 'fixed', TS],
-      ['Tuấn', 'flexible', [], null, 800000], ['Giang', 'flexible', [], null, 1200000]
+      ['Tâm', 'fixed', MT], ['Oanh', 'fixed', [2]], ['Khánh', 'fixed', [0]],
+      ['Tuấn', 'flexible', []], ['Giang', 'flexible', [], null, 1300000]
     ];
     BC.students = specs.map(function (sp, i) {
       var id = BC.nextId++;
       return {
         id: id, name: sp[0], type: sp[1], days: sp[2].slice(), start: sp[3] || '2026-09-01',
         fee: sp[4] || null, active: true,
-        code: 'VM' + String(id + 30).padStart(3, '0'), key: BC.makeKey(id)
+        code: 'VM' + String(id + 30).padStart(3, '0')
       };
     });
 
@@ -213,6 +207,17 @@
       { date: '2026-08-29', v: { smash: 5, net: 4, footwork: 3, defense: 5, serve: 6, stamina: 4 } },
       { date: '2026-10-28', v: { smash: 6, net: 5, footwork: 4, defense: 6, serve: 7, stamina: 5 } }
     ];
+  };
+
+  /* ---------- an empty class (the first-run wizard fills it in) ---------- */
+  BC.blank = function () {
+    var keep = BC.today;
+    BC.seed();
+    BC.today = keep;
+    BC.students = []; BC.changes = []; BC.breaks = []; BC.payments = {}; BC.changeLog = []; BC.scores = {};
+    BC.overrides = {}; BC.nextId = 1; BC.qrImage = '';
+    Object.keys(BC.videos).forEach(function (k) { BC.videos[k] = { title: '', len: '', url: '' }; });
+    BC.meta = { sample: false, setup: false };
   };
 
   /* ---------- lookups ---------- */
@@ -334,13 +339,20 @@
   BC.billedDates = function (s, ym) {
     return BC.lessonDates(s, ym).filter(function (d) { return d >= s.start && !BC.inLongBreak(s.id, d); });
   };
+  /* The usual fee depends on days per week: 1 day = fee_1day, 2 or more = fee_2days. Flexible students use fee_1day unless the coach sets their own. */
+  BC.baseFee = function (s) {
+    if (s.fee) return s.fee;
+    return s.type === 'fixed' && s.days.length >= 2 ? BC.config.fee_2days : BC.config.fee_1day;
+  };
+  /* Part-month bills are always rounded to the nearest 1,000 dong. A fixed rule, not a setting. */
+  var ROUND = 1000;
   BC.calcAmount = function (s, ym) {
-    var fee = s.fee || BC.config.monthly_fee;
+    var fee = BC.baseFee(s);
     if (!BC.config.proration) return fee;
     var full = BC.lessonDates(s, ym).length;
     if (!full) return fee;
-    var billed = BC.billedDates(s, ym).length, r = BC.config.fee_round;
-    return Math.round(fee * billed / full / r) * r;
+    var billed = BC.billedDates(s, ym).length;
+    return Math.round(fee * billed / full / ROUND) * ROUND;
   };
   BC.amountDue = function (s, ym) {
     var rec = BC.payRec(s.id, ym);
@@ -365,37 +377,48 @@
     BC.recalcCredits(sid);
   };
 
-  /* ---------- student actions (the "referee") ---------- */
+  /* ---------- lesson changes (made by the COACH after the student asks on Zalo) ----------
+     Two kinds of "no":
+       hard = impossible (not their lesson, session cancelled, would break the books). Always refused.
+       soft = a rule the coach may bend: notice, late payment, full session, no credit, cap of 3.
+              Refused with a warning first. Passing { force: true } does it anyway and reports what was bent. */
   var fail = function (reason, extra) { return Object.assign({ ok: false, reason: reason }, extra || {}); };
   var daysAhead = function (iso) { return BC.diff(BC.today, iso); };
+  var SOFT = { late: 1, notice: 1, noticeBreak: 1, full: 1, capReached: 1, noCredit: 1 };
+  BC.isSoft = function (reason) { return !!SOFT[reason]; };
+  var refuse = function (reason, o, W) {
+    if (SOFT[reason] && o && o.force) { W.push(reason); return null; }
+    return fail(reason);
+  };
 
-  BC.skip = function (sid, iso) {
-    var s = BC.student(sid);
+  BC.skip = function (sid, iso, o) {
+    var s = BC.student(sid), f, W = [];
     if (s.type !== 'fixed') return fail('fixedOnly');
-    if (BC.isLate(sid)) return fail('late');
     if (!BC.isRegular(s, iso)) return fail('notRegular');
     if (BC.session(iso).cancelled) return fail('cancelled');
     if (BC.skipRow(sid, iso)) return fail('already');
-    if (daysAhead(iso) < BC.config.advance_days) return fail('notice');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
     var row = BC.addSkipRow(sid, iso);
-    return { ok: true, credit: row.credit, row: row };
+    return { ok: true, credit: row.credit, row: row, warned: W };
   };
 
-  /* Undo a skip ("I will attend after all"). Same notice rule as skipping. */
-  BC.unskip = function (sid, iso) {
-    if (BC.isLate(sid)) return fail('late');
+  /* Undo a skip ("I will attend after all"). */
+  BC.unskip = function (sid, iso, o) {
+    var f, W = [];
     var row = BC.skipRow(sid, iso);
     if (!row) return fail('notFound');
     if (row.breakId) return fail('fromBreak');
-    if (daysAhead(iso) < BC.config.advance_days) return fail('notice');
     if (row.credit && BC.usedCreditIds(sid)[row.id]) return fail('creditUsed');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
     row.cancelled = true;
     if (row.credit) {
       /* the freed place under the monthly cap goes to the earliest skip that got no credit */
       var ym = BC.ym(iso), none = BC.rows(sid, 'skip', function (c) { return !c.credit && !c.breakId && BC.ym(c.date) === ym; })[0];
       if (none) none.credit = true;
     }
-    return { ok: true };
+    return { ok: true, warned: W };
   };
 
   BC.pickCredit = function (sid, ym) {
@@ -408,85 +431,79 @@
     return { reason: 'noCredit' };
   };
 
-  BC.makeup = function (sid, iso) {
-    var s = BC.student(sid);
+  /* A make-up. If there is no credit (or the cap of 3 is reached) the coach can still approve it as a
+     "courtesy" make-up: it uses no credit and does not count toward the cap. */
+  BC.makeup = function (sid, iso, o) {
+    var s = BC.student(sid), f, W = [];
     if (s.type !== 'fixed') return fail('fixedOnly');
-    if (BC.isLate(sid)) return fail('late');
     var ses = BC.session(iso);
     if (!ses.isClass) return fail('notClass');
     if (ses.cancelled) return fail('cancelled');
-    if (daysAhead(iso) < BC.config.advance_days) return fail('notice');
-    if (BC.isRegular(s, iso) && !BC.skipRow(sid, iso)) return fail('alreadyIn');
+    if (BC.isRegular(s, iso)) return fail('alreadyIn');   /* own regular day, skipped or not: nothing to make up */
     if (BC.inAnyBreak(sid, iso)) return fail('onBreak');
     if (BC.rows(sid, 'makeup', function (c) { return c.date === iso; }).length) return fail('already');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
     var pick = BC.pickCredit(sid, BC.ym(iso));
-    if (pick.reason) return fail(pick.reason);
-    if (ses.count >= ses.seats) return fail('full');
+    if (pick.reason) { if ((f = refuse(pick.reason, o, W))) return f; pick = { src: 'courtesy', c: { id: null } }; }
+    if (ses.count >= ses.seats && (f = refuse('full', o, W))) return f;
     var row = { id: BC.nextId++, student: sid, type: 'makeup', date: iso, source: pick.src, creditId: pick.c.id, created: BC.today, cancelled: false };
     BC.changes.push(row);
-    return { ok: true, free: pick.src === 'cancel', row: row };
+    return { ok: true, free: pick.src === 'cancel', courtesy: pick.src === 'courtesy', row: row, warned: W };
   };
 
-  BC.changesThisMonth = function (sid) {
-    var ym = BC.ym(BC.today);
-    return BC.changeLog.filter(function (l) { return l.student === sid && BC.ym(l.on) === ym; }).length;
-  };
-  BC.changesLeft = function (sid) {
-    var lim = BC.config.max_makeup_changes_per_month;
-    return lim === 0 ? Infinity : Math.max(0, lim - BC.changesThisMonth(sid));
-  };
-  BC.cancelMakeup = function (sid, iso) {
-    if (BC.isLate(sid)) return fail('late');
+  BC.cancelMakeup = function (sid, iso, o) {
+    var f, W = [];
     var row = BC.rows(sid, 'makeup', function (c) { return c.date === iso; })[0];
     if (!row) return fail('notFound');
-    if (daysAhead(iso) < BC.config.advance_days) return fail('notice');
-    if (BC.changesLeft(sid) <= 0) return fail('changesLimit');
-    row.cancelled = true; BC.changeLog.push({ student: sid, on: BC.today });
-    return { ok: true };
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
+    row.cancelled = true;
+    return { ok: true, warned: W };
   };
-  BC.moveMakeup = function (sid, fromIso, toIso) {
-    if (BC.isLate(sid)) return fail('late');
+  BC.moveMakeup = function (sid, fromIso, toIso, o) {
+    var f, W = [];
     var row = BC.rows(sid, 'makeup', function (c) { return c.date === fromIso; })[0];
     if (!row) return fail('notFound');
-    if (daysAhead(fromIso) < BC.config.advance_days) return fail('notice');
-    if (BC.changesLeft(sid) <= 0) return fail('changesLimit');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(fromIso) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
     row.cancelled = true;
-    var r = BC.makeup(sid, toIso);
+    var r = BC.makeup(sid, toIso, o);
     if (!r.ok) { row.cancelled = false; return r; }
-    BC.changeLog.push({ student: sid, on: BC.today });
-    return { ok: true };
+    return { ok: true, warned: W.concat(r.warned || []) };
   };
 
-  BC.join = function (sid, iso) {
-    var s = BC.student(sid);
+  BC.join = function (sid, iso, o) {
+    var s = BC.student(sid), f, W = [];
     if (s.type !== 'flexible') return fail('flexOnly');
-    if (BC.isLate(sid)) return fail('late');
     var ses = BC.session(iso);
     if (!ses.isClass) return fail('notClass');
     if (ses.cancelled) return fail('cancelled');
     if (iso < s.start) return fail('beforeStart');
-    if (daysAhead(iso) < BC.config.flex_notice_days) return fail('notice');
     if (BC.inLongBreak(sid, iso)) return fail('onBreak');
     if (BC.rows(sid, 'join', function (c) { return c.date === iso; }).length) return fail('already');
-    if (ses.count >= ses.seats) return fail('full');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.flex_notice_days && (f = refuse('notice', o, W))) return f;
+    if (ses.count >= ses.seats && (f = refuse('full', o, W))) return f;
     BC.changes.push({ id: BC.nextId++, student: sid, type: 'join', date: iso, created: BC.today, cancelled: false });
-    return { ok: true };
+    return { ok: true, warned: W };
   };
-  BC.leave = function (sid, iso) {
-    if (BC.isLate(sid)) return fail('late');
+  BC.leave = function (sid, iso, o) {
+    var f, W = [];
     var row = BC.rows(sid, 'join', function (c) { return c.date === iso; })[0];
     if (!row) return fail('notFound');
-    if (daysAhead(iso) < BC.config.flex_notice_days) return fail('notice');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(iso) < BC.config.flex_notice_days && (f = refuse('notice', o, W))) return f;
     row.cancelled = true;
-    return { ok: true };
+    return { ok: true, warned: W };
   };
 
-  BC.addBreak = function (sid, from, to) {
-    var s = BC.student(sid);
-    if (BC.isLate(sid)) return fail('late');
+  BC.addBreak = function (sid, from, to, o) {
+    var s = BC.student(sid), f, W = [];
     if (!from || !to || to < from) return fail('dateOrder');
-    if (daysAhead(from) < BC.config.advance_days) return fail('noticeBreak');
     if (BC.breaksOf(sid).some(function (b) { return from <= b.to && to >= b.from; })) return fail('overlap');
+    if (BC.isLate(sid) && (f = refuse('late', o, W))) return f;
+    if (daysAhead(from) < BC.config.advance_days && (f = refuse('noticeBreak', o, W))) return f;
     var b = { id: BC.nextId++, student: sid, from: from, to: to, notified: BC.today, reduction: null, note: '' };
     var long = BC.isLong(b);
     BC.breaks.push(b);
@@ -499,29 +516,56 @@
       });
     }
     BC.recalcCredits(sid);
-    return { ok: true, long: long, brk: b };
+    return { ok: true, long: long, brk: b, warned: W };
   };
   BC.monthDaysBetween = function (a, b) { var out = [], d = a; while (d <= b) { out.push(d); d = BC.addDays(d, 1); } return out; };
-  BC.removeBreak = function (sid, id) {
+  BC.removeBreak = function (sid, id, o) {
+    var f, W = [];
     var b = BC.breaks.filter(function (x) { return x.id === id && x.student === sid; })[0];
     if (!b) return fail('notFound');
-    if (daysAhead(b.from) < BC.config.advance_days) return fail('notice');
+    /* a skip made by this break may already have paid for a make-up: do not strand that make-up */
+    var used = BC.usedCreditIds(sid);
+    if (BC.changes.some(function (c) { return c.breakId === id && !c.cancelled && c.credit && used[c.id]; })) return fail('creditUsedBreak');
+    if (daysAhead(b.from) < BC.config.advance_days && (f = refuse('notice', o, W))) return f;
     BC.changes.forEach(function (c) { if (c.breakId === id) c.cancelled = true; });
     BC.breaks = BC.breaks.filter(function (x) { return x.id !== id; });
     BC.recalcCredits(sid);
-    return { ok: true };
+    return { ok: true, warned: W };
+  };
+
+  /* what is on one day for one student (the calendar and the coach's day sheet both use this) */
+  BC.dayInfo = function (s, iso) {
+    var ses = BC.session(iso), n = s.type === 'fixed' ? BC.config.advance_days : BC.config.flex_notice_days;
+    var i = { iso: iso, ses: ses, past: iso < BC.today, locked: BC.diff(BC.today, iso) < n, notice: n, kind: 'off' };
+    if (!ses.isClass) return i;
+    if (ses.cancelled) { i.kind = 'cancelled'; return i; }
+    if (s.type === 'fixed') {
+      var mk = BC.rows(s.id, 'makeup', function (c) { return c.date === iso; })[0];
+      if (mk) { i.kind = 'makeup'; i.row = mk; return i; }
+      if (BC.isRegular(s, iso)) {
+        if (BC.inLongBreak(s.id, iso)) i.kind = 'break';
+        else { var sk = BC.skipRow(s.id, iso); if (sk) { i.kind = 'skipped'; i.row = sk; } else i.kind = 'mine'; }
+        return i;
+      }
+    } else {
+      var jn = BC.rows(s.id, 'join', function (c) { return c.date === iso; })[0];
+      if (jn) { i.kind = 'join'; i.row = jn; return i; }
+    }
+    if (BC.inAnyBreak(s.id, iso)) { i.kind = 'break'; return i; }
+    i.kind = ses.free > 0 ? 'free' : 'full';
+    return i;
   };
 
   /* ---------- coach actions ---------- */
   BC.addStudent = function (o) {
     var id = BC.nextId++;
-    var maxCode = Math.max.apply(null, BC.students.map(function (x) { return Number(x.code.slice(2)); }));
-    var s = { id: id, name: o.name, type: o.type, days: o.type === 'fixed' ? o.days.slice().sort() : [], start: o.start, fee: o.fee || null, active: true, code: 'VM' + String(maxCode + 1).padStart(3, '0'), key: BC.makeKey(id * 131 + 7) };
+    var maxCode = Math.max.apply(null, [30].concat(BC.students.map(function (x) { return Number(x.code.slice(2)); })));
+    var s = { id: id, name: o.name, type: o.type, days: o.type === 'fixed' ? o.days.slice().sort() : [], start: o.start, fee: o.fee || null, active: true, code: 'VM' + String(maxCode + 1).padStart(3, '0') };
     BC.students.push(s);
     return s;
   };
-  BC.resetLink = function (sid) { BC.student(sid).key = BC.makeKey(Math.floor(Math.random() * 1e6)); };
   BC.cancelSession = function (iso, note) {
+    if (BC.session(iso).cancelled) return { ok: false, reason: 'already' };   /* never grant the free credits twice */
     var late = daysAhead(iso) < BC.config.advance_days;
     var n = BC.grantCancelCredits(iso, BC.today);
     BC.overrides[iso] = Object.assign({}, BC.overrides[iso], { cancelled: true, cancelledOn: BC.today, note: note || '' });

@@ -1,0 +1,37 @@
+/* Calendar cells and legend, shared by the student card and the coach's student calendar. */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-nav strong { font-size: 1.02rem; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-wd { text-align: center; font-size: .72rem; color: var(--muted); font-weight: 700; padding: 4px 0; }
+.cd {
+  aspect-ratio: 1 / 1.08; min-height: 44px; border-radius: 10px; border: 1px solid transparent; background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; font-weight: 650; color: var(--text);
+  font-size: .95rem; position: relative;
+}
+.cd .m { font-size: .62rem; font-weight: 750; line-height: 1; min-height: .62rem; }
+div.cd { cursor: default; }
+.cd.blank { visibility: hidden; }
+.cd.off { color: var(--muted); opacity: .4; font-weight: 500; }
+.cd.mine, .cd.join { background: var(--brand); color: var(--brand-ink); }
+.cd.skipped { border: 1.5px dashed var(--muted); color: var(--muted); }
+.cd.skipped .n { text-decoration: line-through; }
+.cd.makeup { background: var(--surface); border: 2px solid var(--text); color: var(--text); }
+.cd.free { background: var(--surface); border-color: var(--muted); color: var(--text); }
+.cd.full { background: var(--surface2); color: var(--muted); }
+.cd.cancelled { background: repeating-linear-gradient(135deg, var(--surface2) 0 5px, transparent 5px 10px); color: var(--muted); border-color: var(--line); }
+.cd.break { background: var(--surface2); border: 1.5px dotted var(--muted); color: var(--muted); }
+.cd.past { opacity: .38; }
+.cd.today { outline: 2px solid var(--text); outline-offset: 1px; }
+.cd.target { outline: 2px dashed var(--text); outline-offset: 1px; }
+.cal-grid.frozen .cd:not(.blank) { filter: grayscale(.9); opacity: .72; }
+.cd:focus-visible { outline: 3px solid var(--info); outline-offset: 1px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 12px; font-size: .76rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid transparent; flex: none; }
+.sw.mine { background: var(--brand); } .sw.skipped { border: 1.5px dashed var(--muted); }
+.sw.makeup { background: var(--surface); border: 2px solid var(--text); } .sw.free { background: var(--surface); border-color: var(--muted); }
+.sw.full { background: var(--surface2); border-color: var(--line); }
+.sw.cancelled { background: repeating-linear-gradient(135deg, var(--surface2) 0 3px, transparent 3px 6px); border-color: var(--line); }
+.sw.break { background: var(--surface2); border: 1.5px dotted var(--muted); }
+

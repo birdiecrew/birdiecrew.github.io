@@ -5,15 +5,19 @@ Site address: `birdiecrew.github.io` (GitHub Pages, free).
 ## At a glance
 Five pictures. Everything after them is detail.
 
-**1. The parts.** Two pages, one referee, one private Sheet.
+**1. The parts.** Two static pages and no server. The coach's data is a file she keeps. Students get a card link that holds only their own rows.
 ```mermaid
 flowchart LR
-  S["Student phone<br/>personal link"] --> P1["Student page<br/>/"]
-  C["Coach phone<br/>admin password"] --> P2["Admin page<br/>/admin/"]
-  P1 -->|"key"| A
-  P2 -->|"token"| A
-  A["Google script<br/>the referee: checks every rule"] <--> G[("Private Google Sheet<br/>the only database")]
-  B["Bank app"] -.->|"coach sees the transfer, taps Paid"| P2
+  G["GitHub Pages<br/>the two pages: code only, no data"] -.->|"opens in the browser"| P2
+  C["Coach phone"] --> P2["Admin page /admin/<br/>the rules run here"]
+  P2 <-->|"autosave"| W[("Working copy<br/>in her browser")]
+  P2 <-->|"Save and Open"| F[("Her save file<br/>she keeps it")]
+  P2 -->|"Send card: a link with<br/>only that student's rows"| Z["Zalo chat"]
+  Z --> P1["Card page /<br/>read only"]
+  S["Student phone"] --> P1
+  S -.->|"asks on Zalo"| C
+  B["Bank app"] -.->|"coach sees the transfer, ticks Paid"| P2
+  P2 -->|"Export report"| R["Google Sheets<br/>sums and charts, one way"]
 ```
 
 **2. A new student joins.**
@@ -21,67 +25,71 @@ flowchart LR
 sequenceDiagram
   actor Coach
   actor Student
-  participant Site as Admin page + script
-  Coach->>Site: Add student (name, days, start date)
-  Site-->>Coach: Secret link + payment code
-  Coach->>Student: Send link on Zalo
-  Student->>Site: Open link (browser remembers the key)
-  Site-->>Student: Card + first bill (prorated) + QR
-  Student->>Coach: Bank transfer with payment code
-  Coach->>Site: Tap Paid
-  Site-->>Student: Card fully open
+  participant Admin as Admin page
+  participant Card as Card page
+  Coach->>Admin: Add student (name, days, start date)
+  Admin-->>Coach: Payment code + first bill (prorated)
+  Coach->>Admin: Send card
+  Admin-->>Coach: Message with the card link
+  Coach->>Student: Paste it on Zalo
+  Student->>Card: Open the link (the browser keeps the card)
+  Card-->>Student: Calendar + first bill
+  Student->>Coach: Bank transfer with the payment code (QR pinned in Zalo)
+  Coach->>Admin: Tap Paid
+  Coach->>Student: A fresh card on Zalo when something changes
 ```
 
 **3. The coach's routine.**
 ```mermaid
 flowchart LR
-  O["ONCE<br/>Settings, timetable, QR<br/>Add students, send links"] --> W["EVERY WEEK<br/>Open Next 14 days<br/>Book the courts<br/>Answer on Zalo"]
+  O["ONCE<br/>5-step wizard, save the first file<br/>Pin the QR in Zalo<br/>Send each student a card"] --> W["EVERY WEEK<br/>Open Next 14 days<br/>Book the courts<br/>Answer requests on Zalo, update calendars"]
   W --> M["EVERY MONTH<br/>1st: bills ready<br/>3rd: remind unpaid<br/>Tap Paid as money arrives<br/>6th: remind late"]
-  M --> N["NOW AND THEN<br/>Scores every 2-3 months<br/>Cancel a session 7+ days ahead<br/>Reset a leaked link"]
+  M --> N["NOW AND THEN<br/>Scores every 2-3 months<br/>Cancel a session 7+ days ahead<br/>Save a file (the app reminds her)<br/>Send a fresh card after changes"]
 ```
 
-**4. A student skips or takes a make-up.** The script runs these checks on every tap.
+**4. A student skips or takes a make-up.** The student asks on Zalo. The coach decides and records it.
 ```mermaid
 flowchart LR
-  T["Student taps a day"] --> Q1{"Paid up?"}
-  Q1 -->|no| X["Refused<br/>reason shown"]
-  Q1 -->|yes| Q2{"7+ days ahead?"}
-  Q2 -->|no| X
-  Q2 -->|yes| Q3{"Skip or<br/>make-up?"}
-  Q3 -->|skip| S["Skipped<br/>+1 credit if under 3 this month"]
-  Q3 -->|make-up| Q4{"Credit left,<br/>same month,<br/>free seat?"}
-  Q4 -->|no| X
-  Q4 -->|yes| M["Make-up booked"]
-  style X fill:#fdd,stroke:#c33,color:#000
-  style S fill:#dfd,stroke:#3a3,color:#000
-  style M fill:#dfd,stroke:#3a3,color:#000
+  T["Student taps a day<br/>Ask the coach<br/>(message written for them)"] --> Z["Zalo chat"]
+  Z --> C["Coach opens the student's calendar<br/>and taps the day"]
+  C --> Q{"Any rule bent?<br/>7+ days ahead, fee paid,<br/>credit left, free seat"}
+  Q -->|no| D["Saved at once<br/>she copies the reply with a fresh card"]
+  Q -->|yes| W["Warning shown to the coach"]
+  W -->|"she agrees: Do it anyway"| D
+  W -->|"she says no"| R["She tells the student on Zalo"]
+  style W fill:#fdd,stroke:#c33,color:#000
+  style D fill:#dfd,stroke:#3a3,color:#000
 ```
 
 **5. One month of money.**
 ```mermaid
 flowchart LR
   A["1st<br/>Bill ready"] --> B["3rd<br/>Reminder to unpaid"] --> C["5th<br/>Pay by end of day"] --> D{"Paid?"}
-  D -->|yes| E["Calendar open"]
-  D -->|no| F["6th: late<br/>No new skips, joins or breaks<br/>Booked lessons stay"]
+  D -->|yes| E["All normal"]
+  D -->|no| F["6th: late<br/>Coach sees Late and gets a warning<br/>on every change she makes<br/>Booked lessons stay"]
   F -->|"coach taps Paid"| E
   style F fill:#fdd,stroke:#c33,color:#000
   style E fill:#dfd,stroke:#3a3,color:#000
 ```
 
 ## The idea in one line
-A free website with two doors on the same address: each student opens **their own card** (schedule, skill polygon, bills, videos), and the coach runs the class from a **password-protected admin page**. A private Google Sheet is the database behind both.
+A free website with no server and no database. The coach runs the class from the **admin page**, and her data is **one save file she keeps** (plus an automatic copy in her browser). Each student gets a **card link** that holds only their own rows (schedule, skill polygon, bills, videos) and that they can only read. Students ask the coach on Zalo to skip or take a make-up, and the coach records it.
+
+The developer builds the bike. The coach brings the gasoline (her data). The developer never sees it.
 
 ## What we copied from Project Snowball
-Snowball has no payment company. People scan a QR code, put a short code in the transfer note, and the owner checks the bank app, then marks it in a Google Sheet. We reuse this as is: no accounts, no card fees.
+Snowball has no payment company. People scan a QR code, put a short code in the transfer note, and the owner checks the bank app, then marks it. We reuse this as is: no accounts, no card fees.
 
-Two differences. Snowball's list of codes is public, but student scores are personal and some students may be kids, so here the Sheet stays **private** and a small Google script hands each student only their own data. And Snowball uses one code for everything; here the code in the bank transfer is **not** the secret that opens the student card (see "Access and privacy").
+Two differences. Snowball's list of codes is public, but student scores are personal and some students may be kids, so here nothing is public: there is no shared list at all, and each card link carries only that student's own rows. And the code in the bank transfer is a **short public payment code**, separate from the card.
 
 ## How it works
-- **Website:** plain static pages on GitHub Pages. No server. Two pages: the **student page** (`/`) and the **coach admin page** (`/admin/`).
-- **Brain:** a private Google Sheet in the same new account, plus a Google Apps Script web app that is the only thing that reads or writes it.
-- **Student access:** a personal link with a secret key in it. They open it once and the browser remembers it.
-- **Coach access:** the admin page, protected by an admin password that the script checks.
-- **The script is the referee.** The pages only display things. Every rule below is checked again inside the script, so nobody can get around a rule by editing the page.
+- **Website:** plain static pages on GitHub Pages. No server, no database, no script in anyone's account. Two pages: the **card page** (`/`) and the **coach admin page** (`/admin/`). The pages hold code only, never data.
+- **The coach's data:** one **save file** (JSON, in a format the app owns). She opens it, works, and saves it. Between saves, the admin page keeps a working copy in her browser, so nothing is lost on a refresh. She never edits the file by hand.
+- **Rules:** the rules (credits, the cap of 3, warnings, fees) run in the admin page, in her browser. It is the same code the mockups run, tested by a random-sequence test.
+- **Student card:** a link made by the admin page (**Send card**). The data is in the part after `#`, so it never reaches any server. The card is a **snapshot** with an "as of" date. When something changes, the coach sends a fresh one.
+- **Who changes lessons:** only the coach, in the admin page, after the student asks her on Zalo. The card cannot change anything.
+- **The admin page is the referee.** It checks every rule and warns her. A few rules are **soft** (she can say "Do it anyway"). The impossible ones are **hard** and always refused. See "Skip and make-up".
+- **Counting and charts:** a one-way **report** (CSV) that opens in Google Sheets. Changing it there changes nothing in the app.
 
 ## The class rules (from the coach's own notice)
 These are the real rules of the class. The site must follow them, and every number is a setting the coach can change.
@@ -96,204 +104,258 @@ These are the real rules of the class. The site must follow them, and every numb
 ## How lessons work
 
 ### The timetable
-The weekly timetable lives in a Timetable tab (weekday, start, end), so nobody has to create lessons one by one. The Sheet only needs a row when something is special: a cancelled day, a day with fewer courts, or extra seats (the "Session overrides" tab).
+The weekly timetable is a setting (weekday, start, end), so nobody has to create lessons one by one. The file only holds a record when something is special: a cancelled day, a day with fewer courts, or extra seats (the "special dates" list).
 
 ### Seats and courts (demand-driven)
 The venue has **4 courts** and the coach books courts after she knows who is coming. So seats are not fixed by a courts number. Instead:
 - A session holds up to **`venue_courts` x `seats_per_court` = 4 x 4 = 16 seats**. The coach can allow 0 to 2 **extra seats** on a session for a squeeze-in.
 - The site tells the coach **how many courts to book**: headcount divided by 4, rounded up. It shows this for every session in the admin page.
-- Because changes lock `advance_days` (7) before a lesson, a session's headcount is mostly settled a week ahead. That is when the coach can book courts.
-- Regular students are never bumped. If the coach adds people and a session goes over its seats, it shows as "over capacity" for her and as full for make-ups and flexible joins.
+- Because the coach is warned about changes less than `advance_days` (7) before a lesson, a session's headcount is mostly settled a week ahead. That is when the coach can book courts.
+- Regular students are never bumped. If the coach adds people and a session goes over its seats, it shows as "over capacity" for her.
 - A student skipping or on a break frees a seat for someone else.
-- Capacity check: 16 seats x 6 sessions a week is 96 seat-slots a week at most. So about 48 students attending twice a week is the real ceiling. 100 students is only an upper bound for the data size.
+- **Seat numbers are for the coach only.** A card is a snapshot of one student, so it cannot know who else is coming. It shows a day that is not theirs as "not your day, you can ask".
+- Capacity check: 16 seats x 6 sessions a week is 96 seat-slots a week at most. So about 48 students attending twice a week is the real ceiling.
 
 ### Two kinds of student
-- **Fixed schedule** (most students). The coach sets their days (for example Tuesday and Thursday). They are booked every week with no action. Their only actions: **skip** a lesson, and **pick a make-up**.
-- **Flexible schedule.** No fixed days. They pick the sessions they plan to attend, at least `flex_notice_days` before each one. This is the site version of "send me your plan the week before". Seats apply. They have no make-up credits, because there is no fixed lesson to make up.
+- **Fixed schedule** (most students). The coach sets their days (for example Tuesday and Thursday). They are booked every week with no action. When they want to **skip** a lesson or take a **make-up**, they ask the coach on Zalo and she records it.
+- **Flexible schedule.** No fixed days. They ask the coach for the sessions they plan to attend, at least `flex_notice_days` before each one, and she adds them. This is the site version of "send me your plan the week before". Seats apply. They have no make-up credits, because there is no fixed lesson to make up.
 
 ### Skip and make-up (fixed students), step by step
-- Telling the coach **in advance** (at least `advance_days` before the lesson) lets a student skip. A skip earns **1 make-up credit**.
-- A student can earn and use at most **`max_makeups_per_month` make-ups per calendar month** (default 3). A skip beyond that is still allowed, but earns no credit.
+**The flow:** the student taps a day on their card and then **Ask the coach**. The button writes the message for them (their name, payment code and the date, in Vietnamese or English) and copies it. They paste it into Zalo, or the button opens the coach's Zalo chat (`coach_zalo`). The coach checks her calendar, decides, and records it in the admin page. Then she sends the student a fresh card (the admin page writes the reply, with the new link, ready to paste). There is no request queue: Zalo is the queue.
+
+**How the coach records it.** Students tab, open the student, **Lessons and changes** shows their month. She taps a day and gets only the actions that make sense there: **Skip**, **Undo skip**, **Add make-up**, **Cancel make-up**, **Add to / Remove from session** (flexible students). From the Next 14 days list she can also tap a name in a session, or add a student to it. Moving a make-up is cancel plus add.
+
+**The rules.** The admin page checks them and shows warnings; it never decides for her.
+- A skip made at least `advance_days` ahead earns **1 make-up credit**. A student can earn and use at most `max_makeups_per_month` make-ups per calendar month (default 3). A skip beyond that earns no credit.
 - The credit must be used on a session **in the same calendar month as the skipped lesson**. Unused credit expires at the end of that month.
-- The make-up can be on any session that month with a free seat (before or after the skipped lesson), as long as it follows the rules below.
-- **Sudden absence = no make-up.** If a student does not show up, or tries to skip inside the notice window, the lesson counts as attended and nothing is owed. The site locks the button, so the coach never has to argue about it.
-- All of this is **self-service and instant**. No coach approval. The coach sees every skip and make-up in the admin page.
-- **Changing their mind:** a student can **undo a skip** ("I will attend after all") up to the same `advance_days` cutoff as skipping. Their seat comes back, the credit goes away, and a later skip that got no credit (because of the cap of 3) takes the freed one. If that credit was already used for a make-up, the student must cancel the make-up first. A skip that comes from a planned break is undone by removing the break. The Changes row is not deleted: it gets a cancelled time.
-- **Moving or cancelling a make-up** that is already booked is limited to `max_makeup_changes_per_month` per month (default 3, set to 0 for no limit).
+- The make-up can be on any session that month with a free seat (before or after the skipped lesson).
+- **Undo skip** ("I will attend after all"): the seat comes back, the credit goes away, and a later skip that got no credit (because of the cap of 3) takes the freed one. If that credit was already used for a make-up, the coach must cancel that make-up first. A skip that comes from a planned break is undone by removing the break. Change records are never deleted: they get a cancelled time.
+
+**Soft rules (warning first, then "Do it anyway").** The coach can bend these when she agrees. The change is saved and marked as **rule bent** in the change log, so there is a record.
+| Soft rule | Warning she sees |
+|---|---|
+| Notice | "Less than 7 days before the lesson." A last-minute skip still counts as attended unless she says otherwise. |
+| Late fee | "This student's fee is late." |
+| Session full | "The session is full. This takes the headcount over the seats." The session shows as over capacity. |
+| No credit | "No make-up credit this month." Doing it anyway makes a **courtesy make-up**: no credit used, not counted in the cap of 3. |
+| Cap reached | "Already 3 make-ups this month." Same: a courtesy make-up. |
+| Break notice | "The break starts in less than 7 days." |
+
+**Hard rules (never possible).** Not one of their lessons, session cancelled, no class that day, they are on a break, already done for that day, a make-up on their own regular day (so nobody is booked twice), a skip whose credit already paid for a make-up (cancel that make-up first), overlapping breaks, a flexible-only action on a fixed student and the other way round.
+
+- **Sudden absence = no make-up.** A student who does not show up gets nothing. A skip she records inside the notice window shows the warning, so the coach knows she is making an exception.
+- **Changing a booked make-up** has no monthly limit. The coach is in charge.
 
 ### Planned breaks (long vacations)
-- A student who will be away for a stretch (a holiday, exams) plans a break on the card: a from date and a to date, at least `advance_days` (7) before the first day. The break pauses **all** their weekly lessons for those dates.
-- A break of **`long_break_days` or more** (default 14 calendar days) is a **long break**. In it the student is off every session, **no make-up credits** are earned, and the **fee is reduced** for the lessons they miss (see "What a student pays").
+- A student who will be away for a stretch (a holiday, exams) tells the coach on Zalo (the card has an **Ask the coach to plan a break** button). The coach plans it in the admin page (More, Breaks, **Plan a break**): student, from date, to date. It pauses **all** their weekly lessons for those dates. Soft warning if it starts less than `advance_days` (7) from today.
+- A break of **`long_break_days` or more** (default 14 calendar days) is a **long break**. In it the student is off every session, **no make-up credits** are earned, and the **fee is reduced** for the lessons they miss (see "What a student pays"). The form shows the new fee before she saves.
 - A shorter break is not a long break. Each skipped lesson is a normal skip, with a make-up credit and the cap of 3.
-- The form says it plainly: "A long break lowers your fee. It does not give make-up lessons."
-- The coach sees every break in the admin page and can change the worked-out amount.
+- The card shows the student their planned breaks (read-only): "A long break lowers your fee. It does not give make-up lessons."
+- The coach can remove a break (not while one of its skips has paid for a make-up) and change the worked-out amount.
 
 ### When the coach cancels a session
-- The coach cancels in the admin page, usually for a public holiday. She follows the **same notice rule**: at least `advance_days` before. If she cancels later, the page warns her and she sorts it out on Zalo.
+- The coach cancels in the admin page, usually for a public holiday. She follows the **same notice rule**: at least `advance_days` before. If she cancels later, the page warns her and she sorts it out on Zalo. Cancelling a session that is already cancelled is refused, so nobody gets the free credit twice.
 - **No refund.** Instead, every affected fixed student gets **1 free make-up credit** ("compensation"). It does not count toward the 3-make-up cap, and it stays valid for `cancel_credit_months` more month(s) (default 1), so a holiday near the end of a month can still be made up. The make-up date still follows the notice rule.
 - The announcement goes through her private Zalo channel. The admin page writes the message for her to paste (see "Reminders and messages").
 
 ## What a student sees (one card, mostly pictures)
-1. **Calendar:** shows the month. Regular days are solid, skipped days are crossed out, make-up days are highlighted, and sessions with free seats are green. Days inside the lock window are grey. Fixed students tap a regular day to skip it, and a green day to take a make-up. Flexible students tap a session to join or leave it. A counter says "make-ups left this month: 2 of 3".
-2. **Polygon:** 6 skills (Smash, Net, Footwork, Defense, Serve, Stamina), each scored 1 to 10 by the coach. The faint outline is the **previous scoring**, so growth is visible. The coach scores every 2 to 3 months, not every month. No score yet means the polygon is simply hidden.
-3. **Video:** the clip for their weakest skill, from a YouTube or TikTok link the coach pastes into the Sheet.
-4. **Bills:** a row of month dots, filled once paid. Underneath, a "Pay now" button with the QR and their short payment code. If the student is late, a clear banner says so.
-5. **Plan a break:** a small form (from, to).
-6. **Class rules:** one screen that shows the six rules above. Its numbers are read from Config, so the page and the coach's real settings never disagree.
+The card is **read-only** and is a **snapshot**: the top says "Card as of 5 Nov". After 7 days a banner says "This card is N days old. Ask your coach for a fresh one." It shows the facts and has one kind of button: **Ask the coach**.
+1. **Calendar:** shows the month. Regular days are solid, skipped days are crossed out, make-up days have a thick outline, and a day that is not theirs has a plain outline. A counter says "make-ups left this month: 2 of 3". Tapping a day shows what it is, and where it makes sense one button: **Ask the coach to skip / let me attend / give me a make-up here / move or cancel this make-up / add or remove me** (flexible). The button writes a ready-made message, copies it, and opens the coach's Zalo chat. A day inside the notice window says so: "You can still ask, but the coach may say no."
+2. **Rows under the calendar:** Skills, Fees, Breaks and Class rules, one line each. They open on tap, so the page is not a long scroll.
+3. **Skills:** 6 skills (Smash, Net, Footwork, Defense, Serve, Stamina), each scored 1 to 10 by the coach. The faint outline is the **previous scoring**, so growth is visible. The coach scores every 2 to 3 months, not every month. No score yet means the row is hidden. It also holds the clip for their weakest skill, from a YouTube or TikTok link the coach pastes in.
+4. **Fees:** this month's amount and status. **Pay now** shows the amount and their short payment code with copy buttons, and says to use the QR the coach pinned in Zalo (a link cannot carry a picture). It appears only while the bill is unpaid. Month dots show the history. If the fee is late, a banner says so.
+5. **Breaks:** their planned breaks (read-only) and **Ask the coach to plan a break**.
+6. **Class rules:** one screen that shows the six rules. Its numbers come from the coach's settings, so the page and her real rules never disagree.
 
 Language toggle (Vietnamese / English) on every screen. **Vietnamese is the default**, because the class notice is in Vietnamese. Some students are English speakers. The page stays plain (no fancy browser features) so it works inside chat apps' built-in browsers.
 
-## What the coach sees (admin page)
-Design rule: **click and click.** The coach manages all student data herself, from her phone, with big buttons, pickers instead of typing, and about 3 taps per job. She never has to open the Sheet.
+If the link is cut short when copied, the card says so and asks the student to get a new one from the coach. The page remembers the last card it opened, so reopening the address without the link still shows it.
 
-1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, **courts to book**, and an "over capacity" warning.
-2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. The student's link appears with a **Copy** button. Also edit, pause a student, and **reset the link** if it leaks.
+## What the coach sees (admin page)
+Design rule: **click and click.** The coach manages all student data herself, from her phone, with big buttons, pickers instead of typing, and about 3 taps per job. She never touches the file by hand.
+
+**First run.** A start screen with three big buttons: **New class**, **Open my file**, **Try a sample class** (made-up students, clearly marked, cleared with one tap). New class is a 5-step wizard:
+1. **Your class:** tap the days she teaches, check the times, courts and the two fees (all prefilled with her usual numbers).
+2. **Your students:** paste first names, one per line, from Zalo, notes or a spreadsheet column. Numbers, bullets and repeats are cleaned up; she sees the count.
+3. **Their days:** one row of day chips sets everyone at once, then she fixes the few who are different (fixed or flexible).
+4. **Who has paid this month:** a switch per student, or All / None. She can skip it.
+5. **Save your file:** the first backup, through the phone's share sheet (Files, Zalo, email). Finish stays dimmed until she saves or chooses "I will do it later".
+
+No phone numbers, photos or emails are ever asked for. A class of 20 takes about 5 minutes.
+
+**Every day:**
+1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, **courts to book**, and an "over capacity" warning. **Tap a name** to change that student's lesson, or **Add a student** to the session.
+2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. Then **Send card**: a ready message with the card link, **Copy message**, and **See it as the student sees it**. Also edit and pause a student. **Lessons and changes** opens their calendar: tap a day to skip, add a make-up, undo, join or leave, with warnings and **Do it anyway** (see "Skip and make-up").
 3. **Payments:** the month's list with the amount each student owes (worked out by the proration rule), unpaid students first. **One tap marks a student paid.** A pencil changes the amount.
 4. **Scores:** pick a student, tap 1 to 10 for each of the 6 skills, Save.
-5. **Breaks:** planned breaks and the worked-out fee reduction.
+5. **Breaks:** planned breaks and the worked-out fee reduction. **Plan a break** for a student, or remove one.
 6. **Cancel a session:** pick a date (usually a public holiday). It warns if the date is inside the notice window, shows who gets compensation, and gives a message to paste into Zalo.
 7. **To remind:** today's reminder list with copy buttons (see "Reminders and messages").
 8. **Timetable and seats:** change class days and times with time pickers. Tap 0, 1 or 2 extra seats on a date.
 9. **Videos:** pick a skill, paste the link.
-10. **Settings:** every setting in the table below with a plain label and its default shown, plus the QR image.
+10. **Settings:** every setting in the table below with a plain label and its default shown, plus the page picture and her QR image.
+11. **My data:** Save file, Open a file, Export report, earlier copies on the phone, and Start over (see "Where the data lives").
 
-The Sheet behind it is storage. The coach does not edit it by hand.
+A chip at the top right always shows **Backed up** or **Back up now**, so she knows whether her latest work is in a file.
+
+### Making mistakes hard
+The screens stop mistakes before they happen, instead of explaining them afterwards.
+- **Order is enforced.** In the wizard a step opens only when the steps before it are complete. In Add student, the day chips stay dimmed until there is a name.
+- **Dimmed, never hidden.** A button that cannot be used yet stays in place, dimmed, and a reserved line under it says why ("2 students still need a day"). Nothing appears or disappears, so the layout does not jump.
+- **Numbers cannot run away.** Steppers stop at their limits. Fees move in steps of 50,000 dong. Linked numbers cannot cross: the 2-day fee can never be below the 1-day fee, the buttons just stop. A typed fee is rounded and clamped, with a message.
+- **Pick, don't type.** Times come from a list, and the end list offers only times after the start. Dates have a window of a year around today.
+- **Names:** at most 20 letters, no repeats (accents ignored), at most 60 students per class.
+- **One class day always stays on.** The last day's switch is dimmed.
+- **Start over is dimmed** until the data is in a saved file.
+- **Big fingers.** Every control is at least 48 px tall (40 px for compact ones), with one size, one set of colours and one wording for the same kind of control everywhere.
 
 ## Rules and settings
-All numbers below are **settings in a Config tab of the Sheet**, so the coach can change them without touching code. Defaults are shown.
+All numbers below are **settings in the Settings screen**, saved in her file, so the coach can change them without touching code. Defaults are shown.
 
 | Rule | Default | Setting name |
 |---|---|---|
-| Skip, take a make-up, or start a break at least this many **calendar days** before the lesson (weekends count) | 7 | `advance_days` |
-| Flexible students join a session at least this many days before it | 7 | `flex_notice_days` |
+| The coach is warned when a skip, make-up or break is less than this many **calendar days** before the lesson (weekends count) | 7 | `advance_days` |
+| The coach is warned when a flexible student is added less than this many days before the session | 7 | `flex_notice_days` |
 | Monthly fee is paid by the end of this day of the month | 5 | `pay_by_day` |
 | A new student's first bill is due this many days after their start date (or on the pay-by day, whichever is later) | 3 | `first_bill_days` |
 | Make-ups per student per month | 3 | `max_makeups_per_month` |
-| Moves or cancels of a booked make-up per month (0 = no limit) | 3 | `max_makeup_changes_per_month` |
 | A break this many days or longer is a long break | 14 | `long_break_days` |
 | Players per court | 4 | `seats_per_court` |
 | Courts the venue has. No session can have more | 4 | `venue_courts` |
-| Fee amounts are rounded to this many dong | 1000 | `fee_round` |
+| Monthly fee, 1 day a week (dong) | 800,000 | `fee_1day` |
+| Monthly fee, 2 days a week (dong) | 1,300,000 | `fee_2days` |
 | Work out the bill from the lessons studied (mid-month joiners, long breaks). Off = always the full fee and the coach types any change | on | `proration` |
 | A paid month later found to be too high becomes a credit on the next bill. Off = the coach handles it by hand | on | `credit_carry` |
 | A cancelled-session credit stays valid this many months after the lesson's month | 1 | `cancel_credit_months` |
-| Page title in the browser tab and in chat link previews | VM Badminton | `page_title` |
+| Page title in the browser tab and on the card | VM Badminton | `page_title` |
+| The coach's Zalo phone number. The students' **Ask the coach** button opens this chat | (empty) | `coach_zalo` |
+| Default language on the card | Vietnamese | `default_lang` |
 | Time zone | Asia/Ho_Chi_Minh | `timezone` |
 | Currency | VND | `currency` |
 
-**Payment (flat monthly fee, paid like rent):**
-- One fixed fee per month, set by the coach. A student can have their own fee in the Students tab. Paid by bank transfer, with the student's **short payment code** in the note.
-- Paid **by the end of the 5th** is on time. Late starts on the 6th. Paying late unlocks it again.
-- **A new student's first bill** is due on the later of the 5th and `first_bill_days` (3) after their start date. The late lock starts the day after. Example: starts on the 20th, due on the 23rd, locked from the 24th. Starts on the 3rd: due on the 6th.
-- The coach marks the month as paid in the admin page after checking the bank app. No receipt upload.
-- The lock looks at the **current month's** payment on the day the student acts. A student who skips a December lesson on 20 November is judged on November.
+**Payment (flat monthly fee by days per week, paid like rent):**
+- The fee depends on how many days a week the student comes: **800,000 dong for 1 day, 1,300,000 dong for 2 days** (both are settings). A student with 3 or more days pays the 2-day fee, and a flexible student pays the 1-day fee, unless the coach sets their own fee in the Students tab. Paid by bank transfer, with the student's **short payment code** in the note.
+- Paid **by the end of the 5th** is on time. Late starts on the 6th. Once the coach marks it paid, the late warning goes away.
+- **A new student's first bill** is due on the later of the 5th and `first_bill_days` (3) after their start date. The late warning starts the day after. Example: starts on the 20th, due on the 23rd, late from the 24th. Starts on the 3rd: due on the 6th.
+- The coach marks the month as paid in the admin page after checking the bank app. No receipt upload. The app stores only "paid" and the date, not bank details.
+- The late warning looks at the **current month's** payment on the day the coach records the change. A skip of a December lesson recorded on 20 November is judged on November.
 
 **What a student pays (proration):** a student pays only for the days they study.
-- Bill = monthly fee x (lessons billed ÷ lessons in a full month for their weekly days), rounded to `fee_round` (1,000 dong).
+- Bill = monthly fee x (lessons billed ÷ lessons in a full month for their weekly days), rounded to the nearest 1,000 dong. This is a fixed rule, not a setting: it only matters for part months, so a part-month bill is never an odd number.
 - **Not billed:** lessons before the student's **start date** (someone who joins mid-month), and lessons inside a **long break**.
 - **Still billed:** normal skips, no-shows, and lessons the coach cancelled. Those get a make-up credit instead of a refund.
 - Flexible students use the same calculation, with all timetable sessions in the month as the "full month".
 - The coach can overwrite any amount in the admin page.
 - If a break is planned after the month was already paid, the difference becomes a **credit on the next bill**. Nobody gets cash back.
-- Example (made-up fee): 1,000,000 dong, a Tuesday and Thursday student, November 2026 has 8 such lessons (3, 5, 10, 12, 17, 19, 24, 26). A long break from 17 to 30 November covers 4 of them. Bill = 1,000,000 x 4 ÷ 8 = **500,000 dong**. They had to tell the coach by 10 November.
+- Example: a Tuesday and Thursday student pays 1,300,000 dong. November 2026 has 8 such lessons (3, 5, 10, 12, 17, 19, 24, 26). A long break from 17 to 30 November covers 4 of them. Bill = 1,300,000 x 4 ÷ 8 = **650,000 dong**. They had to tell the coach by 10 November.
 - Money is Vietnamese dong, shown as whole numbers.
 
 **When a student is late (from the 6th until they pay):**
-- The calendar greys out: they cannot skip, join, move, take a make-up, or plan a break.
-- Their regular weekly lessons and any make-ups already booked **stay**. The coach decides case by case.
-- The student sees a banner with the Pay now button.
-- The coach sees the student marked "unpaid" in the admin page.
-- Days 1 to 5 are a grace period: nothing is locked yet.
+- Nothing is locked automatically, because students cannot change anything. The card shows a banner with the Pay now button.
+- The coach sees the student marked "Late" in the admin page, and gets a **warning on every change** she records for them ("This student's fee is late"). She can do it anyway, case by case.
+- Their regular weekly lessons and any make-ups already booked **stay**.
+- Days 1 to 5 are a grace period: no warning yet.
 
-**The notice lock:**
-- A lesson can be skipped, or a make-up booked or moved, only if the lesson date is at least `advance_days` calendar days after today.
-- Example with the default of 7 days: today is 10 Nov. A lesson on 17 Nov can still be changed. A lesson on 16 Nov is locked.
-- The same rule applies to the make-up date a student is choosing.
+**The notice warning:**
+- A skip, make-up, join, leave or break less than `advance_days` calendar days before the lesson shows a warning to the coach. She can do it anyway.
+- Example with the default of 7 days: today is 10 Nov. A lesson on 17 Nov gives no warning. A lesson on 16 Nov does.
+- The warning is also about the make-up date being chosen, not only the skipped lesson.
+- The notice window also protects the coach: a session's headcount is mostly final a week ahead, so she can book the courts.
 
 ## Access and privacy
-**Student can never see another student.** This is the core guarantee.
-- A student's link carries a **secret key**: long and random (at least 12 characters from a 32-letter alphabet, about 60 bits), so it cannot be guessed.
-- The page sends only the key. It never sends "show me student B". The script looks up whose key it is and returns **only that student's data**. There is no call that lists students.
-- Seat counts show **numbers only**, never other students' names.
-- The link looks like `birdiecrew.github.io/#k=KEY`. The part after `#` is never sent to any server, so it stays out of GitHub's logs. The page saves the key in the browser, then removes it from the address bar. The page also tells the browser not to send a referrer.
-- The key goes to the script in the request body, never in a page address.
-- **Lost phone or leaked link:** the coach resets the link in the admin page. The old key stops working at once.
-- **No Google login for students.** It would force every student, including kids, to have a Google account, and the coach would have to collect and match their emails. A secret link does the same job for far less work, and it is the same idea as "anyone with the link" sharing. The only way student A sees student B is if B gives A their link.
+**The short version:** there is no server, so there is nothing to hack and nobody to trust with the data. It lives on the coach's phone and in her file. The pages are code only.
 
-**The bank code is not the login key.** The note in a bank transfer is seen by banks, other staff and screenshots. So each student has two things:
-- a **short payment code** (like `VM042`), public, used only in the transfer note;
-- a **secret key**, used only in their link.
+**A student can never see another student.**
+- A card link holds only **that student's** rows: their name, weekly days, their own lessons, changes, breaks and credits (from last month on), their last two scores, their own payment status for the last six months, the class timetable and rules numbers, cancelled dates, and the videos the coach set. Nothing about anyone else. The coach's phone number, QR and photos are not in it.
+- The card page has no code that writes anything. A card link can show a schedule and a bill, but cannot skip, book or cancel anything.
+- The data sits after the `#` in the link. The part after `#` is never sent to a server, so it stays out of GitHub's logs. The page also tells the browser not to send a referrer.
+- The page remembers the last card in the student's browser, so reopening the address still shows it.
+- **No Google login for students.** It would force every student, including kids, to have a Google account. A link does the same job for far less work, and it is the same idea as "anyone with the link" sharing. The only way student A sees student B's card is if B gives A the link.
+- **The honest limit: a card cannot be taken back.** Once a link is sent, it works forever, because there is no server to switch it off. What a leaked card shows is small (first name, schedule, scores, paid or not), and it goes stale, which is why the card shows its date.
+
+**The bank code is not private.** The note in a bank transfer is seen by banks, other staff and screenshots. So the **short payment code** (like `VM042`) is used only in the transfer note and means nothing on its own.
 
 **The coach's admin page**
-- It is protected by an **admin password**. The password is checked **by the script**, never in the page. It is stored in the script's private settings, not in the repo and not in the Sheet. (The repo is public, so anything in the page code is public.)
-- After a correct password the script gives a token that lasts 6 hours (the limit of Google's cache). All admin actions need the token.
-- Wrong passwords make the script slow down its answer. It does not lock out, so nobody can lock the coach out.
-- `/admin/` is public but useless without the password. Nothing links to it from the student page.
-- Later, **Google sign-in** for the coach alone is possible and stronger. It needs a one-time Google Cloud setup, so it is an upgrade, not version 1.
+- **No password.** The data is on her device, so there is nothing for a password to protect, and someone who opens `/admin/` on another device sees an empty start screen. The phone's own lock protects the phone. A PIN on the page is a possible later add-on.
+- **The admin page makes no network calls.** Its security policy (Content-Security-Policy) forbids connections, so the browser itself blocks any attempt to send data out. There is no analytics and there are no third-party scripts or fonts. She can check it herself: switch on airplane mode and everything still works. (The policy is set in the page's `<meta>` tag, because GitHub Pages does not let us set headers. To be verified in step 2.)
+- The file is a plain file. Opening a file from someone else loads their data into her phone, so the app checks the shape and refuses anything that is not a Birdie Crew file.
 
 **Other safety**
-- The repo is **public** (free Pages needs it). No student data, names, keys or passwords are ever committed to it.
-- Google's script cannot see a visitor's IP address, so we do **not** block devices. We rely on long random keys and the slow-down instead.
-- Booking runs under a script lock, so two students cannot take the last seat at the same moment.
-- Dates use one fixed time zone, set in the script and in Config (see "Open questions").
-- If the script is down or slow, the card shows the last saved copy with "last updated" and no buttons, instead of an error.
+- The repo is **public** (free Pages needs it). No student data, names or QR images are ever committed to it. The mockups use made-up names only.
+- **Names only.** The app keeps first names or nicknames, and nothing else personal: no phone, email, address or photo. Money is stored as "paid or not" with the amount the rules worked out, not as bank details.
+- Dates use one fixed time zone, set in the settings.
+- **File integrity:** every save file carries a version number and a fingerprint. If the file was changed outside the app, or damaged, the app says so in plain words and offers the last good copy. This catches mistakes. It is not a security feature.
+- **Single device.** The data lives on one device at a time. Using two devices means opening the latest file on the second one, and the newest save wins. The app does not merge.
+
+## Ownership and handover (so the coach can trust it)
+**The goal:** the developer can never see the coach's data, and the design makes that true by construction, not by promise. The developer builds the bike. She brings the gasoline.
+- **Nothing of hers is on the developer's side.** There is no server, no Sheet, no script, no account to hand over. Her data is a file on her phone. The developer has nothing to see, even if asked.
+- **She can check it.** The code is public and small, and anyone she trusts can read it. The admin page cannot make network calls (see above), and she can test it in airplane mode. The page shows its version number in My data.
+- **Developing and supporting on fake data.** The sample class (made-up students, and the same file format) is what the developer tests, demos and debugs with. For a real problem, she sends a copy of her file, or the developer adds a **support copy** button later that replaces every name with S1, S2, and so on.
+- **Updates reach her at once.** Fixes ship through GitHub Pages, and nothing has to be redeployed in her account. The flip side: whoever controls the page address could change the page later, so the repo history is public, and she can always take a copy (below).
+- **File format changes are the app's job.** The file has a version number. A newer app opens an older file and upgrades it. An older page refuses a newer file and says so.
+
+**Two ways to hand it over**
+1. **She uses the developer's address** (`birdiecrew.github.io`). The developer keeps it running and fixes it. Simplest for her. It is a licence or small monthly support fee.
+2. **She owns a copy.** Because the site is only static pages with no server, the repo can be moved to her GitHub account and served from her own Pages address, with nothing to migrate. Her file works unchanged. This gives her independence if the developer disappears.
+
+**The usual handover for a small project like this**
+1. A short written agreement: what is delivered, that the data is hers, and whether she buys the code (way 2) or licenses it (way 1).
+2. A handover checklist: this plan as the runbook, one walkthrough session, the first save file made together, and her written sign-off after trying it.
+3. Support is separate and agreed up front: a small monthly fee, or paid by the hour. Nothing stops her hiring someone else, because the code and docs are public.
+
+**Personal data.** Some students may be children. Vietnam's personal-data rules (Decree 13/2023, as understood here) probably call for parental consent, and they make the coach the data controller. Keeping only first names, and keeping them on her own device, makes this much smaller, but she should still check it properly. This plan is not legal advice.
+
+## Pictures
+- **Page picture:** the picture at the top of the admin page and in the browser tab. The coach changes it in Settings (Choose picture). It is stored as a small square image in her file. **Students see the default shuttlecock picture**, because a card link is too short to carry a picture (open question).
+- **Her QR image:** kept in her file and shown to her. A card cannot carry a picture, so she pins the QR once in her Zalo chat. The card's Pay now shows the amount and the payment code with copy buttons.
+- **No student photos.** Fewer personal details to keep, and no way to put them in a link. The avatar is the first letter of the name.
 
 ## Reminders and messages
 The coach talks to her students on a **private Zalo channel**. Zalo's official message service needs a registered business account and costs money, so version 1 does not send messages by itself. Instead:
-- The admin page has a **"to remind" list**: on the 3rd, students who have not paid yet (a friendly heads-up), and from the 6th, the late ones. Each row has a **Copy message** button, and she pastes it into Zalo. The message is ready in Vietnamese and English, with the student's link, payment code and amount.
+- The admin page has a **"to remind" list**: on the 3rd, students who have not paid yet (a friendly heads-up), and from the 6th, the late ones. Each row has a **Copy message** button, and she pastes it into Zalo. The message is ready in Vietnamese and English, with the student's name, payment code and amount.
+- **Send card** is the same kind of message: a friendly line plus the card link. She sends it to each new student, and again after changes. (Planned: a **Copy reply** button right after she records a request, giving "Done: Thursday 19 skipped. 2 make-ups left. Your new card: link" in one paste.)
 - A cancelled session has a **Copy announcement** button the same way.
-- She also uses Zalo to send each new student their link.
-- Message texts live in Config, so she can reword them.
-- **Later, optional:** automatic email reminders from the script. A normal Google account can send about 100 emails a day, enough for this class. It needs an optional email per student.
+- **The other direction:** the student's **Ask the coach** button writes the request message in the same style. It is the mirror of her Copy message buttons.
+- Message texts live in her settings, so she can reword them.
+- **Later, optional:** automatic email reminders. It would need an optional email per student, which we avoid for now.
 
-## Where the data lives: the Google Sheet is the database
-There is **no other database**. The private Google Sheet is it. Think of it as the filing cabinet: every student, lesson, payment and score is a row in it, and the admin page and student cards are just windows onto it. This is enough because the class is small: about 100 students at most, in a venue with 4 courts.
+## Where the data lives: her file, her browser, the cards
+There is **no database and no server.** Think of it as a notebook the coach carries. The data lives in three places:
 
-**Why a Sheet is enough**
-- 100 students make roughly 100 payment rows a month and a few hundred skip or make-up rows a month. That is a few thousand rows a year. A Sheet holds millions of cells, and we would use well under 1%.
-- The script reads a whole tab in one call (a few hundred to a few thousand rows is fast), finds the student's rows by key, and answers. No search index needed.
-- At most 16 seats per session, so two students fighting for a seat is rare. The script lock handles it anyway.
-- The coach already knows how to use a Sheet, and it stays as a fallback if the admin page ever breaks.
-
-**Why a Sheet and not another database**
-
-| Option | Good | Not so good |
+| Place | What it is | Why |
 |---|---|---|
-| **Google Sheet + Apps Script** (chosen) | Free, no card. One Google account. One language (JavaScript) for the script and the pages. No server to run. Google keeps history and uptime. The rows can be viewed, exported and printed by anyone who knows spreadsheets. | The script can be slow (1 to 3 seconds when it wakes up). Daily limits exist, but are far above this class. No built-in database rules, so the script must guard seats and rows itself. The script's address is public, so every call must be checked. Calls from a web page have quirks. The code is edited in a browser editor unless we add git tools. |
-| **Supabase** (hosted Postgres) | A real database with rules built in. A seat limit can be enforced in one safe step. Real login for the coach. A spreadsheet-like table viewer. A generous free plan. | More to learn (SQL and access rules). Free projects can pause after a week of no use. Student-link access needs carefully written database functions. One more account and vendor. |
-| **Firebase** (Firestore) | Free tier, fast, live updates. | Safe student access needs server code, and that needs a paid plan with a card. Questions like "who is in this session" are awkward. |
-| **Cloudflare Workers + D1** | Free, fast, does not pause, real SQL. | The most to build and own: we write and deploy the server code, and there is no ready-made table editor. |
-| **Airtable or Notion** | Friendly tables. | Free limits, and an API token that must stay secret, which a static site cannot do without a server. |
+| **Working copy** | An automatic copy in her browser, saved after every change. The last few earlier copies are kept too, so she can go back. | So a refresh or a closed tab loses nothing. |
+| **Save file** | One JSON file she makes with **Save file** (through the phone's share sheet: Files, Zalo, email) and opens with **Open a file**. | Her real backup, and the way to move to a new phone. The only copy that lives outside the phone. |
+| **Student cards** | Links with one student's rows each. | What students see. Made on demand, stored nowhere. |
 
-Free-plan limits change, so check the current ones before committing to anything.
+**Why this is enough:** a class of up to 60 students (a safety limit in the screens, easy to raise) makes a file of well under 200 KB. Opening, working and saving are instant and work offline. There is no latency, no daily limit and no account.
 
-**Verdict:** the Sheet wins on cost and simplicity for about 100 students. One honest point: its best feature, "the coach can open and edit it", matters less now that she works through the admin page. Its real value is zero cost and zero servers. To keep the door open, all reading and writing goes through one small `store` module in the script, and the rules never touch the Sheet directly. If the class grows past a few hundred students, the Sheet feels slow, or we want a real login for the coach, we can swap the store for Supabase without touching the rules or the pages.
-
-**Who writes what**
-- **The admin page** (through the script) writes everything the coach manages: Students, Payments, Scores, Videos, Timetable, Session overrides, Config, and cancelled sessions.
-- **The student pages** (through the script) write only the Changes tab (skips, make-ups, joins, leaves) and the Breaks they plan.
-- **Nobody edits the Sheet by hand.** Its tabs are protected with a warning "written by the site, do not edit by hand", so a stray typo cannot break the rules. A small Sheet menu (add student, reset link) is the emergency fallback.
-- Dates and times are stored as real dates, never as text, so sorting and filtering work.
+**What is in the file:** settings, timetable, special dates, videos, students (name, type, days, start date, optional own fee, active, payment code), the change log (skip, make-up, join, leave, cancel credit, with the rule-bent mark), breaks, payments (month, amount, paid date, credit carried on), scores, message texts, her QR image and page picture, and a few flags. The file starts with the app name, a version number, the save time and a fingerprint.
 
 **Keeping it safe and tidy**
-- **Backup:** Google keeps the Sheet's version history. Once a month, the coach makes a copy of the Sheet (File, Make a copy). Later this can be a small scheduled script.
-- **Growth:** once a year, move old Changes, Payments and Scores rows to an "Archive 20XX" tab or file, so the live tabs stay small.
-- **Speed:** the script keeps Config and Timetable in a short cache, because they change rarely. Step 2 measures the real speed with 100 test students.
-- **Moving later:** if the class ever grows past a few hundred students, the same tabs can become database tables. The pages and the rules do not change.
+- **Backup nudge:** the chip at the top right says **Backed up** or **Back up now**. My data says how long ago the last file was, and warns on a first run with no file. Start over is dimmed until the data is in a file.
+- **Storage can be lost.** Browsers can clear a site's storage (for example iPhones after about a week of no use for a site not added to the Home Screen, or "clear history"). Adding the page to the Home Screen helps, and the backup file covers the rest. To be tested in step 2.
+- **Earlier copies:** the last five working copies can be restored from My data.
+- **Edited or damaged file:** refused with a plain message, and the earlier copy is offered.
+- **Growth:** once a year she saves the file, exports the report, and the app can start a new year's file with the students carried over (later).
+- **Moving later:** storage sits behind a small `load` and `save` layer (a working copy now, a file now). A Google Drive sync, or a small shared store, can be added later without touching the rules or the pages. It would cost a sign-in and a service, which is why it is not in version 1.
 
-**The tabs**
+**Counting and charts: the report.** Export report makes a CSV with one row per student per month: lessons billed, skipped, make-ups, amount, paid or not, and the paid date. She opens it in Google Sheets to count, sum and draw charts. It is one way: nothing is read back, so she cannot break the file by editing it.
 
-| Tab | What it holds |
+**Options we weighed**
+
+| Option | Verdict |
 |---|---|
-| Config | The settings above, plus the default monthly fee, the coach's QR image, the reminder and announcement texts, and the default language. |
-| Timetable | One row per class weekday: weekday, start, end. Starts as Monday to Thursday 20:00 to 22:00, Saturday and Sunday 10:00 to 12:00. |
-| Session overrides | Only for special dates: date, extra seats (0 to 2), courts available (if less than 4), cancelled yes/no, date cancelled, note. |
-| Students | Secret key, short payment code, display name (first name or nickname is enough), type (`fixed` or `flexible`), weekly days (e.g. `Tue,Thu`, empty for flexible), start date, own monthly fee (optional), active yes/no. |
-| Changes | One row per action: student, type (`skip`, `makeup`, `join`, `leave` or `cancel_credit`), session date, linked skip, created time, cancelled time. |
-| Breaks | Student, from, to, date notified, worked-out fee reduction (the coach can change it), note. |
-| Scores | Student, date scored, and the 6 skill scores. |
-| Payments | Student, month, amount due (worked out, the coach can overwrite), amount paid, paid date, credit carried to the next month. |
-| Videos | Skill, link (YouTube or TikTok). |
+| The developer hosts a Sheet and a script | Dropped: the developer could see her data, so she must trust a promise. |
+| Her own Google account owns everything, developer as editor | Dropped: heavy setup, and the developer loses control of the stack. |
+| Her own Sheet plus a small script the developer provides | Dropped: a script inside her account that she may not trust. |
+| Google sign-in, the app creates a Sheet in her Drive (no script) | Kept as a later upgrade only if she needs several devices. Costs a Google permission screen, hourly re-login and a Cloud project. |
+| **Browser working copy plus a save file (chosen)** | No accounts, no permissions, no backend, easy to hand over. Needs the backup habit. |
+| A file only, nothing saved between sessions | Too easy to forget to save. Used as the backup, not as the main store. |
+| A small encrypted store the developer runs | Dropped: the developer would run a service, against the no-backend goal. |
+
+**How a student sees their card (options we weighed):** a link that carries the data (chosen), a picture of the card sent in Zalo, a ready-made text reply (planned as the Copy reply button), or a live page that needs a shared place (dropped for now). The cost of the chosen way: students see the last card she sent, not live data.
 
 **Who is in a session:** every active fixed student whose weekly days include that weekday, whose start date has passed, who is not on a break, minus those with a `skip` for that date, plus those with a `makeup` or `join` for that date.
 
@@ -301,134 +363,162 @@ Free-plan limits change, so check the current ones before committing to anything
 | Risk | What we do |
 |---|---|
 | **The coach does not want to use it.** This is the biggest risk, and she has not been asked yet. | Step 0: show her the demo and the rules page before building more. The admin page does her daily jobs (courts to book, who paid) so it saves her time, not adds work. |
-| Students keep messaging the coach instead of using the site. | The coach shares each student's link in the class group chat. The card is simple and Vietnamese by default. |
-| Google's script is slow, or the browser blocks the call. | Step 2 proves a call from `github.io` works on iPhone, Android and inside a chat app's browser. The card shows a saved copy when the script is down. |
-| Someone edits the Sheet by hand and breaks a row. | The tabs are protected and the admin page does all the editing. |
+| Too many requests land on the coach, and each one now also means sending a fresh card. She becomes the bottleneck. (A rough guess for 100 students is 5 to 10 requests a day. Not measured.) | The Ask the coach button writes a complete, standard message, her calendar tools take about 3 taps per request, and **Copy reply** (planned) makes the answer one paste. Step 0 checks the volume with her. |
+| **She forgets to back up, or the browser clears its storage, or the phone is lost.** | The chip, the first-run backup step, Start over locked until a file exists, earlier copies, and the Home Screen tip. Test in step 2 how storage behaves on her phone. |
+| Students look at an old card. | The card shows its date and a banner after 7 days. The coach sends a fresh card with each change. If students want live data, we add a shared place later. |
+| A leaked card link cannot be taken back. | The card holds only first names and a schedule, and it goes stale. Said honestly in "Access and privacy". |
+| The link is cut short or the in-app browser (Zalo) misbehaves. | A clear "this link did not open" message. Test the card in the Zalo browser in step 2. |
+| The file format has to change later. | A version number in the file, and the app upgrades old files. |
 | The rules feel too complicated. | The class rules screen explains them in plain Vietnamese and English, with the real numbers. |
 | The coach burns out entering scores. | Scoring every 2 to 3 months, and the polygon is optional until a score exists. |
 
 ## Build order
 0. **Show the coach.** One page: the six rules, the demo, and the open questions below. *Done when she says yes and has answered the questions that are hers.* No code.
-1. **Student card with fake data.** Polygon, bills, calendar (read-only), language toggle (Vietnamese first), class rules screen. *Done when it looks right on a phone and in a chat app's built-in browser, and the coach has seen it.*
-2. **Sheet and script, read-only.** Create the tabs, a script that returns one student's card by key, and the admin password login. Test with 100 fake students and 3 months of rows, and check the speed. The Sheet also gets a small menu ("Birdie Crew") with **Add student** (makes the secret key, payment code and link) and **Reset link**, so the coach can run everything from the Sheet alone before the admin page exists, or if she prefers it. *Done when the page shows real Sheet data from `github.io`, a wrong key shows nothing, a wrong admin password is refused, and a student added from the Sheet menu can open their card.*
-3. **Skip and make-up with all the rules.** Seat count, notice lock, credit, the 3-make-up cap, and the unpaid lock. *Done when every example in the step 3 test list passes.*
-4. **Admin page.** Click and click, phone first. Next 14 days with courts to book, students and links, payments with worked-out amounts, scores, breaks, cancel a session, the reminder list, timetable and seats, videos and settings. *Done when the coach can run a normal week without opening the Sheet.*
-5. **Flexible students and planned breaks.** Join or leave sessions, the break form.
-6. **Pay now page.** The coach's own QR image (she already has one), with the amount and the short payment code shown next to it to type into the transfer note. The QR image is kept in the private Sheet or Drive and handed out by the script, not committed to the repo. Late banner, and the reduced amount after a long break. Later, if she shares the bank and account number, the QR can be made in the browser with the amount and code already filled in.
-7. **Videos.**
+1. **Mockups reviewed.** Click-through pages with made-up data (`mockups/`): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
+2. **Prove the risky parts on real phones.** One afternoon. (a) Save file and Open a file through the share sheet on her phone. (b) Storage survives a week, with and without the page on the Home Screen. (c) A card link opens in the Zalo in-app browser, and compression works there. (d) The security policy really blocks network calls. *Done when all four work on her phone, or we know the fallback.*
+3. **The rules and storage as real code, with tests.** Port the rules engine and the storage layer from the mockups. *Done when every example in the step 3 test list passes, the random-sequence test (`mockups/tests/rules-fuzz.js`) finds no broken rule, and the storage tests (`mockups/tests/store-test.js`) pass.*
+4. **Admin page.** Click and click, phone first: the wizard, Next 14 days with courts to book, students, each student's calendar with lesson changes, payments with worked-out amounts, breaks, cancel a session, the reminder list, timetable and seats, settings, My data. *Done when the coach can run a normal week without anything else.*
+5. **Card page.** Read-only, Vietnamese first, opened from the link, with the "as of" line and the old-card banner. *Done when it looks right on a phone and in a chat app's built-in browser.*
+6. **Send card and Copy reply.** The message with the link after every change. Backup nudges. The report.
+7. **Skills.** Scores, the polygon, and videos. (Open question: skills are the most valuable part for keeping students, so this may move earlier.)
+8. **Pay now page.** The amount and payment code with copy buttons. Late banner, and the reduced amount after a long break. Later, if she shares the bank and account number, a QR can be made in the browser with the amount and code filled in.
 
 ## Test list for step 3
-Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and the student has paid.
+Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and the student has paid. The coach records every change. "Warned" means: refused at first with a soft warning, and it succeeds with "Do it anyway" (marked rule bent). "Refused" means a hard refusal that never succeeds.
 - Skip a lesson 8 days away: allowed, 1 credit.
-- Skip a lesson 7 days away: allowed. 6 days away: refused (locked), and the lesson counts as attended.
-- Use the credit on a session 10 days away in the same month: allowed. Next month: refused.
-- Use a second credit when only one skip was made: refused.
+- Skip a lesson 7 days away: allowed. 6 days away: warned (notice).
+- Use the credit on a session 10 days away in the same month: allowed. Next month: warned (no credit). Doing it anyway makes a courtesy make-up that uses no credit.
+- Use a second credit when only one skip was made: warned (no credit), courtesy on override.
 - Four skips in a month, all with notice: all four allowed, but only the first three give a credit. The fourth gives none.
-- Undo a skip 8 days away: allowed, the credit goes away. 6 days away: refused (locked). Undo a skip whose credit is already used for a make-up: refused until that make-up is cancelled.
+- Undo a skip 8 days away: allowed, the credit goes away. 6 days away: warned. Undo a skip whose credit is already used for a make-up: refused until that make-up is cancelled.
 - Four skips (the fourth had no credit), then undo one of the first three: the fourth now gets the credit.
-- Three make-ups taken: a fourth make-up is refused even if a credit is somehow left.
-- Pick a make-up on a full session (16 seats taken): refused. After the coach sets extra seats to 1: allowed.
+- Three make-ups taken: a fourth make-up is warned (cap reached); doing it anyway is a courtesy make-up and does not count toward the cap.
+- A make-up on a full session (16 seats taken): warned (full). After the coach sets extra seats to 1: allowed with no warning. Doing it anyway on the full session shows it as over capacity.
+- A make-up on the student's own regular day (skipped or not): refused, so a student is never booked twice in one session.
+- Remove a short break whose skips already paid for a make-up: refused until that make-up is cancelled.
+- The coach cancels a session that is already cancelled: refused, so nobody gets the free credit twice.
 - A session with 9 people shows "courts to book: 3". With 8 people: 2.
-- The coach sets courts available to 5 on a session: refused (the venue has 4).
-- Move a booked make-up: counts toward `max_makeup_changes_per_month`. The fourth move: refused.
-- Skip inside the lock window by editing the page or the request: the script refuses.
-- Today is the 5th and the month is not paid: still allowed. Today is the 6th and not paid: refused.
-- A student starting on the 20th: first bill due on the 23rd, locked from the 24th. Starting on the 3rd: due on the 6th.
-- Coach marks the month paid on the 12th: the same student can skip again immediately.
+- The coach sets courts available to 5 on a session: not possible (the venue has 4).
+- Move a booked make-up: it is cancel plus add. There is no monthly limit on changes.
+- Today is the 5th and the month is not paid: no warning. Today is the 6th and not paid: every change for that student shows a "fee is late" warning.
+- A student starting on the 20th: first bill due on the 23rd, late from the 24th. Starting on the 3rd: due on the 6th.
+- Coach marks the month paid on the 12th: the late warning disappears at once.
 - The coach cancels a lesson: each affected fixed student gets 1 free credit. It does not count toward the cap of 3.
 - A cancelled-lesson credit from November can be used in December, but not in January.
-- Two students book the last seat at the same time: exactly one succeeds.
+- Ask the coach: the copied message contains the student's name, payment code and the date, in the language shown. Inside the notice window the card says "the coach may say no".
+- Every change made with "Do it anyway" is stored with a rule-bent mark listing which rules were overridden. A change made without it has none.
 
-## Test list for step 4 (access and admin)
-- Student A's key returns only A's data. There is no request that returns B's data.
-- A wrong key returns nothing.
-- Resetting a student's link makes the old key stop working at once.
-- Every admin action is refused without a valid token.
-- A wrong admin password is refused and the answer is slowed down. The right password still works right after.
-- The token stops working after 6 hours.
-- Marking a student paid in the admin page unlocks their calendar immediately.
+## Test list for step 4 (storage, cards and the admin page)
+Most of these already run in `mockups/tests/store-test.js`.
+- Saving a file and opening it again gives exactly the same data.
+- Opening the Payments screen for a month with no records does not make the file look changed (so the Back up now chip does not nag for nothing).
+- A file edited by hand is refused ("changed outside the app"). Text that is not JSON, a file from another app, a file with a newer version number, and a file with the right fingerprint but a broken shape are each refused with their own plain message.
+- A student's card contains only that student's rows: no other student's name appears anywhere in it.
+- The card link is under about 6,000 characters for a normal student, and a cut-short link gives a "this link did not open" screen.
+- A card, once opened, draws the same calendar and the same credit counts as the coach sees for that student.
+- Pasted names: bullets, numbers and commas are cleaned, repeats are dropped (accents ignored), names over 20 letters are cut and counted, and only the first 60 are used.
+- The report is a plain CSV with one row per student per month, and opens in a spreadsheet.
+- Wizard: step 3 stays locked until step 2 has a name, Next stays dimmed with its reason, the 2-day fee cannot go under the 1-day fee, the last class day cannot be switched off, the end-time list only has times after the start, and Finish stays dimmed until the file is saved or skipped on purpose.
+- Add student: Save stays dimmed with a reason for each of: no name, a name already in the class, no day chosen, a date more than a year away. A class of 60 cannot take another.
+- Start over is dimmed while there are changes that are not in a file.
 - The admin page shows courts to book for the next 14 days and flags a session over 16 people.
-- A Tuesday and Thursday student starting on 17 November (4 of 8 lessons), fee 1,000,000: bill is 500,000.
+- A Tuesday and Thursday student starting on 17 November (4 of 8 lessons), fee 1,300,000: bill is 650,000.
 - Cancelling a session 8 days away: no warning. 5 days away: the page warns about the notice rule.
 - On the 3rd the reminder list shows unpaid students. On the 6th it shows them as late. Copy message puts the text on the clipboard.
 
-## Test list for step 5
-- A flexible student joins a session 7 days away: allowed. 6 days away: refused.
-- A flexible student leaves a session: no credit is given.
+## Test list for step 5 (flexible students and breaks)
+- The coach adds a flexible student to a session 7 days away: allowed. 6 days away: warned (notice).
+- The coach removes a flexible student from a session: no credit is given.
 - A 14-day break starting 7 days from now: accepted, and the sessions in it show as "on break" with no credits earned.
 - A 10-day break: treated as normal skips, with the make-up cap.
-- A break starting 3 days from now: refused.
-- The bill is worked out by itself: 8 lessons in the month, 4 inside a long break, fee 1,000,000 gives 500,000. The coach overwrites it to 450,000: Pay now shows 450,000.
+- A break starting 3 days from now: warned. Doing it anyway saves it.
+- The bill is worked out by itself: 8 lessons in the month, 4 inside a long break, fee 1,300,000 gives 650,000. The coach overwrites it to 600,000: Pay now shows 600,000.
 - A break planned after the month is already paid: the difference shows as a credit on the next bill.
 
 ## Open questions
 Each has a current guess in brackets, so nothing blocks the start. "Coach" means it is hers to answer. They are ordered by how much they could change the design.
 
 **Needs the coach (step 0)**
-1. **Will she use an admin page plus Sheet, and keep it up?** (She has not been asked. **Recommendation, applied:** go ahead and show her the demo at step 1. Nothing is lost if she says no or "later", because the Sheet and script work on their own with a small Sheet menu, and the admin page is a separate step she can switch on when ready.)
-2. **Does she agree with the fee rule?** A student pays only for the days they study (mid-month joiners and long breaks), rounded to 1,000 dong, with a credit on the next bill instead of a refund. (**Recommendation, applied:** yes, as worked out in "What a student pays". It is flexible: `proration`, `credit_carry` and `fee_round` in Config. She can turn them off or change them, and type amounts herself.)
-3. **Flexible students:** is the rule "each session at least 7 days ahead", or "the whole week's plan sent during the week before"? And do they pay the same fee? (Each session at least 7 days ahead, with a fee set per student.)
-4. **Cancelled sessions:** is the make-up credit outside the cap of 3, and may it be used one extra month? (Yes to both.)
-5. **Reminders:** is copy-and-paste into her Zalo channel fine for version 1? Does she want automatic emails later? (Copy-and-paste now, email later.)
-- **Phone or computer** for the admin page? (Phone first. It works on a computer too.)
-6. **Typical headcount per session and how many lessons a week each student takes.** This checks that free seats exist for make-ups. (Unknown. Four players per court. The admin page will show real numbers once it runs.)
+0. **Coach-only changes (decided by the owner, to confirm with her):** students ask on Zalo and she records every skip, make-up and break. How many requests a day is that for her? Does the Ask the coach button fit how her students already write to her? (Applied: yes, with soft warnings so she can say yes to exceptions. A self-service mode for simple cases can be added later if the volume is too high.)
+1. **Is "the last card she sent" enough for students?** Or do they need a page that is always up to date? (Guess: enough. If not, a shared place is added later and the cost is a sign-in or a small service.)
+2. **Does she use one device or two?** (Guess: her phone. Two devices means moving the file between them, or the Drive upgrade.)
+3. **Is the extra step per request fine?** After recording a change she copies the reply with the fresh card. (Planned: one tap and one paste.)
+4. **Does she agree with the fee rule?** A student pays only for the days they study (mid-month joiners and long breaks), rounded to the nearest 1,000 dong, with a credit on the next bill instead of a refund. (**Applied:** yes. It is flexible: `proration` and `credit_carry` in the settings.)
+5. **Flexible students:** is the rule "each session at least 7 days ahead", or "the whole week's plan sent during the week before"? And do they pay the same fee? (Each session at least 7 days ahead, with a fee set per student.)
+6. **Cancelled sessions:** is the make-up credit outside the cap of 3, and may it be used one extra month? (Yes to both.)
+7. **Reminders:** is copy-and-paste into her Zalo channel fine for version 1? (Copy-and-paste now.)
+8. **Typical headcount per session and how many lessons a week each student takes.** (Unknown. The admin page will show real numbers once it runs.)
 
 **Needs you**
-7. **The coach's QR image,** when we reach step 6. Do not commit it to the repo. (She has shared it already.)
-8. **Bank and account number,** only if you want the QR to come with the amount filled in. (Optional.)
+9. **Skills first?** Skills are the most valuable part for keeping students and finding new ones. Should scores and the polygon come before payments and breaks? (Guess: build the order above, but keep skills small and early.)
+10. **A picture on the card.** Should students see her page picture? A card link is too short for one. (Guess: no, default shuttlecock. Alternative: a very small picture inside the link.)
+11. **The coach's QR image.** She pins it in Zalo, and keeps a copy in her file. Is that fine, or should the card show it? (Guess: pinned in Zalo.)
+12. **Hand-over model:** her own copy, or the developer's address with a support fee? (Guess: the developer's address first.)
 
-**Technical, answered by building**
-9. **Does a call from `github.io` to Google's script work in every browser students use, including the Zalo in-app browser?** (Step 2 proves it.)
-10. **Speed with 100 students.** (Step 2 measures it.)
-11. **Google sign-in for the coach** instead of a password. (Password first. Upgrade later if wanted.)
+**Technical, answered by building (step 2)**
+13. **Do the share sheet, file picker and storage work as expected on her phone, with and without the Home Screen?**
+14. **Does the card link open inside the Zalo in-app browser, and does compression work there?** (A plain fallback is built in.)
+15. **Does a security policy in the page's `<meta>` tag really block network calls on GitHub Pages?**
+16. **A Google Drive sync or a shared place** if one device or live cards turn out not to be enough. (Not in version 1.)
 
 ## Decided
-- Two pages on one address: student page and coach admin page.
-- Students open a personal secret link. No Google login for students. Another student's data is never reachable.
-- The coach logs in with an admin password checked by the script. Google sign-in is a later upgrade.
-- The bank-transfer code is a short public payment code, separate from the secret key.
-- The private Google Sheet is the only database. Up to about 100 students. It stays behind a small `store` module, so it can be swapped for Supabase later.
-- Click and click: the coach manages all student data herself in the admin page, mostly on her phone. Nobody edits the Sheet by hand.
-- Everything is called Birdie Crew (repo, plan, code). The page title shown to students is **VM Badminton**, set by the `page_title` setting in Config.
+- Two static pages on one address: the card page and the coach admin page. **No server, no database, no script in anyone's account.**
+- The coach's data is a **save file she keeps**, with an automatic working copy in her browser. The file is in the app's own format (JSON with a version and a fingerprint). She never edits it by hand.
+- The developer never sees her data, by construction. The developer builds the bike, she brings the gasoline. The developer tests on a sample class of made-up students.
+- The rules run in the admin page and are tested by a random-sequence test. They are the same code in the mockups and the real site.
+- Students get a **card link** made by the admin page, holding only their own rows. It is read-only and a snapshot, with an "as of" date. No Google login for students.
+- No admin password: the data is on her device. The admin page cannot make network calls.
+- The coach keeps **names only**: no phone, email, address or student photos.
+- The bank-transfer code is a short public payment code (like `VM042`).
+- Counting and charts come from a one-way **report** that opens in Google Sheets.
+- The first run is a 5-step wizard with gated steps. Buttons that cannot be used yet stay in place, dimmed, with a reason line, so the layout never jumps. Every control is at least 48 px tall.
+- Click and click: the coach manages all student data herself in the admin page, mostly on her phone.
+- Everything is called Birdie Crew (repo, plan, code). The page title shown to students is **VM Badminton**, set by the `page_title` setting.
 - Money is Vietnamese dong. Time zone is Vietnam (`Asia/Ho_Chi_Minh`).
-- Class timetable: Monday to Thursday 20:00 to 22:00, Saturday and Sunday 10:00 to 12:00, kept in a Timetable tab.
+- Class timetable: Monday to Thursday 20:00 to 22:00, Saturday and Sunday 10:00 to 12:00.
 - The venue has 4 courts. A session holds up to 16 seats plus 0 to 2 extra. The site tells the coach how many courts to book.
-- Flat monthly fee, paid by the end of the 5th (setting). Paid with the coach's own QR.
+- Flat monthly fee, paid by the end of the 5th (setting). Fees by days per week: 800,000 dong for 1 day, 1,300,000 for 2. Part-month bills round to the nearest 1,000 dong (a fixed rule).
 - A new student's first bill is due 3 days after their start date, or on the 5th if that is later (setting `first_bill_days`).
-- A student pays only for the days they study. A mid-month joiner is prorated. A long break reduces the fee. No cash refunds: a credit goes on the next bill. All of it can be switched off or changed in Config (`proration`, `credit_carry`, `fee_round`).
-- Go ahead without waiting for the coach's yes. The Sheet and script work alone (with a Sheet menu to add students), and the admin page is an optional step.
+- A student pays only for the days they study. A mid-month joiner is prorated. A long break reduces the fee. No cash refunds: a credit goes on the next bill. All of it can be switched off or changed in the settings (`proration`, `credit_carry`).
 - Fixed weekly schedule per student, or flexible students who pick sessions in advance.
-- Skip with notice earns a make-up credit, used in the same month. Self-service, instant.
+- **Only the coach changes lessons.** Students ask on Zalo (the card's Ask the coach button writes the message) and she records it. The card cannot change anything.
+- Skip with notice earns a make-up credit, used in the same month.
 - At most 3 make-ups per student per month (setting). More skips are allowed but give no credit.
 - Sudden absence, or a skip inside the notice window, gets no make-up.
 - A long break is 14 days or more, announced at least 7 days ahead. It gives a lower fee and no make-up credits.
 - The coach cancels sessions (usually public holidays) with the same notice rule. No refund: each affected student gets a free make-up credit.
 - 7 calendar days notice, weekends included, as a setting.
-- Reminders and announcements are copy-and-paste messages for the coach's private Zalo channel. Automatic email is a later option.
+- Reminders, announcements and cards are copy-and-paste messages for the coach's private Zalo channel. Automatic email is a later option.
 - Group classes, 4 players per court.
-- Existing bookings stay when a student is late. Only new changes are locked.
+- Existing bookings stay when a student is late. The coach gets a warning when she changes a late student's lessons, and decides case by case.
+- Rules are soft or hard. Soft rules (notice, late fee, full session, no credit, cap of 3, break notice) warn the coach and she can do it anyway; the change is marked rule bent. Hard rules (impossible or double-booking changes) are always refused. A make-up with no credit is a courtesy make-up.
 - The coach scores skills every 2 to 3 months. The polygon compares with the previous scoring.
 - Both languages (Vietnamese by default, and English), with a toggle.
-- No receipt upload. The Sheet stays private.
+- Go ahead without waiting for the coach's yes: the mockups cost her nothing, and the step 2 phone test comes before the big build.
+- No receipt upload.
 
-## Status so far (2026-11-05)
+## Status so far (2026-11-06)
 Done:
 - Name chosen: **Birdie Crew**, at `birdiecrew.github.io`.
-- GitHub account `birdiecrew` and repo `birdiecrew/birdiecrew.github.io` created. The repo is **public**. No student data lives in the repo; it stays in the private Google Sheet.
+- GitHub account `birdiecrew` and repo `birdiecrew/birdiecrew.github.io` created. The repo is **public**. No student data lives in the repo.
 - `main` is protected: changes go through a pull request, and force pushes are blocked.
 - PR #1 merged. GitHub Pages is on for `main` and the build status is "built". The placeholder page is live.
 - PR #2 merged: the plan became a build-ready spec.
-- PR #3 open: the class's real notice applied, and the Sheet as the only database.
-- Plan stress-tested: access and admin page, demand-driven courts, separate payment code, and a risk table added.
-- The coach's answers applied: fee proration, long breaks, cancelled sessions, Zalo reminders, her own QR, dong and Vietnam time, and the VM Badminton page title (this change).
+- PR #3 open: the class's real notice applied.
+- The coach's answers applied: fee proration, long breaks, cancelled sessions, Zalo reminders, her own QR, dong and Vietnam time, and the VM Badminton page title.
+- Click-through HTML mockups of both pages (`mockups/`) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`mockups/tests/rules-fuzz.js`).
+- Changed to coach-only lesson changes, with soft and hard rules and fee tiers by days per week.
+- **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`mockups/tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
 - Git push from this computer works over SSH.
 
 Next:
-1. Merge the open plan PR.
-2. Step 0: show the coach and get her answers.
-3. Build step 1, the student card with fake data.
+1. The developer reviews the mockups on a phone.
+2. Step 0: show the coach and get her answers (especially open questions 0 to 3).
+3. Step 2: the phone test (share sheet, storage, Zalo browser, security policy).
+4. Merge the open plan PR.
 
 Working notes:
 - Commits use `birdiecrew <lewisozera@gmail.com>`.
 - This repo pushes with its own SSH key, set in the local git config (not stored in the repo), so it does not use the key of any other GitHub account on the same computer.
 - `gh` may be signed in as another account. For this repo, run it with `GH_TOKEN="$(gh auth token --user birdiecrew)"`.
+- The mockup preview server (`.claude/serve.py`, port 8765) is local only and not committed.

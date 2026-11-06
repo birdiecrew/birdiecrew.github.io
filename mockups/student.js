@@ -1,11 +1,13 @@
-/* Student card mockup. Everything here is fake data in memory; the rules come from mock-core.js. */
+/* Student card mockup. The card is a snapshot: the page draws it from the link the coach sent (store.js), with no server. Without a link it shows a made-up demo student. */
 (function () {
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
   var cfg = BC.config;
-  var S = { sid: BC.byName('Lan').id, lang: 'vi', month: BC.ym(BC.today), down: false, moveFrom: null, legend: false };
+  var S = { sid: BC.byName('Lan').id, lang: 'vi', month: BC.ym(BC.today), legend: false, card: false };
   try { var sl = localStorage.getItem('bc_lang'); if (sl === 'en' || sl === 'vi') S.lang = sl; } catch (e) { /* ignore */ }
   BC.lang = S.lang;
+  /* the student cannot see other people's bookings, so a day is simply "open" or not */
+  function info(s, iso) { var i = BC.dayInfo(s, iso); if (i.kind === 'full') i.kind = 'free'; return i; }
 
   function t(k, v) {
     var d = STR[S.lang][k]; if (d == null) d = STR.en[k]; if (d == null) return k;
@@ -29,45 +31,19 @@
     }).join(', ');
   }
 
-  /* what is on a given day for this student */
-  function info(s, iso) {
-    var ses = BC.session(iso);
-    var i = { iso: iso, ses: ses, past: iso < BC.today, locked: BC.diff(BC.today, iso) < noticeN(s), kind: 'off' };
-    if (!ses.isClass) return i;
-    if (ses.cancelled) { i.kind = 'cancelled'; return i; }
-    if (s.type === 'fixed') {
-      var mk = BC.rows(s.id, 'makeup', function (c) { return c.date === iso; })[0];
-      if (mk) { i.kind = 'makeup'; i.row = mk; return i; }
-      if (BC.isRegular(s, iso)) {
-        if (BC.inLongBreak(s.id, iso)) i.kind = 'break';
-        else { var sk = BC.skipRow(s.id, iso); if (sk) { i.kind = 'skipped'; i.row = sk; } else i.kind = 'mine'; }
-        return i;
-      }
-    } else {
-      var jn = BC.rows(s.id, 'join', function (c) { return c.date === iso; })[0];
-      if (jn) { i.kind = 'join'; i.row = jn; return i; }
-    }
-    if (BC.inAnyBreak(s.id, iso)) { i.kind = 'break'; return i; }
-    i.kind = ses.free > 0 ? 'free' : 'full';
-    return i;
-  }
-
-  function reasonText(r) {
-    var n = r === 'capReached' ? cfg.max_makeups_per_month : (r === 'notice' ? noticeN(me()) : cfg.advance_days);
-    var key = 'r_' + r;
-    return t(STR[S.lang][key] != null || STR.en[key] != null ? key : 'r_generic', { n: n });
-  }
-
   /* ---------- sections ---------- */
   function header() {
     var s = me();
-    return '<header class="hdr"><div class="row between"><div class="row"><div class="logo" aria-hidden="true">VM</div><div><h1>' + h(cfg.page_title) + '</h1><div class="hi">' + t('hi', { name: h(s.name) }) + '</div></div></div>' +
-      '<div class="row" style="gap:8px">' + UI.themeBtn() + '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div></header>';
+    return '<header class="hdr"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' +
+      '<div class="row" style="gap:8px">' + UI.themeBtn() + '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
+      '<div class="me"><div class="hi">' + t('hi', { name: h(s.name) }) + '</div><div class="asof">' + t('asOf', { date: BC.fmtDay(asOf(), S.lang) }) + '</div></div></header>';
   }
+  function asOf() { return (BC.meta && BC.meta.asOf) || BC.today; }
 
   function banners() {
     var s = me(), ymNow = BC.ym(BC.today), out = '';
-    if (S.down) out += '<div class="banner warn" role="status">' + icon('refresh') + '<div>' + t('down', { when: BC.fmtDay('2026-11-05', S.lang) + ', 20:41' }) + '</div></div>';
+    var age = BC.diff(asOf(), BC.today);
+    if (age >= 7) out += '<div class="banner warn" role="status">' + icon('refresh') + '<div>' + t('stale', { n: age }) + '</div></div>';
     if (BC.isLate(s.id)) {
       out += '<div class="banner bad" role="alert">' + icon('lock') + '<div><b>' + t('lateTitle', { month: BC.monthOnly(ymNow, S.lang) }) + '</b><br>' + t('lateBody') + '<br><button class="btn danger sm" data-act="pay" style="background:#fff3">' + t('payNow') + '</button></div></div>';
     } else if (!BC.payRec(s.id, ymNow).paid && ymNow >= BC.ym(s.start)) {
@@ -80,13 +56,10 @@
     var i = info(s, iso), day = Number(iso.slice(8));
     if (i.kind === 'off') return '<div class="cd off"><span class="n">' + day + '</span><span class="m"></span></div>';
     var cls = ['cd', i.kind];
-    if (i.locked || i.past) cls.push('locked');
     if (i.past) cls.push('past');
     if (iso === BC.today) cls.push('today');
-    if (S.moveFrom && i.kind === 'free' && !i.locked) cls.push('target');
     var m = '';
-    if (i.kind === 'free') m = i.ses.free; else if (i.kind === 'full') m = t('full');
-    else if (i.kind === 'makeup') m = '+'; else if (i.kind === 'join') m = '✓'; else if (i.kind === 'cancelled') m = t('off');
+    if (i.kind === 'makeup') m = '+'; else if (i.kind === 'join') m = '✓'; else if (i.kind === 'cancelled') m = t('off');
     return '<button class="' + cls.join(' ') + '" data-iso="' + iso + '" aria-label="' + h(BC.fmtLong(iso, S.lang)) + '"><span class="n">' + day + '</span><span class="m">' + m + '</span></button>';
   }
 
@@ -105,12 +78,12 @@
     } else {
       top = '<div class="banner" style="margin-bottom:12px">' + icon('info') + '<div>' + t('flexHint', { n: cfg.flex_notice_days }) + '</div></div>';
     }
-    var move = S.moveFrom ? '<div class="banner" style="margin-bottom:12px">' + icon('calendar') + '<div>' + t('moveHint', { date: BC.fmtDate(S.moveFrom, S.lang) }) + '<br><button class="btn sm" data-act="movecancel">' + t('cancel') + '</button></div></div>' : '';
-    var lg = (s.type === 'fixed' ? ['mine', 'skipped', 'makeup'] : ['join']).concat(['free', 'full', 'cancelled', 'break', 'locked']);
+    var move = '';
+    var lg = (s.type === 'fixed' ? ['mine', 'skipped', 'makeup'] : ['join']).concat(['free', 'cancelled', 'break']);
     var lgNames = { mine: t('lgMine'), join: t('lgJoin'), skipped: t('lgSkipped'), makeup: t('lgMakeup'), free: t('lgFree'), full: t('lgFull'), cancelled: t('lgCancelled'), 'break': t('lgBreak'), locked: t('lgLocked', { n: noticeN(s) }) };
     return '<section class="card" aria-labelledby="h-cal"><div class="card-h"><h2 id="h-cal">' + t('calendar') + '</h2><button class="btn ghost sm" data-legend aria-expanded="' + S.legend + '">' + t('legend') + '</button></div>' + top + move +
       '<div class="cal-nav"><button class="btn icon sm" data-nav="-1" aria-label="Previous month"' + (prevOk ? '' : ' disabled') + '>' + icon('chevL') + '</button><strong>' + BC.monthName(ym, S.lang) + '</strong><button class="btn icon sm" data-nav="1" aria-label="Next month"' + (nextOk ? '' : ' disabled') + '>' + icon('chevR') + '</button></div>' +
-      '<div class="cal-grid' + (BC.isLate(s.id) || S.down ? ' frozen' : '') + '">' + wd + blanks + cells + '</div>' +
+      '<div class="cal-grid">' + wd + blanks + cells + '</div>' +
       (S.legend ? '<div class="legend">' + lg.map(function (k) { return '<span><i class="sw ' + k + '"></i>' + lgNames[k] + '</span>'; }).join('') + '</div>' : '') + '</section>';
   }
 
@@ -158,22 +131,18 @@
   function wire(el) {
     el.addEventListener('click', function (e) {
       var c = e.target.closest('[data-copy]'); if (c) { UI.copy(c.getAttribute('data-copy'), t('copied')); return; }
-      var rm = e.target.closest('[data-rmbreak]');
-      if (rm) {
-        var rr = BC.removeBreak(S.sid, Number(rm.getAttribute('data-rmbreak')));
-        if (rr.ok) { render(); breaksSheet(); UI.toast(t('okRemove')); } else UI.toast(reasonText(rr.reason), 'bad');
-        return;
-      }
+      var q = e.target.closest('[data-ask]'); if (q) { showAsk($('#ask-area', el), q.getAttribute('data-ask'), null); return; }
+      var z = e.target.closest('[data-zalo]'); if (z && z.getAttribute('href') === '#') { e.preventDefault(); UI.toast(t('zaloMock')); return; }
       var a = e.target.closest('[data-sheet]'); if (!a || a.disabled) return;
       var k = a.getAttribute('data-sheet');
-      if (k === 'pay') paySheet(); else if (k === 'addbreak') breakSheet(); else if (k === 'video') UI.toast(t('videoToast'));
+      if (k === 'pay') paySheet(); else if (k === 'video') UI.toast(t('videoToast'));
     });
     return el;
   }
 
   function skillsSheet() {
     var arr = BC.scores[S.sid]; if (!arr || !arr.length) return;
-    var last = arr[arr.length - 1], prev = arr.length > 1 ? arr[arr.length - 2] : null, w = weakest(last.v), v = BC.videos[w.id];
+    var last = arr[arr.length - 1], prev = arr.length > 1 ? arr[arr.length - 2] : null, w = weakest(last.v), v = BC.videos[w.id] && BC.videos[w.id].url ? BC.videos[w.id] : null;
     var rows = BC.skills.map(function (k) {
       var d = prev ? last.v[k.id] - prev.v[k.id] : 0;
       return '<div><span>' + k[S.lang] + '</span><span><b>' + last.v[k.id] + '</b> ' + (d > 0 ? '<span class="up">+' + d + '</span>' : d < 0 ? '<span class="dn">' + d + '</span>' : '') + '</span></div>';
@@ -182,8 +151,8 @@
       '<p class="muted small center" style="margin-top:6px">' + t('scoredOn', { date: BC.fmtDay(last.date, S.lang) }) + ' ' + (prev ? t('prevOn', { date: BC.fmtDay(prev.date, S.lang) }) : t('firstScore')) + '</p>' +
       '<div class="skills">' + rows + '</div>' +
       '<h3 style="margin:18px 0 8px">' + t('nextFocus') + ' <span class="tag accent">' + t('weakest', { skill: w[S.lang] }) + '</span></h3>' +
-      '<button class="thumb" data-sheet="video" aria-label="' + h(v.title) + '"><span class="play">' + icon('play') + '</span><span class="len">' + v.len + '</span></button>' +
-      '<div style="margin-top:10px"><b>' + h(v.title) + '</b><div class="muted small">YouTube</div></div>', { full: true }));
+      (v ? '<button class="thumb" data-sheet="video" aria-label="' + h(v.title || w[S.lang]) + '"><span class="play">' + icon('play') + '</span>' + (v.len ? '<span class="len">' + h(v.len) + '</span>' : '') + '</button>' +
+        '<div style="margin-top:10px"><b>' + h(v.title || w[S.lang]) + '</b><div class="muted small">YouTube</div></div>' : '<p class="muted small">' + t('noVideo') + '</p>'), { full: true }));
   }
 
   function feesSheet() {
@@ -214,123 +183,70 @@
   function breaksSheet() {
     var s = me(), list = BC.breaksOf(s.id).sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var items = list.map(function (b) {
-      var long = BC.isLong(b), canRm = BC.diff(BC.today, b.from) >= cfg.advance_days && !S.down;
-      return '<div class="brk row between"><div><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + ' · ' + (long ? t('longBreak') : t('shortBreak')) + '</div></div>' +
-        (canRm ? '<button class="btn sm icon" data-rmbreak="' + b.id + '" aria-label="' + t('remove') + '">' + icon('trash', 'sm') + '</button>' : '') + '</div>';
+      var long = BC.isLong(b);
+      return '<div class="brk"><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + ' · ' + (long ? t('longBreak') : t('shortBreak')) + '</div></div>';
     }).join('<div style="height:8px"></div>');
-    var blocked = S.down || BC.isLate(s.id);
     wire(UI.sheet.open(sheetHead(t('breaks')) +
       (items || '<p class="muted">' + t('noBreaks') + '</p>') +
-      (blocked ? '' : '<button class="btn block" style="margin-top:14px" data-sheet="addbreak">' + icon('plus', 'sm') + ' ' + t('breaks') + '</button>')));
+      '<p class="muted small" style="margin-top:10px">' + t('longNote') + '</p>' +
+      '<div id="ask-area" style="margin-top:14px">' + askButton('break') + '</div>'));
   }
 
-  function btnState(i, s) {
-    var late = BC.isLate(s.id);
-    if (S.down) return { off: true, why: t('down', { when: '20:41' }) };
-    if (late) return { off: true, why: t('r_late') };
-    if (i.locked) return { off: true, why: t('r_notice', { n: noticeN(s) }) };
-    return { off: false };
+  function msgFor(kind, iso) {
+    var s = me();
+    return t('msg_' + kind, { name: s.name, code: s.code, date: iso ? BC.fmtLong(iso, S.lang) : '' });
   }
+  /* copy the message, show it, and offer Zalo. The coach decides and updates the calendar herself. */
+  function showAsk(area, kind, iso) {
+    var msg = msgFor(kind, iso);
+    UI.copy(msg, t('copiedAsk'));
+    area.innerHTML = '<div class="msgbox">' + h(msg) + '</div>' +
+      '<a class="btn primary block" style="margin-top:10px" data-zalo href="' + (cfg.coach_zalo ? 'https://zalo.me/' + h(cfg.coach_zalo) : '#') + '" target="_blank" rel="noopener">' + t('openZalo') + '</a>' +
+      '<p class="muted small" style="margin-top:8px">' + t('askNote') + '</p>';
+  }
+  function askButton(kind) { return '<button class="btn primary block" data-ask="' + kind + '">' + t('ask_' + kind) + '</button>'; }
 
   function dayHtml(i) {
-    var s = me(), ses = i.ses, iso = i.iso, ym = BC.ym(iso), body = '', acts = '', st = btnState(i, s);
+    var s = me(), ses = i.ses, iso = i.iso, ym = BC.ym(iso), body = '', ask = '';
     var head = sheetHead(BC.fmtLong(iso, S.lang), ses.start ? ses.start + '–' + ses.end : t('statusNone'));
     var status = function (txt, cls) { return '<div class="banner ' + (cls || '') + '">' + txt + '</div>'; };
-    var seats = ses.isClass && !ses.cancelled ? '<p class="muted small" style="margin-top:10px">' + icon('seat', 'sm') + ' ' + t('seatsFree', { free: ses.free, total: ses.seats }) + '</p>' : '';
-    var disabled = function (label, act, off) { return '<button class="btn block ' + (off ? '' : 'primary') + '" data-act="' + act + '"' + (off ? ' disabled' : '') + '>' + label + '</button>'; };
     var why = function (txt) { return '<p class="muted small" style="margin-top:8px">' + txt + '</p>'; };
-
     switch (i.kind) {
-      case 'mine': {
-        body = status(t('statusMine'), 'ok'); seats = '';
-        if (i.past) { body += why(t('pastNote')); break; }
-        var earned = BC.rows(s.id, 'skip', function (c) { return c.credit && BC.ym(c.date) === ym; }).length;
-        var gain = earned < cfg.max_makeups_per_month;
-        acts = disabled(t('btnSkip'), 'skip', st.off) + (st.off ? why((i.locked ? t('lockedNote', { n: noticeN(s) }) : st.why)) : why(gain ? t('skipGain', { month: BC.monthOnly(ym, S.lang) }) : t('skipNoGain', { n: cfg.max_makeups_per_month })));
-        break;
-      }
+      case 'mine': body = status(t('statusMine'), 'ok'); ask = 'skip'; break;
       case 'skipped':
-        seats = ''; body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month }));
-        if (i.past) break;
-        /* the undo button exists only for skips the student made themselves */
-        if (i.row.breakId) { body += why(t('r_fromBreak')); break; }
-        acts = disabled(t('btnUnskip'), 'unskip', st.off).replace('primary', '') + (st.off ? why(i.locked ? t('lockedNote', { n: noticeN(s) }) : st.why) : '');
-        break;
-      case 'makeup': {
-        var free = i.row.source === 'cancel';
-        body = status(free ? t('statusMakeupFree') : t('statusMakeup'), 'ok');
-        if (i.past) { body += why(t('pastNote')); break; }
-        var left = BC.changesLeft(s.id);
-        acts = '<div class="stack-s">' + disabled(t('btnMove'), 'move', st.off).replace('primary', '') + disabled(t('btnCancelMk'), 'cancelmk', st.off).replace('primary', '') + '</div>' +
-          (st.off ? why(i.locked ? t('lockedNote', { n: noticeN(s) }) : st.why) : '') +
-          why(t('changesLeft', { n: left === Infinity ? t('unlimited') : left, max: cfg.max_makeup_changes_per_month || t('unlimited') }));
-        break;
-      }
-      case 'join':
-        body = status(t('statusJoin'), 'ok');
-        if (i.past) { body += why(t('pastNote')); break; }
-        acts = disabled(t('btnLeave'), 'leave', st.off).replace('primary', '') + (st.off ? why(i.locked ? t('r_notice', { n: cfg.flex_notice_days }) : st.why) : '');
-        break;
-      case 'free': {
-        body = status(t('statusFree'), 'info') + seats;
-        if (i.past) { body = status(t('statusPast')); seats = ''; break; }
-        if (s.type === 'fixed') {
-          var pick = BC.pickCredit(s.id, ym), off = st.off || !!pick.reason;
-          acts = disabled(t('btnMakeup'), 'makeup', off) + why(st.off ? st.why : pick.reason ? reasonText(pick.reason) : (pick.src === 'cancel' ? t('usesFree') : t('usesCredit')));
-        } else {
-          acts = disabled(t('btnJoin'), 'join', st.off) + (st.off ? why(st.why) : '');
-        }
-        seats = '';
-        break;
-      }
-      case 'full':
-        body = status(t('statusFull'), 'warn') + seats; seats = '';
-        if (i.past) body = status(t('statusPast'));
-        break;
+        body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month }));
+        ask = i.row.breakId ? '' : 'unskip'; break;
+      case 'makeup': body = status(i.row.source === 'cancel' ? t('statusMakeupFree') : t('statusMakeup'), 'ok'); ask = 'changemk'; break;
+      case 'join': body = status(t('statusJoin'), 'ok'); ask = 'leave'; break;
+      case 'free': body = status(t('statusFree')); ask = s.type === 'fixed' ? 'makeup' : 'join'; break;
       case 'cancelled': {
         var got = BC.rows(s.id, 'cancel_credit', function (c) { return c.date === iso; }).length;
         body = status(t('statusCancelled'), 'bad') + (ses.ov.note ? why(h(ses.ov.note)) : '') + (got ? status(icon('check') + ' ' + t('gotFree'), 'ok') : '');
         break;
       }
-      case 'break':
-        body = status(t('statusBreak'), 'info'); break;
-      default:
-        body = status(t('statusNone'));
+      case 'break': body = status(t('statusBreak')); break;
+      default: body = status(t('statusNone'));
     }
-    return head + body + seats + '<div id="day-err"></div><div style="margin-top:14px">' + acts + '</div>';
+    if (i.past) { ask = ''; if (i.kind === 'free') body = status(t('statusPast')); else body += why(t('pastNote')); }
+    var acts = '';
+    if (ask) acts = (i.locked ? why(t('noticeNote', { n: i.notice })) : '') + '<div id="ask-area" style="margin-top:12px">' + askButton(ask) + '</div>';
+    return head + body + acts;
   }
 
   function openDay(iso) {
     var s = me(), i = info(s, iso);
     var el = UI.sheet.open(dayHtml(i));
     el.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
-      doAct(b.getAttribute('data-act'), iso);
+      var b = e.target.closest('[data-ask]'); if (b) { showAsk($('#ask-area', el), b.getAttribute('data-ask'), iso); return; }
+      var z = e.target.closest('[data-zalo]'); if (z && z.getAttribute('href') === '#') { e.preventDefault(); UI.toast(t('zaloMock')); }
     });
-  }
-
-  function doAct(act, iso) {
-    var r, ok = '';
-    if (act === 'move') { UI.sheet.close(); S.moveFrom = iso; render(); return; }
-    if (act === 'skip') { r = BC.skip(S.sid, iso); ok = r.ok ? (r.credit ? t('okSkip') : t('okSkipNo')) : ''; }
-    else if (act === 'makeup') { r = BC.makeup(S.sid, iso); ok = t('okMakeup'); }
-    else if (act === 'join') { r = BC.join(S.sid, iso); ok = t('okJoin'); }
-    else if (act === 'unskip') { r = BC.unskip(S.sid, iso); ok = t('okUnskip'); }
-    else if (act === 'leave') { r = BC.leave(S.sid, iso); ok = t('okLeave'); }
-    else if (act === 'cancelmk') { r = BC.cancelMakeup(S.sid, iso); ok = t('okCancelMk'); }
-    if (!r) return;
-    if (!r.ok) {
-      var box = $('#day-err'); if (box) box.innerHTML = '<div class="banner bad" style="margin-top:12px" role="alert">' + icon('ban') + '<div>' + reasonText(r.reason) + '</div></div>';
-      return;
-    }
-    UI.sheet.close(); render(); UI.toast(ok);
   }
 
   function paySheet() {
     var s = me(), ym = BC.ym(BC.today), b = billInfo(s, ym);
     var html = sheetHead(t('payTitle', { month: BC.monthOnly(ym, S.lang) })) +
       (BC.isLate(s.id) ? '<div class="banner bad" style="margin-bottom:12px">' + icon('lock') + '<div>' + t('lateBody') + '</div></div>' : '') +
-      '<p class="center muted small" style="margin-bottom:8px">' + t('scanQR') + '</p><div class="qr-box">' + BC.fakeQR(s.id) + '</div><p class="center muted tiny" style="margin-bottom:12px">' + t('demoQR') + '</p>' +
+      '<div class="banner" style="margin-bottom:12px">' + icon('wallet') + '<div>' + t('scanQR') + '</div></div>' +
       '<div class="kv"><span class="muted">' + t('amount') + '</span><span class="row"><span class="v">' + money(b.amount) + '</span><button class="btn sm icon" data-copy="' + b.amount + '" aria-label="' + t('copy') + '">' + icon('copy', 'sm') + '</button></span></div>' +
       '<div class="kv"><span class="muted">' + t('note') + '</span><span class="row"><span class="code">' + h(s.code) + '</span><button class="btn sm icon" data-copy="' + h(s.code) + '" aria-label="' + t('copy') + '">' + icon('copy', 'sm') + '</button></span></div>' +
       '<p class="muted small" style="margin-top:12px">' + t('payInfo') + '</p>';
@@ -351,7 +267,7 @@
 
   function welcomeSheet() {
     var build = function () {
-      return '<div class="center stack"><div class="logo" style="margin:6px auto;width:52px;height:52px;font-size:1.2rem">VM</div><h2>' + t('welcome', { title: h(cfg.page_title) }) + '</h2>' +
+      return '<div class="center stack"><div style="margin:6px auto">' + UI.logo(56) + '</div><h2>' + t('welcome', { title: h(cfg.page_title) }) + '</h2>' +
         '<p class="muted small">' + t('pickLang') + '</p><div class="row"><button class="chip langbtn grow" data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">Tiếng Việt</button><button class="chip langbtn grow" data-lang="en" aria-pressed="' + (S.lang === 'en') + '">English</button></div>' +
         '<p class="muted small">' + t('welcomeBody') + '</p></div><div style="text-align:left;margin-top:10px">' + sheetHead(t('rules')) + rulesList() + '</div>' +
         '<button class="btn primary block" style="margin-top:16px" data-close>' + t('gotIt') + '</button>';
@@ -364,42 +280,6 @@
     });
   }
 
-  function breakSheet() {
-    var s = me(), min = BC.addDays(BC.today, cfg.advance_days);
-    var html = sheetHead(t('breaks')) +
-      '<p class="muted small" style="margin-bottom:12px">' + t('longNote') + '</p>' +
-      '<div class="stack"><label class="field"><span class="lbl">' + t('from') + '</span><input class="inp" type="date" id="b-from" min="' + min + '" value="' + BC.addDays(min, 7) + '"><span class="hint">' + t('noticeHint', { date: BC.fmtDate(min, S.lang), n: cfg.advance_days }) + '</span></label>' +
-      '<label class="field"><span class="lbl">' + t('to') + '</span><input class="inp" type="date" id="b-to" min="' + min + '" value="' + BC.addDays(min, 20) + '"></label>' +
-      '<div id="b-prev"></div><div id="b-err"></div><button class="btn primary block" id="b-save">' + t('saveBreak') + '</button></div>';
-    var el = UI.sheet.open(html);
-    var f = $('#b-from', el), to = $('#b-to', el), prev = $('#b-prev', el);
-    var update = function () {
-      var a = f.value, b = to.value; if (!a || !b) { prev.innerHTML = ''; return; }
-      if (b < a) { prev.innerHTML = '<div class="banner bad">' + t('r_dateOrder') + '</div>'; return; }
-      var len = BC.diff(a, b) + 1, long = len >= cfg.long_break_days, out = '<div class="row wrap"><span class="tag">' + t('nDays', { n: len }) + '</span><span class="tag ' + (long ? 'info' : '') + '">' + (long ? t('longBreak') : t('shortBreak')) + '</span></div>';
-      if (BC.diff(BC.today, a) < cfg.advance_days) out += '<div class="banner bad" style="margin-top:8px">' + t('r_noticeBreak', { n: cfg.advance_days }) + '</div>';
-      if (long) {
-        out += '<p class="small" style="margin-top:8px">' + t('longNote') + '</p>';
-        var tmp = { id: -1, student: s.id, from: a, to: b }; BC.breaks.push(tmp);
-        for (var ym = BC.ym(a); ym <= BC.ym(b); ym = BC.addMonths(ym, 1)) {
-          var calc = BC.calcAmount(s, ym), rec = BC.payRec(s.id, ym);
-          out += '<div class="kv"><span>' + t('newFee', { month: BC.monthOnly(ym, S.lang), amount: '' }).replace(/:?\s*$/, '') + '</span><b>' + money(calc) + '</b></div>';
-          if (rec.paid && rec.amountPaid > calc && cfg.credit_carry) out += '<p class="muted small">' + t('creditNext', { amount: money(rec.amountPaid - calc) }) + '</p>';
-        }
-        BC.breaks.pop();
-      } else {
-        out += '<p class="small" style="margin-top:8px">' + t('shortNote', { n: cfg.max_makeups_per_month }) + '</p>';
-      }
-      prev.innerHTML = out;
-    };
-    f.addEventListener('input', update); to.addEventListener('input', update); update();
-    $('#b-save', el).addEventListener('click', function () {
-      var r = BC.addBreak(S.sid, f.value, to.value);
-      if (!r.ok) { $('#b-err', el).innerHTML = '<div class="banner bad" style="margin-bottom:12px">' + reasonText(r.reason) + '</div>'; return; }
-      UI.sheet.close(); render(); UI.toast(t('okBreak'));
-    });
-  }
-
   /* ---------- events ---------- */
   function setLang(l) { S.lang = l; BC.lang = l; try { localStorage.setItem('bc_lang', l); } catch (e) { /* ignore */ } render(); }
 
@@ -407,55 +287,65 @@
     var el;
     if ((el = e.target.closest('[data-lang]'))) { setLang(el.getAttribute('data-lang')); return; }
     if ((el = e.target.closest('[data-nav]'))) { S.month = BC.addMonths(S.month, Number(el.getAttribute('data-nav'))); render(); return; }
-    if ((el = e.target.closest('[data-iso]'))) {
-      var iso = el.getAttribute('data-iso');
-      if (S.moveFrom) {
-        var r = BC.moveMakeup(S.sid, S.moveFrom, iso);
-        if (r.ok) { S.moveFrom = null; render(); UI.toast(t('okMove')); }
-        else UI.toast(reasonText(r.reason), 'bad');
-        return;
-      }
-      openDay(iso); return;
-    }
+    if ((el = e.target.closest('[data-iso]'))) { openDay(el.getAttribute('data-iso')); return; }
     if ((el = e.target.closest('[data-legend]'))) { S.legend = !S.legend; render(); return; }
     if ((el = e.target.closest('[data-act]'))) {
       var a = el.getAttribute('data-act');
       if (a === 'pay') paySheet(); else if (a === 'rules') rulesSheet(); else if (a === 'skills') skillsSheet(); else if (a === 'fees') feesSheet(); else if (a === 'breaks') breaksSheet();
-      else if (a === 'movecancel') { S.moveFrom = null; render(); }
     }
   });
 
   /* ---------- mockup-only controls ---------- */
   var panel = UI.mockPanel(
     '<h3>Mock controls</h3><div class="note">Only in the mockup. They jump between the situations a real student can be in.</div>' +
-    '<label>Who is looking</label><select id="m-who"><option value="Lan">Lan: fixed Tue/Thu, has scores</option><option value="Tuấn">Tuấn: flexible schedule</option><option value="Hà">Hà: new student, starts 17 Nov, no scores</option></select>' +
+    (S.card ? '<label>Whose card</label><div class="note">The card from the link you opened. On the coach page: Students, open one, Send card.</div>' :
+      '<label>Who is looking</label><select id="m-who"><option value="Lan">Lan: fixed Tue/Thu, has scores</option><option value="Tuấn">Tuấn: flexible schedule</option><option value="Hà">Hà: new student, starts 17 Nov, no scores</option></select>') +
     '<label>Pretend today is</label><div class="seg full" id="m-today"><button data-v="2026-11-03">3 Nov</button><button data-v="2026-11-05">5 Nov</button><button data-v="2026-11-06">6 Nov</button><button data-v="2026-11-12">12 Nov</button></div>' +
     '<label>This month\'s fee</label><div class="seg full" id="m-paid"><button data-v="1">Paid</button><button data-v="0">Unpaid</button></div>' +
-    '<label>Server</label><div class="seg full" id="m-down"><button data-v="0">Online</button><button data-v="1">Down</button></div>' +
     '<label>Screens</label><button class="mb" id="m-welcome">Show the first-open welcome</button>' +
-    '<label>Data</label><button class="mb" id="m-reset">Reset all fake data</button>'
+    (S.card ? '<label>Card</label><button class="mb" id="m-demo">Forget this card and show the demo student</button>' : '<label>Data</label><button class="mb" id="m-reset">Reset all fake data</button>')
   );
   function syncPanel() {
-    var s = me(), ym = BC.ym(BC.today);
-    $('#m-who', panel).value = s.name;
+    var s = me(), ym = BC.ym(BC.today), who = $('#m-who', panel);
+    if (who) who.value = s.name;
     $$('#m-today button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === BC.today)); });
     $$('#m-paid button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-v') === '1') === BC.payRec(s.id, ym).paid)); });
-    $$('#m-down button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-v') === '1') === S.down)); });
   }
   panel.addEventListener('change', function (e) {
-    if (e.target.id === 'm-who') { S.sid = BC.byName(e.target.value).id; S.moveFrom = null; render(); }
+    if (e.target.id === 'm-who') { S.sid = BC.byName(e.target.value).id; render(); }
   });
   panel.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
     var grp = b.parentElement && b.parentElement.id, v = b.getAttribute('data-v');
     if (grp === 'm-today') { BC.today = v; S.month = BC.ym(v); render(); }
     else if (grp === 'm-paid') { BC.setPaid(S.sid, BC.ym(BC.today), v === '1'); render(); }
-    else if (grp === 'm-down') { S.down = v === '1'; render(); }
     else if (b.id === 'm-welcome') { panel.classList.add('hide'); welcomeSheet(); }
-    else if (b.id === 'm-reset') { var who = me().name; BC.seed(); cfg = BC.config; S.sid = BC.byName(who).id; S.month = BC.ym(BC.today); S.moveFrom = null; S.down = false; render(); UI.toast('Reset'); }
+    else if (b.id === 'm-demo') { try { localStorage.setItem('bc_card', ''); } catch (er) { /* ignore */ } location.hash = ''; location.reload(); }
+    else if (b.id === 'm-reset') { var who = me().name; BC.seed(); cfg = BC.config; S.sid = BC.byName(who).id; S.month = BC.ym(BC.today); render(); UI.toast('Reset'); }
   });
 
-  render();
-  var seen = false; try { seen = !!localStorage.getItem('bc_seen'); } catch (e) { /* ignore */ }
-  if (!seen) welcomeSheet();
+  function bootCard(code, remember) {
+    return BC.cardDecode(code).then(function (card) {
+      if (!card) return false;
+      S.sid = BC.hydrate(card); S.card = true; S.month = BC.ym(BC.today);
+      var stored = null; try { stored = localStorage.getItem('bc_lang'); } catch (e) { /* ignore */ }
+      if (stored !== 'en' && stored !== 'vi') { S.lang = card.cfg.default_lang === 'en' ? 'en' : 'vi'; BC.lang = S.lang; }
+      cfg = BC.config;
+      if (remember) { try { localStorage.setItem('bc_card', code); } catch (e) { /* ignore */ } }
+      return true;
+    });
+  }
+  function badLink() {
+    app.innerHTML = '<div style="padding:60px 0 0;text-align:center"><div style="margin:0 auto 12px;width:52px">' + UI.logo(52) + '</div><h1 style="font-size:1.2rem">' + t('badTitle') + '</h1><p class="muted" style="margin-top:8px">' + t('badBody') + '</p></div>';
+  }
+  function start() {
+    render();
+    var seen = false; try { seen = !!localStorage.getItem('bc_seen'); } catch (e) { /* ignore */ }
+    if (!seen) welcomeSheet();
+  }
+  var m = /^#c=(.+)$/.exec(location.hash), saved = null;
+  try { saved = localStorage.getItem('bc_card'); } catch (e) { /* ignore */ }
+  if (m) bootCard(m[1], true).then(function (ok) { if (ok) start(); else badLink(); });
+  else if (saved) bootCard(saved, false).then(function () { start(); });
+  else start();
 })();

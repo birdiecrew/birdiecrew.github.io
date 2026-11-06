@@ -119,7 +119,7 @@
   UI.mockPanel = function (html, opts) {
     opts = opts || {};
     var tag = document.createElement('div'); tag.className = 'mock-tag';
-    tag.textContent = 'MOCKUP: fake data, nothing is saved. The dark controls are for reviewing only.';
+    tag.textContent = 'MOCKUP: made-up data, kept in this browser only. The dark controls are for reviewing.';
     document.body.appendChild(tag); document.body.classList.add('has-mocktag');
     var fab = document.createElement('button'); fab.className = 'mock-fab' + (opts.up ? ' up' : ''); fab.textContent = 'Mock controls';
     var panel = document.createElement('div'); panel.className = 'mock-panel hide' + (opts.up ? ' up' : '');
@@ -146,6 +146,50 @@
     UI.theme.set(UI.theme.get() === 'dark' ? 'light' : 'dark');
     UI.$$('[data-theme-cycle]').forEach(function (x) { x.outerHTML = UI.themeBtn(); });
   });
+
+  /* pictures: the page logo and each student's photo.
+     The mockup keeps them in this browser's localStorage so both pages can show them.
+     The real site keeps small JPEGs in the private Sheet. */
+  UI.pics = {
+    get: function (k) { try { return localStorage.getItem('bc_pic_' + k) || ''; } catch (e) { return ''; } },
+    set: function (k, v) { try { localStorage.setItem('bc_pic_' + k, v); return true; } catch (e) { return false; } },
+    del: function (k) { try { localStorage.removeItem('bc_pic_' + k); } catch (e) { /* ignore */ } }
+  };
+  UI.logoSrc = function () { return UI.pics.get('logo') || 'logo.svg'; };
+  UI.logo = function (size) { var n = size || 36; return '<img class="logo-img" src="' + UI.logoSrc() + '" alt="" style="width:' + n + 'px;height:' + n + 'px">'; };
+  UI.applyFavicon = function () {
+    var l = document.querySelector('link[rel="icon"]');
+    if (!l) { l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); }
+    l.href = UI.logoSrc();
+  };
+  /* pick an image, crop it to a centred square, shrink it, hand back a small JPEG (data URL) */
+  UI.pickImage = function (size, done) {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var side = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = size;
+          c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+          var q = 0.85, out = c.toDataURL('image/jpeg', q);
+          while (out.length > 40000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+          done(out);
+        };
+        img.onerror = function () { UI.toast('Not a picture', 'bad'); };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(f);
+    });
+    inp.click();
+  };
+  /* a round avatar: the photo if there is one, else the first letter */
+  UI.avatarInner = function (id, name) {
+    return UI.h(String(name || '?').charAt(0).toUpperCase());   /* no student photos: fewer personal details to keep */
+  };
+  UI.applyFavicon();
 
   UI.fmtNum =function (n) { return new Intl.NumberFormat('en-US').format(n); };
 })();
