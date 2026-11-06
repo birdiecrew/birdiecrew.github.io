@@ -1,4 +1,4 @@
-/* Coach admin mockup. Made-up data, kept in this browser only (the real site keeps the coach's own save file the same way). */
+/* The coach's page. Her data is a working copy in this browser plus a save file she keeps (store.js). */
 (function () {
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
@@ -17,7 +17,8 @@
   function dt(iso) { return BC.fmtDate(iso, S.lang); }
   function ymNow() { return BC.ym(BC.today); }
   function monthWord(ym, lang) { return lang === 'vi' ? 'tháng ' + Number(ym.slice(5)) : BC.monthOnly(ym, 'en'); }
-  function cardBase() { try { return new URL('student.html', location.href).href; } catch (e) { return 'student.html'; } }
+  /* the card page is the site's front page, one folder up from the coach's page */
+  function cardBase() { try { return new URL('../', location.href).href; } catch (e) { return '../'; } }
   var app = $('#app');
   var SU = Setup.create({ t: t, h: h, icon: icon, money: money, S: S, $: $, render: function () { render(); }, toast: function (m, k) { if (m !== t('Saved')) UI.toast(m, k); } });
 
@@ -61,7 +62,8 @@
     var isSample = !!(BC.meta && BC.meta.sample), nag = bk.dirty && !isSample, lbl = isSample ? t('Sample') : t('Save');
     var chip = '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : (isSample ? 'info' : 'check')) + '</button>';
     var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
-    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + sample +
+    var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + '</div></div>' : '';
+    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + pretend + sample +
       '<div id="view">' + view() + '</div>' +
       '<nav class="nav" aria-label="Main"><div class="nav-in">' + tabs.map(function (x) {
         return '<button data-tab="' + x[0] + '" aria-label="' + t(x[2]) + '" title="' + t(x[2]) + '" ' + ((!S.sub && S.tab === x[0]) || (S.sub && x[0] === 'more') ? 'aria-current="page"' : '') + '>' + icon(x[1]) + (x[3] ? '<span class="badge ' + (x[0] === 'payments' ? 'warn' : '') + '">' + x[3] + '</span>' : '') + '</button>';
@@ -764,7 +766,6 @@
     else if (S.mode === 'wizard') app.innerHTML = SU.wizardView();
     else { app.innerHTML = shell(); BC.autosave(); }
     window.scrollTo(0, y);
-    syncPanel();
     if (focus === 'q') { var q = $('#q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
   }
   function toast(msg, kind) { if (msg === t('Saved')) return; UI.toast(msg, kind); }
@@ -835,12 +836,12 @@
         case 'startover':
           if (BC.backup().dirty) { toast(t('Save a file first, so nothing is lost.'), 'bad'); break; }
           UI.confirm({ title: t('Start over?'), body: t('This clears everything on this phone. Your saved file is not touched.'), ok: t('Clear this phone'), cancel: t('Keep it'), danger: true }).then(function (yes) {
-            if (!yes) return; BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
+            if (!yes) return; BC.wipeLocal(); BC.blank(); BC.initToday(); S.payMonth = BC.ym(BC.today); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
           });
           break;
         case 'clearsample':
           UI.confirm({ title: t('Leave the sample class?'), body: t('The made-up students are cleared from this phone.'), ok: t('Start my own class'), cancel: t('Keep playing'), danger: true }).then(function (yes) {
-            if (!yes) return; BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
+            if (!yes) return; BC.wipeLocal(); BC.blank(); BC.initToday(); S.payMonth = BC.ym(BC.today); SU.restart(); S.sub = null; S.tab = 'sessions'; render(); window.scrollTo(0, 0);
           });
           break;
         case 'score': { var q = x.split(':'); S.draft[q[0]] = Number(q[1]); render(); break; }
@@ -855,7 +856,7 @@
         case 'copycancel': UI.copy(msg('cancel', null, S.msgLang, S.cancelIso), t('Message copied. Paste it into Zalo.')); break;
         case 'docancel': {
           var iso = S.cancelIso, note = ($('#cx-note') || {}).value || '';
-          UI.confirm({ title: t('Cancel {date}?', { date: dt(iso) }), body: t('Booked students each get 1 free make-up lesson. You cannot undo this in the mockup.'), ok: t('Cancel session'), cancel: t('Keep it'), danger: true }).then(function (yes) {
+          UI.confirm({ title: t('Cancel {date}?', { date: dt(iso) }), body: t('Booked students each get 1 free make-up lesson. This cannot be undone.'), ok: t('Cancel session'), cancel: t('Keep it'), danger: true }).then(function (yes) {
             if (!yes) return; var r = BC.cancelSession(iso, note); if (!r.ok) { toast(t('This session is already cancelled.'), 'bad'); return; } S.cancelIso = null; S.reminded['canc' + iso] = false; S.sub = null; S.tab = 'remind'; render(); toast(t('Cancelled. {n} students got a free make-up.', { n: r.affected }));
           });
           break;
@@ -921,22 +922,10 @@
     else if (b === 'msg') { var m = k.split('.'); BC.messages[m[0]][m[1]] = el.value; toast(t('Saved')); }
   });
 
-  /* ---------- mockup-only controls ---------- */
-  var panel = UI.mockPanel(
-    '<h3>Mock controls</h3><div class="note">Only in the mockup. Jump between situations the coach meets.</div>' +
-    '<label>Pretend today is</label><div class="seg full" id="m-today"><button data-v="2026-11-03">3 Nov</button><button data-v="2026-11-05">5 Nov</button><button data-v="2026-11-06">6 Nov</button><button data-v="2026-11-12">12 Nov</button></div>' +
-    '<label>First run</label><button class="mb" id="m-start">Clear this browser and show the start screen</button>' +
-    '<label>Data</label><button class="mb" id="m-reset">Load the sample class again</button>', { up: true });
-  function syncPanel() { $$('#m-today button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === BC.today)); }); }
-  panel.addEventListener('click', function (e) {
-    var b = e.target.closest('button'); if (!b) return;
-    if (b.parentElement.id === 'm-today') { BC.today = b.getAttribute('data-v'); S.payMonth = BC.ym(BC.today); render(); }
-    else if (b.id === 'm-start') { BC.wipeLocal(); BC.blank(); SU.restart(); S.sub = null; S.tab = 'sessions'; panel.classList.add('hide'); render(); window.scrollTo(0, 0); }
-    else if (b.id === 'm-reset') { S.mode = 'app'; BC.seed(); cfg = BC.config; S.open = {}; S.reminded = {}; S.draft = null; S.scoreSid = null; S.cancelIso = null; S.payMonth = BC.ym(BC.today); render(); UI.toast('Reset'); }
-  });
-
   /* start: use the working copy in this browser if there is one */
   var boot = BC.restore();
+  if (boot.ok && BC.meta && BC.meta.sample) BC.today = BC.SAMPLE_DAY;   /* the sample class lives on its own day */
+  S.payMonth = BC.ym(BC.today);
   if (boot.ok && BC.meta && BC.meta.setup) S.mode = 'app';
   else {
     BC.blank(); S.mode = 'start';

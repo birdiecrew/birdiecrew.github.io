@@ -1,9 +1,9 @@
-/* Student card mockup. The card is a snapshot: the page draws it from the link the coach sent (store.js), with no server. Without a link it shows a made-up demo student. */
+/* The student's card. It is a snapshot: the page draws it from the link the coach sent (store.js), with no server. Without a link it says to ask the coach. */
 (function () {
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
   var cfg = BC.config;
-  var S = { sid: BC.byName('Lan').id, lang: 'vi', month: BC.ym(BC.today), card: false, older: null };
+  var S = { sid: 0, lang: 'vi', month: BC.ym(BC.today), card: false, older: null };
   try { var sl = localStorage.getItem('bc_lang'); if (sl === 'en' || sl === 'vi') S.lang = sl; } catch (e) { /* ignore */ }
   BC.lang = S.lang;
   /* the student cannot see other people's bookings, so a day is simply "open" or not */
@@ -110,7 +110,6 @@
     var y = window.scrollY, s = me();
     app.innerHTML = header() + banners() + calendar() + menu() + '<div class="foot">' + t('footer') + UI.SEP + h(s.code) + '</div>';
     window.scrollTo(0, y);
-    syncPanel();
   }
 
   /* ---------- sheets ---------- */
@@ -124,7 +123,7 @@
       var q = e.target.closest('[data-ask]'); if (q) { showAsk($('#ask-area', el), q.getAttribute('data-ask'), null); return; }
       var a = e.target.closest('[data-sheet]'); if (!a || a.disabled) return;
       var k = a.getAttribute('data-sheet');
-      if (k === 'pay') paySheet(); else if (k === 'video') UI.toast(t('videoToast'));
+      if (k === 'pay') paySheet(); else if (k === 'video') { var u = a.getAttribute('data-url') || ''; if (/^https?:\/\//i.test(u)) window.open(u, '_blank', 'noopener'); }
     });
     return el;
   }
@@ -134,7 +133,7 @@
     var last = arr[arr.length - 1], prev = arr.length > 1 ? arr[arr.length - 2] : null, w = weakest(last.v), v = BC.videos[w.id] && BC.videos[w.id].url ? BC.videos[w.id] : null;
     wire(UI.sheet.open(UI.pageHead(t('skills'), t('scoredOn', { date: BC.fmtDay(last.date, S.lang) })) + BC.radar(last.v, prev ? prev.v : null, S.lang) +
       '<h3 style="margin:16px 0 8px">' + t('nextFocus') + ': ' + w[S.lang] + '</h3>' +
-      (v ? '<button class="thumb" data-sheet="video" aria-label="' + h(v.title || w[S.lang]) + '"><span class="play">' + icon('play') + '</span>' + (v.len ? '<span class="len">' + h(v.len) + '</span>' : '') + '</button>' +
+      (v ? '<button class="thumb" data-sheet="video" data-url="' + h(v.url) + '" aria-label="' + h(v.title || w[S.lang]) + '"><span class="play">' + icon('play') + '</span>' + (v.len ? '<span class="len">' + h(v.len) + '</span>' : '') + '</button>' +
         (v.title ? '<div style="margin-top:10px"><b>' + h(v.title) + '</b></div>' : '') : ''), { page: true }));
   }
 
@@ -261,33 +260,6 @@
     }
   });
 
-  /* ---------- mockup-only controls ---------- */
-  var panel = UI.mockPanel(
-    '<h3>Mock controls</h3><div class="note">Only in the mockup. They jump between the situations a real student can be in.</div>' +
-    (S.card ? '<label>Whose card</label><div class="note">The card from the link you opened. On the coach page: Students, open one, Send card.</div>' :
-      '<label>Who is looking</label><select id="m-who"><option value="Lan">Lan: fixed Tue/Thu, has scores</option><option value="Tuấn">Tuấn: flexible schedule</option><option value="Hà">Hà: new student, starts 17 Nov, no scores</option></select>') +
-    '<label>Pretend today is</label><div class="seg full" id="m-today"><button data-v="2026-11-03">3 Nov</button><button data-v="2026-11-05">5 Nov</button><button data-v="2026-11-06">6 Nov</button><button data-v="2026-11-12">12 Nov</button></div>' +
-    '<label>This month\'s fee</label><div class="seg full" id="m-paid"><button data-v="1">Paid</button><button data-v="0">Unpaid</button></div>' +
-    (S.card ? '<label>Card</label><button class="mb" id="m-demo">Forget this card and show the demo student</button>' : '<label>Data</label><button class="mb" id="m-reset">Reset all fake data</button>')
-  );
-  function syncPanel() {
-    var s = me(), ym = BC.ym(BC.today), who = $('#m-who', panel);
-    if (who) who.value = s.name;
-    $$('#m-today button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === BC.today)); });
-    $$('#m-paid button', panel).forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-v') === '1') === BC.payRec(s.id, ym).paid)); });
-  }
-  panel.addEventListener('change', function (e) {
-    if (e.target.id === 'm-who') { S.sid = BC.byName(e.target.value).id; render(); }
-  });
-  panel.addEventListener('click', function (e) {
-    var b = e.target.closest('button'); if (!b) return;
-    var grp = b.parentElement && b.parentElement.id, v = b.getAttribute('data-v');
-    if (grp === 'm-today') { BC.today = v; S.month = BC.ym(v); render(); }
-    else if (grp === 'm-paid') { BC.setPaid(S.sid, BC.ym(BC.today), v === '1'); render(); }
-    else if (b.id === 'm-demo') { try { localStorage.setItem('bc_card', ''); } catch (er) { /* ignore */ } location.hash = ''; location.reload(); }
-    else if (b.id === 'm-reset') { var who = me().name; BC.seed(); cfg = BC.config; S.sid = BC.byName(who).id; S.month = BC.ym(BC.today); render(); UI.toast('Reset'); }
-  });
-
   /* open a card link. A phone keeps one card, and an older link never replaces a newer card of the same student. */
   function bootCard(code, remember) {
     var storedCode = ''; try { storedCode = localStorage.getItem('bc_card') || ''; } catch (e) { /* ignore */ }
@@ -305,6 +277,10 @@
       return true;
     });
   }
+  /* no card yet: say what to do, in a few words */
+  function noCard() {
+    app.innerHTML = '<div style="padding:60px 0 0;text-align:center"><div class="row" style="justify-content:flex-end;margin-bottom:24px">' + UI.langBtn(S.lang) + '</div><div style="margin:0 auto 12px;width:52px">' + UI.logo(52) + '</div><h1 style="font-size:1.2rem">' + h(cfg.page_title) + '</h1><p class="muted" style="margin-top:8px">' + t('noCard') + '</p></div>';
+  }
   function badLink() {
     app.innerHTML = '<div style="padding:60px 0 0;text-align:center"><div style="margin:0 auto 12px;width:52px">' + UI.logo(52) + '</div><h1 style="font-size:1.2rem">' + t('badTitle') + '</h1><p class="muted" style="margin-top:8px">' + t('badBody') + '</p></div>';
   }
@@ -312,6 +288,6 @@
   var m = /^#c=(.+)$/.exec(location.hash), saved = null;
   try { saved = localStorage.getItem('bc_card'); } catch (e) { /* ignore */ }
   if (m) bootCard(m[1], true).then(function (ok) { if (ok) start(); else badLink(); });
-  else if (saved) bootCard(saved, false).then(function () { start(); });
-  else start();
+  else if (saved) bootCard(saved, false).then(function (ok) { if (ok) start(); else noCard(); });
+  else noCard();
 })();

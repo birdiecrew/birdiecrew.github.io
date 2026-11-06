@@ -12,7 +12,7 @@
 <body>
 <b id="sum">running...</b>
 <div id="out"></div>
-<div><iframe id="f-admin" src="../admin.html"></iframe> <iframe id="f-card" src="../student.html"></iframe></div>
+<div><iframe id="f-admin" src="../admin/"></iframe> <iframe id="f-card" src="../?today=2026-11-05#c=x"></iframe></div>
 <script>
 (function () {
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
@@ -32,7 +32,7 @@
     line(!/unsafe-inline/.test((policy.match(/script-src[^;]*/) || [''])[0]) && !/unsafe-eval/.test(policy), name + ': no inline or eval scripts are allowed');
     line(!/https?:/.test(policy) && !/\*/.test(policy), name + ': the policy names no outside address');
     line(await blocked(w.fetch('https://example.com/')), name + ': fetch to another site is blocked');
-    line(await blocked(w.fetch(location.origin + '/mockups/mock.css')), name + ': even fetch to its own site is blocked (nothing is ever fetched)');
+    line(await blocked(w.fetch(location.origin + '/assets/base.css')), name + ': even fetch to its own site is blocked (nothing is ever fetched)');
     line(await blocked(new Promise(function (ok, no) { var x = new w.XMLHttpRequest(); x.open('GET', 'https://example.com/'); x.onload = ok; x.onerror = no; x.send(); })), name + ': XMLHttpRequest is blocked');
     var ws = true; try { var s = new w.WebSocket('wss://example.com/'); ws = await viaEvent(function (okf, no) { s.onopen = okf; s.onerror = no; s.onclose = no; }); } catch (e) { ws = true; }
     line(ws, name + ': WebSocket is blocked');

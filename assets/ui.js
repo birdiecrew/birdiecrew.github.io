@@ -1,7 +1,9 @@
-/* Birdie Crew mockup: small UI helpers shared by both pages (sheets, toasts, icons, copy). */
+/* Birdie Crew: small UI helpers shared by both pages (sheets, toasts, icons, copy). */
 (function () {
   'use strict';
   var UI = (window.UI = {});
+  /* the address of the assets folder, so the logo is found from both pages */
+  UI.assets = (function () { var c = document.currentScript; return c && c.src ? c.src.replace(/[^/]*$/, '') : ''; })();
 
   /* the divider between two different facts on one line. aria-hidden, so a screen reader does not read it out. */
   UI.SEP = ' <span class="sep" aria-hidden="true">|</span> ';
@@ -131,20 +133,6 @@
     });
   };
 
-  /* mockup-only floating panel */
-  UI.mockPanel = function (html, opts) {
-    opts = opts || {};
-    var tag = document.createElement('div'); tag.className = 'mock-tag';
-    tag.textContent = 'MOCKUP: made-up data, kept in this browser only. The dark controls are for reviewing.';
-    document.body.appendChild(tag); document.body.classList.add('has-mocktag');
-    var fab = document.createElement('button'); fab.className = 'mock-fab' + (opts.up ? ' up' : ''); fab.textContent = 'Mock controls';
-    var panel = document.createElement('div'); panel.className = 'mock-panel hide' + (opts.up ? ' up' : '');
-    panel.innerHTML = html;
-    document.body.appendChild(fab); document.body.appendChild(panel);
-    fab.addEventListener('click', function () { panel.classList.toggle('hide'); });
-    return panel;
-  };
-
   /* theme: System / Light / Dark, remembered in the browser */
   UI.theme = {
     get: function () { try { return localStorage.getItem('bc_theme') === 'dark' ? 'dark' : 'light'; } catch (e) { return 'light'; } },
@@ -164,14 +152,13 @@
   });
 
   /* pictures: the page logo and each student's photo.
-     The mockup keeps them in this browser's localStorage so both pages can show them.
-     The real site keeps small JPEGs in the private Sheet. */
+     Kept in this browser's localStorage (the page picture is also saved in the coach's file). */
   UI.pics = {
     get: function (k) { try { return localStorage.getItem('bc_pic_' + k) || ''; } catch (e) { return ''; } },
     set: function (k, v) { try { localStorage.setItem('bc_pic_' + k, v); return true; } catch (e) { return false; } },
     del: function (k) { try { localStorage.removeItem('bc_pic_' + k); } catch (e) { /* ignore */ } }
   };
-  UI.logoSrc = function () { return UI.pics.get('logo') || 'logo.svg'; };
+  UI.logoSrc = function () { return UI.pics.get('logo') || UI.assets + 'logo.svg'; };
   UI.logo = function (size) { var n = size || 36; return '<img class="logo-img" src="' + UI.logoSrc() + '" alt="" style="width:' + n + 'px;height:' + n + 'px">'; };
   UI.applyFavicon = function () {
     var l = document.querySelector('link[rel="icon"]');

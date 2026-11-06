@@ -1,7 +1,6 @@
 /* Coach admin: extra styles */
 .wrap-col.wide { max-width: 720px; }
 .top { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 16px 10px; margin: 0 -16px 8px; }
-body.has-mocktag .top { top: 22px; }
 .top h1 { font-size: 1.2rem; }
 .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .nav-in { max-width: 720px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
@@ -73,7 +72,6 @@ button.li:hover { background: var(--surface2); }
 .opt[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }
 .login { min-height: 80vh; display: grid; place-items: center; }
 .login .card { width: 100%; }
-.mock-hint { background: var(--surface2); color: var(--muted); border-radius: 12px; padding: 8px 12px; font-size: .8rem; }
 .qr-preview { width: 150px; border: 1px solid var(--line); border-radius: 12px; padding: 5px; background: #fff; }
 .empty { text-align: center; color: var(--muted); padding: 24px 8px; }
 .tick { color: var(--ok); font-weight: 650; }
@@ -137,12 +135,10 @@ details.card > summary::-webkit-details-marker { display: none; }
 /* on a laptop the same single column, with the icon bar moved to the top */
 @media (min-width: 900px) {
   .nav { top: 0; bottom: auto; border-top: 0; border-bottom: 1px solid var(--line); padding-bottom: 0; }
-  body.has-mocktag .nav { top: 22px; }
   .nav-in { max-width: 720px; }
   .nav button[aria-current="page"]::before { top: auto; bottom: 0; border-radius: 3px 3px 0 0; }
   .wrap-col.wide { padding-top: 60px; padding-bottom: 48px; }
   .top { top: 56px; }
-  body.has-mocktag .top { top: 78px; }
   .wrap-col.wz { padding-bottom: 200px; }
   .bar { left: 50%; right: auto; transform: translateX(-50%); width: 720px; max-width: 100%; border: 1px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0; }
 }

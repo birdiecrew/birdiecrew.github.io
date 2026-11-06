@@ -1,4 +1,4 @@
-/* Birdie Crew mockup: where the data lives.
+/* Birdie Crew: where the data lives.
    There is no server. The coach's data is one file she keeps (a "save file") plus an automatic working copy in her browser.
    Students get a card link that carries only their own rows. This file is the whole storage layer, so the real site can
    swap the browser copy for another place later without touching the rules. */
@@ -170,7 +170,7 @@
       if (Number(p[0]) === sid && p[1] >= BC.addMonths(BC.ym(BC.today), -6) && !EMPTY_PAY(BC.payments[k])) pay[k] = BC.payments[k];
     });
     Object.keys(BC.overrides).forEach(function (d) { if (BC.overrides[d].cancelled && d >= from) ov[d] = { cancelled: true, note: BC.overrides[d].note || '' }; });
-    Object.keys(BC.videos).forEach(function (k) { if (BC.videos[k].url) vids[k] = BC.videos[k]; });
+    Object.keys(BC.videos).forEach(function (k) { if (/^https?:\/\//i.test(BC.videos[k].url || '')) vids[k] = BC.videos[k]; });   /* only web links go on a card */
     return {
       v: 1, asOf: BC.today, made: Date.now(), cfg: cfg, timetable: BC.timetable, ttHistory: (BC.ttHistory || []).filter(function (x) { return x.until > from; }), overrides: ov, videos: vids,
       student: { id: s.id, name: s.name, type: s.type, days: s.days, start: s.start, fee: s.fee, active: s.active, code: s.code },

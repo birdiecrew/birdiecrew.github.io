@@ -199,7 +199,7 @@ window.Setup = (function () {
       switch (a) {
         case 'new': startErr = ''; freshW(); S.mode = 'wizard'; E.render(); window.scrollTo(0, 0); break;
         case 'open': pickFile(function (r) { if (r.ok) adopt(r); else { startErr = errText(r.reason); E.render(); } }); break;
-        case 'sample': BC.seed(); BC.autosave(); S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); 0; break;
+        case 'sample': BC.seed(); S.payMonth = BC.ym(BC.today); BC.autosave(); S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); 0; break;
         case 'go': go(Number(el.getAttribute('data-s'))); break;
         case 'next': if (VALID[W.step]()) go(W.step + 1); break;
         case 'back': if (W.step === 1) { S.mode = 'start'; E.render(); } else go(W.step - 1); break;

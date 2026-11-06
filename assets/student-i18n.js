@@ -21,7 +21,7 @@ window.STR = {
     msg_changemk: 'Hi coach, this is {name} ({code}). I need to move or cancel my make-up lesson on {date}.',
     msg_break: 'Hi coach, this is {name} ({code}). I would like to take a break from ___ to ___.',
     copiedAsk: 'Copied. Paste it in Zalo.', zaloMock: 'Mockup: set the coach\'s Zalo number in her Settings to open Zalo from here.',
-    skills: 'Skills', scoredOn: 'Scored {date}', focus: 'Focus: {skill}', nextFocus: 'Next focus', videoToast: 'The real page opens the coach\'s video link here.',
+    skills: 'Skills', scoredOn: 'Scored {date}', focus: 'Focus: {skill}', nextFocus: 'Next focus',
     fees: 'Fees', paidOn: 'Paid {date}', dueBy: 'Due {date}', lateSince: 'Late since {date}', prorated: '{a} of {b} lessons', creditLine: 'Credit -{amount}',
     payTitle: 'Pay {month}', scanQR: 'Pay with the QR in Zalo.', amount: 'Amount', note: 'Note', copy: 'Copy', copied: 'Copied',
     breaks: 'Break', longBreak: 'Long break', shortBreak: 'Short break', nDays: '{n} days',
@@ -33,7 +33,7 @@ window.STR = {
     rule5: 'To skip or take a make-up, message the coach on Zalo at least {n} days ahead. A skip she agrees to gives a make-up credit: at most {max} a month, used in the same month.',
     rule6: 'Sudden absence (inside {n} days): no make-up.',
     ruleTitles: ['Fee', 'Timetable', 'Flexible members', 'Breaks', 'Make-up lessons', 'Sudden absence'],
-    badTitle: 'Link did not open', badBody: 'Ask your coach to send your card again.',
+    noCard: 'No card yet. Ask your coach to send yours.', badTitle: 'Link did not open', badBody: 'Ask your coach to send your card again.',
     footer: 'Birdie Crew'
   },
   vi: {
@@ -57,7 +57,7 @@ window.STR = {
     msg_changemk: 'Chào HLV, tôi là {name} ({code}). Tôi xin đổi hoặc hủy buổi học bù ngày {date}.',
     msg_break: 'Chào HLV, tôi là {name} ({code}). Tôi xin báo nghỉ dài từ ngày ___ đến ngày ___.',
     copiedAsk: 'Đã sao chép. Dán vào Zalo nhé.', zaloMock: 'Bản mẫu: đặt số Zalo của HLV trong Cài đặt để mở Zalo từ đây.',
-    skills: 'Kỹ năng', scoredOn: 'Chấm ngày {date}', focus: 'Tập trung: {skill}', nextFocus: 'Nên luyện tiếp', videoToast: 'Trang thật sẽ mở link video của huấn luyện viên ở đây.',
+    skills: 'Kỹ năng', scoredOn: 'Chấm ngày {date}', focus: 'Tập trung: {skill}', nextFocus: 'Nên luyện tiếp',
     fees: 'Học phí', paidOn: 'Đã đóng {date}', dueBy: 'Hạn {date}', lateSince: 'Quá hạn từ {date}', prorated: '{a}/{b} buổi', creditLine: 'Trừ -{amount}',
     payTitle: 'Đóng học phí {month}', scanQR: 'Thanh toán bằng mã QR trong Zalo.', amount: 'Số tiền', note: 'Nội dung', copy: 'Sao chép', copied: 'Đã sao chép',
     breaks: 'Nghỉ dài', longBreak: 'Nghỉ dài', shortBreak: 'Nghỉ ngắn', nDays: '{n} ngày',
@@ -69,7 +69,7 @@ window.STR = {
     rule5: 'Muốn nghỉ hoặc học bù, nhắn HLV qua Zalo trước ít nhất {n} ngày. Buổi nghỉ được đồng ý có 1 lượt học bù: tối đa {max} lượt mỗi tháng, dùng trong cùng tháng.',
     rule6: 'Vắng đột xuất (trong vòng {n} ngày): không có học bù.',
     ruleTitles: ['Học phí', 'Lịch học', 'Học viên linh hoạt', 'Nghỉ dài', 'Học bù', 'Vắng đột xuất'],
-    badTitle: 'Không mở được link', badBody: 'Nhờ HLV gửi lại thẻ cho bạn.',
+    noCard: 'Bạn chưa có thẻ. Nhờ HLV gửi thẻ cho bạn.', badTitle: 'Không mở được link', badBody: 'Nhờ HLV gửi lại thẻ cho bạn.',
     footer: 'Birdie Crew'
   }
 };
