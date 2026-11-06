@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CSP check</title>
+<!-- Does the page's security policy really stop it sending data out?
+     It loads the real admin page and the real card page in frames, then tries every way a page can reach the network
+     FROM INSIDE those frames (so their own policy applies). Every attempt must be blocked.
+     Serve the mockups folder, open /tests/csp-check.html, and wait for "CSP CHECK: ... passed". -->
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:16px}.ok{color:#1f7a4d}.bad{color:#b73428;font-weight:700}iframe{width:300px;height:200px;border:1px solid #bbb}</style>
+</head>
+<body>
+<b id="sum">running...</b>
+<div id="out"></div>
+<div><iframe id="f-admin" src="../admin.html"></iframe> <iframe id="f-card" src="../student.html"></iframe></div>
+<script>
+(function () {
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var out = document.getElementById('out'), pass = 0, fail = 0;
+  function line(ok, text) { var d = document.createElement('div'); d.className = ok ? 'ok' : 'bad'; d.textContent = (ok ? 'ok    ' : 'FAIL  ') + text; out.appendChild(d); ok ? pass++ : fail++; }
+  function blocked(p) { return p.then(function () { return false; }, function () { return true; }); }
+  /* resolves true when the attempt is refused: a rejection, an error event, or nothing loading */
+  function viaEvent(make) { return new Promise(function (res) { var done = false, end = function (v) { if (!done) { done = true; res(v); } }; make(function () { end(false); }, function () { end(true); }); setTimeout(function () { end(true); }, 2500); }); }
+
+  async function check(name, w) {
+    var d = w.document, viol = [];
+    d.addEventListener('securitypolicyviolation', function (e) { viol.push(e.effectiveDirective); });
+    var meta = d.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    line(!!meta, name + ': the policy is in the page');
+    var policy = meta ? meta.content : '';
+    line(/connect-src 'none'/.test(policy) && /default-src 'none'/.test(policy), name + ': connections are forbidden (connect-src none)');
+    line(!/unsafe-inline/.test((policy.match(/script-src[^;]*/) || [''])[0]) && !/unsafe-eval/.test(policy), name + ': no inline or eval scripts are allowed');
+    line(!/https?:/.test(policy) && !/\*/.test(policy), name + ': the policy names no outside address');
+    line(await blocked(w.fetch('https://example.com/')), name + ': fetch to another site is blocked');
+    line(await blocked(w.fetch(location.origin + '/mockups/mock.css')), name + ': even fetch to its own site is blocked (nothing is ever fetched)');
+    line(await blocked(new Promise(function (ok, no) { var x = new w.XMLHttpRequest(); x.open('GET', 'https://example.com/'); x.onload = ok; x.onerror = no; x.send(); })), name + ': XMLHttpRequest is blocked');
+    var ws = true; try { var s = new w.WebSocket('wss://example.com/'); ws = await viaEvent(function (okf, no) { s.onopen = okf; s.onerror = no; s.onclose = no; }); } catch (e) { ws = true; }
+    line(ws, name + ': WebSocket is blocked');
+    /* sendBeacon says "queued" and is stopped afterwards, so look for the browser's report instead of the return value */
+    var cs = function () { return viol.filter(function (v) { return v === 'connect-src'; }).length; }, before = cs();
+    try { w.navigator.sendBeacon('https://example.com/', 'x'); } catch (e) { /* blocked */ } await sleep(400);
+    line(cs() > before, name + ': sendBeacon is stopped');
+    line(await viaEvent(function (okf, no) { var i = new w.Image(); i.onload = okf; i.onerror = no; i.src = 'https://example.com/x.png'; }), name + ': an image from another site does not load (no tracking pixel)');
+    line(await viaEvent(function (okf, no) { var s = d.createElement('script'); s.onload = okf; s.onerror = no; s.src = 'https://example.com/x.js'; d.head.appendChild(s); }), name + ': a script from another site does not load');
+    w.__x = 0; var s2 = d.createElement('script'); s2.textContent = 'window.__x = 1'; d.head.appendChild(s2); await sleep(100);
+    line(w.__x === 0, name + ': an injected inline script does not run');
+    var f = d.createElement('form'); f.action = 'https://example.com/'; f.method = 'post'; d.body.appendChild(f); try { f.submit(); } catch (e) { /* blocked */ } await sleep(300);
+    line(viol.indexOf('form-action') >= 0, name + ': a form cannot post out');
+    line(viol.length >= 6, name + ': the browser reported the blocked attempts (' + viol.length + ')');
+  }
+  (async function () {
+    await sleep(1500);
+    await check('coach page', document.getElementById('f-admin').contentWindow);
+    await check('card page', document.getElementById('f-card').contentWindow);
+    var s = 'CSP CHECK: ' + pass + ' passed' + (fail ? ', ' + fail + ' FAILED' : '');
+    document.getElementById('sum').textContent = s; document.title = s; window.__csp = { pass: pass, fail: fail };
+  })();
+})();
+</script>
+</body>
+</html>

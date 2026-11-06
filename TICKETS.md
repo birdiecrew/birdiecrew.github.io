@@ -21,9 +21,9 @@ Size is the work still left: **XS** under an hour, **S** half a day, **M** about
 | Epic | Done | Prototype | In progress | To do | Parked | Total |
 |---|---|---|---|---|---|---|
 | **P** Plan and prototype | 6 | 0 | 1 | 0 | 0 | 7 |
-| **A** Agree it with the coach | 0 | 0 | 0 | 5 | 0 | 5 |
-| **B** Prove the risky parts on a real phone | 0 | 0 | 0 | 10 | 0 | 10 |
-| **C** The real site (foundation) | 0 | 0 | 0 | 8 | 0 | 8 |
+| **A** Agree it with the coach | 4 | 0 | 0 | 1 | 0 | 5 |
+| **B** Prove the risky parts on a real phone | 1 | 0 | 0 | 9 | 0 | 10 |
+| **C** The real site (foundation) | 1 | 1 | 0 | 7 | 0 | 9 |
 | **D** Rules engine | 0 | 15 | 0 | 1 | 0 | 16 |
 | **E** Storage and the save file | 0 | 5 | 0 | 4 | 1 | 10 |
 | **F** Coach page: first run and frame | 0 | 9 | 0 | 0 | 0 | 9 |
@@ -32,17 +32,17 @@ Size is the work still left: **XS** under an hour, **S** half a day, **M** about
 | **J** Quality | 0 | 0 | 0 | 7 | 0 | 7 |
 | **K** Hand-over | 0 | 0 | 0 | 5 | 0 | 5 |
 | **L** Later (not version 1) | 0 | 0 | 0 | 0 | 7 | 7 |
-| **All** | **6** | **57** | **1** | **41** | **8** | **113** |
+| **All** | **12** | **58** | **1** | **35** | **8** | **114** |
 
-Counting only the product (not epic P) and leaving out the parked tickets, **57 of 98 are built as a prototype and none are shipped yet.** The prototype tickets are the ones that look finished but still need the real phone checks in epic B.
+Counting only the product (not epic P) and leaving out the parked tickets, **58 of 99 are built as a prototype and none are shipped yet.** The prototype tickets are the ones that look finished but still need the real phone checks in epic B.
 
 ## Suggested order
 
 1. **P7** merge the plan and prototype, so everything below starts from `main`.
-2. **A1** and **B1 to B9** in parallel: show her the mockups, and run the phone experiments. These two can change the plan, so nothing big should be built before they finish. **B3** needs seven days, so start it first.
-3. **A2** to **A5** with her answers, then **B10** to write down what the phones taught us.
+2. **A1** and **B1 to B8** in parallel: show her the mockups, and run the phone experiments. These can still change the plan, so nothing big should be built before they finish. **B3** needs seven days, so start it first. (A2 to A5 and B9 are already answered or tried; A1 is where she confirms the answers.)
+3. **B10** to write down what the phones taught us.
 4. **C1 to C8**, the real site and its address. Then **D16** so tests run on every push.
-5. Promote the prototype tickets in this order: **E** (storage), **F** (first run), **G** (daily jobs), **H** (cards), with **G17** (Copy reply) right after **H3**. Skills (**G13**, **G14**, **H7**) can move up if she says skills matter most (**A5**).
+5. **Skills first:** promote **E** (storage) just enough to save, then **G13**, **G14** and **H7** (scores, videos, the Skills page). After that **E**, **F** (first run), **G** (daily jobs) and **H** (cards), with **G17** (Copy reply) right after **H3**.
 6. **J** (quality) as each epic lands, then **K** (hand-over).
 
 ## P. Plan and prototype
@@ -66,10 +66,10 @@ Nothing here is code. The biggest risk in the plan is that she does not want it.
 | ID | Ticket | Size | Needs | Status | Done when |
 |---|---|---|---|---|---|
 | A1 | Show the coach the mockups on her own phone | S | P7 | **To do** | She has tapped through the wizard and a card, and said what felt wrong |
-| A2 | Ask the workload questions (requests a day, live card or not, one device or two, the extra step per request) | S | A1 | **To do** | Plan open questions 0 to 3 are answered in writing |
-| A3 | Ask the rule questions (fees, flexible students, cancelled credit, reminders, headcount) | S | A1 | **To do** | Plan open questions 4 to 8 are answered |
-| A4 | Decide the hand-over model (her own copy or the developer's address) | XS | A1 | **To do** | One sentence in the plan |
-| A5 | Decide whether skills move earlier in the build order | XS | A1 | **To do** | Build order in the plan reflects the answer |
+| A2 | Answer the workload questions (requests a day, live card or not, one device or two, the extra step per request) | S | A1 | **Done** | Answered by the owner on 2026-11-07 (all fine for now); the coach confirms in A1 |
+| A3 | Answer the rule questions (fees, flexible students, cancelled credit, reminders) | S | A1 | **Done** | Answered by the owner: they match; flexible students are rare; the coach confirms in A1 |
+| A4 | Decide the hand-over model and fee | XS | A1 | **Done** | Decided: discussed offline between the two of them |
+| A5 | Decide whether skills move earlier in the build order | XS | A1 | **Done** | Decided: skills first; the plan's build order says so |
 
 ## B. Prove the risky parts on a real phone
 
@@ -85,7 +85,7 @@ One afternoon of experiments. Each one is small and each can change the design, 
 | B6 | Compression works in the Zalo browser, and the plain fallback works when it does not | XS | B5 | **To do** | Both link kinds open |
 | B7 | Copying a message works on iPhone Safari and in the Zalo browser | XS |  | **To do** | Pasting into Zalo gives the full text |
 | B8 | The coach's Zalo number opens her chat from the card | XS |  | **To do** | Tapping Ask opens Zalo with the right person |
-| B9 | The meta Content-Security-Policy really blocks network calls on GitHub Pages | S |  | **To do** | A test fetch from the admin page is refused by the browser |
+| B9 | The meta Content-Security-Policy really blocks network calls | S |  | **Done** | Tried: `tests/csp-check.html` blocks all 28 attacks on both pages in Chrome. iPhone Safari is checked again in J4 |
 | B10 | Write the findings and fallbacks into the plan | XS | B1 to B9 | **To do** | Plan open questions 13 to 15 are closed |
 
 ## C. The real site (foundation)
@@ -98,7 +98,8 @@ Turn the mockup folder into the two real pages.
 | C2 | Remove the mock banner, the dark review controls and the "Reset" buttons | XS | C1 | **To do** | No mockup wording or controls on either page |
 | C3 | Use the real date in Vietnam time instead of the fixed mock date | S | C1 | **To do** | Tests run with a fake clock; the page shows today correctly around midnight |
 | C4 | A card page with no link and no saved card shows a short friendly screen, not the demo student | XS | C2 | **To do** | Opening `/` cold says to ask the coach for a card |
-| C5 | Add the security meta tags (policy, no referrer, no indexing) and check there are no outside requests | S | B9 | **To do** | Network tab shows only the site's own files |
+| C5 | Security meta tags (policy, no referrer, no indexing) on both pages, and no outside requests | S | B9 | **Prototype** | Tags are in the mockup pages; confirm the Network tab shows only the site's own files once live |
+| C9 | No inline scripts: the theme is applied by a small file | XS | C5 | **Done** | `theme-boot.js`; the policy allows scripts only from the site itself |
 | C6 | Show the app version in My data | XS | C1 | **To do** | Version number visible and written into saved files |
 | C7 | Home Screen install: name, icon, theme colour for the coach page | S | C1 | **To do** | Installs on both phones and opens full screen |
 | C8 | Publish from `main` and check the build status | XS | C1 | **To do** | Pages build is green after a merge |
@@ -150,7 +151,7 @@ The coach's data lives in her browser and in a file she keeps.
 | F1 | Start screen: New class, Open file, Sample | S | E3 | **Prototype** | Three buttons, one line of text |
 | F2 | Wizard step 1: class days, times, courts, fees with limits | S | F1 | **Prototype** | Fees cannot cross; last day cannot be switched off |
 | F3 | Wizard step 2: paste names, clean them, count them | S | F1 | **Prototype** | Bullets, repeats and long names handled |
-| F4 | Wizard step 3: days for everyone, then the exceptions, with a Flex chip | S | F3 | **Prototype** | Next dims until everyone has days or Flex |
+| F4 | Wizard step 3: days for everyone, then the exceptions, with a Flex chip (flexible students are rare: no more work) | S | F3 | **Prototype** | Next dims until everyone has days or Flex |
 | F5 | Wizard step 4: who has paid this month | XS | F4 | **Prototype** | All and None work |
 | F6 | Wizard step 5: save the file, or skip on purpose, then open the class | S | E2 | **Prototype** | Finish dimmed until saved or skipped |
 | F7 | Header, icon-only bottom bar with badges, top bar on a laptop | S | C1 | **Prototype** | Bar moves to the top at 900 px |
@@ -173,7 +174,7 @@ The coach's data lives in her browser and in a file she keeps.
 | G10 | Cancel a session: pick a date, see who is affected, copy the announcement | S | D9 | **Prototype** | Credits granted once |
 | G11 | Timetable and special dates; adding or dropping a day asks first | M | D15 | **Prototype** | Past stays as it was |
 | G12 | Settings with short labels, class name, rules, money, Zalo number, messages under Messages | S | C1 | **Prototype** | Clamps work; class name renames the header |
-| G13 | Scores: last scores prefilled, tap only what changed | S | C1 | **Prototype** | Saving adds a dated scoring |
+| G13 | Scores: last scores prefilled, tap only what changed (first in line) | S | C1 | **Prototype** | Saving adds a dated scoring |
 | G14 | Videos: one link per skill | XS | G13 | **Prototype** | Link shows on the card |
 | G15 | My data page: status, Save, Open, Export, earlier copies | S | E4 | **Prototype** | No paragraphs, one word for saving |
 | G16 | Page picture and QR image saved in the file | S | E2 | **Prototype** | Both survive save and open |
@@ -189,7 +190,7 @@ The coach's data lives in her browser and in a file she keeps.
 | H4 | Card page: one-line header, calendar, old-card banner | S | H1 | **Prototype** | Draws the same calendar the coach sees for that student |
 | H5 | Tap a day: status and the one ask that fits, written for Zalo | M | D11 | **Prototype** | Extra lesson when there is no credit |
 | H6 | Two cards on one phone: the newest wins | S | H4 | **Prototype** | An old link never replaces a newer card |
-| H7 | Skills page: polygon with the change, focus, clip | S | H4 | **Prototype** | No table repeating the numbers |
+| H7 | Skills page: polygon with the change, focus, clip (first in line) | S | H4 | **Prototype** | No table repeating the numbers |
 | H8 | Fees and Pay pages: amount, six month dots, copy amount and code | S | H4 | **Prototype** | Pay shows only while unpaid |
 | H9 | Rules page with the coach's numbers and Ask for a break | XS | H4 | **Prototype** | Numbers follow her settings |
 | H10 | Break row and page, only when a break exists | XS | H4 | **Prototype** | Row hidden otherwise |
@@ -225,10 +226,10 @@ Checks that the prototype tests cannot give.
 | ID | Ticket | Size | Needs | Status | Done when |
 |---|---|---|---|---|---|
 | L1 | Google Drive sync for two devices | M | A2 | **Parked** | Only if she needs two devices |
-| L2 | A live card page that always shows the latest | M | A2 | **Parked** | Only if students need it |
+| L2 | A live card page that always shows the latest | M | A2 | **Parked** | Not now (owner); revisit once she has used the cards |
 | L3 | PIN lock on the coach page | S |  | **Parked** |  |
 | L4 | Automatic reminder emails | M |  | **Parked** |  |
-| L5 | QR made in the browser with amount and code | M |  | **Parked** | Needs her bank and account number |
+| L5 | QR on the card, made in the browser with amount and code (only if needed) | M |  | **Parked** | Needs her bank and account number; banks allow showing the QR (owner) |
 | L6 | Two-pane layout on a laptop | M |  | **Parked** |  |
 | L7 | Pages that stack (Pay opens over Fees) | S |  | **Parked** |  |
 
