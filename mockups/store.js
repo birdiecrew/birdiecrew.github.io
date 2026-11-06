@@ -30,14 +30,14 @@
     var pay = {};
     Object.keys(BC.payments).forEach(function (k) { if (!EMPTY_PAY(BC.payments[k])) pay[k] = BC.payments[k]; });
     return {
-      config: BC.config, messages: BC.messages, timetable: BC.timetable, overrides: BC.overrides, videos: BC.videos,
+      config: BC.config, messages: BC.messages, timetable: BC.timetable, ttHistory: BC.ttHistory || [], overrides: BC.overrides, videos: BC.videos,
       students: BC.students, changes: BC.changes, breaks: BC.breaks, payments: pay, changeLog: BC.changeLog, scores: BC.scores,
       nextId: BC.nextId, meta: BC.meta, qr: BC.qrImage || '', logo: (window.UI && UI.pics.get('logo')) || ''
     };
   };
   BC.load = function (d) {
     var c = JSON.parse(JSON.stringify(d));
-    BC.config = Object.assign({}, BC.config, c.config); BC.messages = c.messages; BC.timetable = c.timetable; BC.overrides = c.overrides;
+    BC.config = Object.assign({}, BC.config, c.config); BC.messages = c.messages; BC.timetable = c.timetable; BC.ttHistory = c.ttHistory || []; BC.overrides = c.overrides;
     BC.videos = c.videos; BC.students = c.students; BC.changes = c.changes; BC.breaks = c.breaks; BC.payments = c.payments;
     BC.changeLog = c.changeLog || []; BC.scores = c.scores; BC.nextId = c.nextId; BC.meta = c.meta || { sample: false, setup: true };
     BC.qrImage = c.qr || '';
@@ -172,7 +172,7 @@
     Object.keys(BC.overrides).forEach(function (d) { if (BC.overrides[d].cancelled && d >= from) ov[d] = { cancelled: true, note: BC.overrides[d].note || '' }; });
     Object.keys(BC.videos).forEach(function (k) { if (BC.videos[k].url) vids[k] = BC.videos[k]; });
     return {
-      v: 1, asOf: BC.today, cfg: cfg, timetable: BC.timetable, overrides: ov, videos: vids,
+      v: 1, asOf: BC.today, made: Date.now(), cfg: cfg, timetable: BC.timetable, ttHistory: (BC.ttHistory || []).filter(function (x) { return x.until > from; }), overrides: ov, videos: vids,
       student: { id: s.id, name: s.name, type: s.type, days: s.days, start: s.start, fee: s.fee, active: s.active, code: s.code },
       changes: BC.changes.filter(function (c) { return c.student === sid && c.date >= from; }),
       breaks: BC.breaksOf(sid).filter(function (b) { return b.to >= from; }),
@@ -182,11 +182,11 @@
   /* turn a card back into a tiny one-student world the student page can draw */
   BC.hydrate = function (card) {
     BC.blank();
-    BC.config = Object.assign({}, BC.config, card.cfg); BC.timetable = card.timetable; BC.overrides = card.overrides;
+    BC.config = Object.assign({}, BC.config, card.cfg); BC.timetable = card.timetable; BC.ttHistory = card.ttHistory || []; BC.overrides = card.overrides;
     Object.keys(card.videos || {}).forEach(function (k) { BC.videos[k] = card.videos[k]; });
     BC.students = [Object.assign({}, card.student)]; BC.changes = card.changes; BC.breaks = card.breaks; BC.payments = card.pay;
     BC.scores = {}; if (card.scores && card.scores.length) BC.scores[card.student.id] = card.scores;
-    BC.nextId = 1e6; BC.meta = { sample: false, setup: true, card: true, asOf: card.asOf };
+    BC.nextId = 1e6; BC.meta = { sample: false, setup: true, card: true, asOf: card.asOf, made: card.made || 0 };
     return card.student.id;
   };
   function validCard(c) {
@@ -227,6 +227,36 @@
         else resolve(null);
       } catch (e) { resolve(null); }
     });
+  };
+  /* Which card is newer. Cards carry the moment they were made, so two cards from one day still order. */
+  BC.cardNewer = function (a, b) {
+    var ma = a.made || 0, mb = b.made || 0;
+    if (ma || mb) return ma > mb;
+    return a.asOf > b.asOf;
+  };
+  /* A phone keeps one card. Opening an older link must never replace a newer card of the same student.
+     Returns { show, keep, older } : the card to draw, whether to remember it, and the older card that was opened (if any). */
+  BC.pickCard = function (stored, opened) {
+    if (!stored || !opened) return { show: opened || stored, keep: !!opened, older: null };
+    var same = stored.student.code === opened.student.code && stored.student.id === opened.student.id;
+    if (same && !BC.cardNewer(opened, stored) && !(opened.made === stored.made && opened.asOf === stored.asOf)) return { show: stored, keep: false, older: opened };
+    return { show: opened, keep: true, older: null };
+  };
+
+  /* What the coach has sent each student, and whether it still matches what the card would say now. */
+  function cardBody(sid) { var c = BC.cardOf(sid); delete c.asOf; delete c.made; return sum(JSON.stringify(c)); }
+  BC.markCardSent = function (sid) {
+    BC.meta.cards = BC.meta.cards || {};
+    BC.meta.cards[sid] = { at: Date.now(), asOf: BC.today, sum: cardBody(sid) };
+  };
+  /* 'never' | 'stale' | 'current' */
+  BC.cardState = function (sid) {
+    var m = BC.meta && BC.meta.cards && BC.meta.cards[sid];
+    if (!m) return 'never';
+    return m.sum === cardBody(sid) ? 'current' : 'stale';
+  };
+  BC.cardsToSend = function () {
+    return BC.students.filter(function (s) { return s.active && BC.cardState(s.id) !== 'current'; });
   };
   BC.cardLink = function (sid, base) {
     return BC.cardEncode(BC.cardOf(sid)).then(function (code) { return (base || 'https://birdiecrew.github.io/s.html') + '#c=' + code; });

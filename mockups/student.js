@@ -3,7 +3,7 @@
   'use strict';
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
   var cfg = BC.config;
-  var S = { sid: BC.byName('Lan').id, lang: 'vi', month: BC.ym(BC.today), legend: false, card: false };
+  var S = { sid: BC.byName('Lan').id, lang: 'vi', month: BC.ym(BC.today), card: false, older: null };
   try { var sl = localStorage.getItem('bc_lang'); if (sl === 'en' || sl === 'vi') S.lang = sl; } catch (e) { /* ignore */ }
   BC.lang = S.lang;
   /* the student cannot see other people's bookings, so a day is simply "open" or not */
@@ -36,12 +36,17 @@
     var s = me();
     return '<header class="hdr"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' +
       '<div class="row" style="gap:8px">' + UI.themeBtn() + '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-      '<div class="me"><div class="hi">' + t('hi', { name: h(s.name) }) + '</div><div class="asof">' + t('asOf', { date: BC.fmtDay(asOf(), S.lang) }) + '</div></div></header>';
+      '<div class="me"><div class="hi">' + t('hi', { name: h(s.name) }) + '</div><div class="asof">' + t('asOf', { date: BC.fmtDay(asOf(), S.lang) + madeTime() }) + '</div></div></header>';
   }
   function asOf() { return (BC.meta && BC.meta.asOf) || BC.today; }
+  function madeTime(m) {
+    m = m === undefined ? BC.meta && BC.meta.made : m; if (!m) return '';
+    try { return ', ' + new Date(m).toLocaleTimeString(S.lang === 'vi' ? 'vi-VN' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+  }
 
   function banners() {
     var s = me(), ymNow = BC.ym(BC.today), out = '';
+    if (S.older) out += '<div class="banner warn" role="status">' + icon('info') + '<div>' + t('olderOpened', { old: BC.fmtDay(S.older.asOf, S.lang) + madeTime(S.older.made), now: BC.fmtDay(asOf(), S.lang) + madeTime() }) + '</div></div>';
     var age = BC.diff(asOf(), BC.today);
     if (age >= 7) out += '<div class="banner warn" role="status">' + icon('refresh') + '<div>' + t('stale', { n: age }) + '</div></div>';
     if (BC.isLate(s.id)) {
@@ -69,22 +74,11 @@
     var wd = [1, 2, 3, 4, 5, 6, 0].map(function (d) { return '<div class="cal-wd">' + BC.wd(d, S.lang) + '</div>'; }).join('');
     var blanks = ''; for (var b = 0; b < lead; b++) blanks += '<div class="cd blank"></div>';
     var cells = days.map(function (d) { return cell(s, d); }).join('');
-    var top = '';
-    if (s.type === 'fixed') {
-      var cs = BC.creditSummary(s.id, ym);
-      top = '<div class="kpis"><div class="kpi"><div class="v">' + cs.left + ' <small>' + t('ofN', { n: cfg.max_makeups_per_month }) + '</small></div><div class="l">' + t('makeupsLeft') + '</div></div>' +
-        '<div class="kpi"><div class="v">' + cs.skipCredits + '</div><div class="l">' + t('creditsToUse') + '</div></div>' +
-        (cs.free ? '<div class="kpi free"><div class="v">' + cs.free + '</div><div class="l">' + t('freeCredit') + ', ' + t('until', { month: BC.monthOnly(cs.freeUntil, S.lang) }) + '</div></div>' : '') + '</div>';
-    } else {
-      top = '<div class="banner" style="margin-bottom:12px">' + icon('info') + '<div>' + t('flexHint', { n: cfg.flex_notice_days }) + '</div></div>';
-    }
-    var move = '';
-    var lg = (s.type === 'fixed' ? ['mine', 'skipped', 'makeup'] : ['join']).concat(['free', 'cancelled', 'break']);
-    var lgNames = { mine: t('lgMine'), join: t('lgJoin'), skipped: t('lgSkipped'), makeup: t('lgMakeup'), free: t('lgFree'), full: t('lgFull'), cancelled: t('lgCancelled'), 'break': t('lgBreak'), locked: t('lgLocked', { n: noticeN(s) }) };
-    return '<section class="card" aria-labelledby="h-cal"><div class="card-h"><h2 id="h-cal">' + t('calendar') + '</h2><button class="btn ghost sm" data-legend aria-expanded="' + S.legend + '">' + t('legend') + '</button></div>' + top + move +
+    /* nothing but the calendar: a day explains itself when tapped, and a rule is mentioned only when it is about to be broken */
+    var top = s.type === 'fixed' ? '' : '<div class="banner" style="margin-bottom:12px">' + icon('info') + '<div>' + t('flexHint', { n: cfg.flex_notice_days }) + '</div></div>';
+    return '<section class="card" aria-labelledby="h-cal"><div class="card-h"><h2 id="h-cal">' + t('calendar') + '</h2></div>' + top +
       '<div class="cal-nav"><button class="btn icon sm" data-nav="-1" aria-label="Previous month"' + (prevOk ? '' : ' disabled') + '>' + icon('chevL') + '</button><strong>' + BC.monthName(ym, S.lang) + '</strong><button class="btn icon sm" data-nav="1" aria-label="Next month"' + (nextOk ? '' : ' disabled') + '>' + icon('chevR') + '</button></div>' +
-      '<div class="cal-grid">' + wd + blanks + cells + '</div>' +
-      (S.legend ? '<div class="legend">' + lg.map(function (k) { return '<span><i class="sw ' + k + '"></i>' + lgNames[k] + '</span>'; }).join('') + '</div>' : '') + '</section>';
+      '<div class="cal-grid">' + wd + blanks + cells + '</div></section>';
   }
 
   function weakest(cur) {
@@ -207,26 +201,22 @@
   function askButton(kind) { return '<button class="btn primary block" data-ask="' + kind + '">' + t('ask_' + kind) + '</button>'; }
 
   function dayHtml(i) {
-    var s = me(), ses = i.ses, iso = i.iso, ym = BC.ym(iso), body = '', ask = '';
+    var s = me(), ses = i.ses, iso = i.iso, ym = BC.ym(iso), body = '';
+    var d = BC.dayAsk(s, iso), ask = d.ask;
     var head = sheetHead(BC.fmtLong(iso, S.lang), ses.start ? ses.start + '–' + ses.end : t('statusNone'));
     var status = function (txt, cls) { return '<div class="banner ' + (cls || '') + '">' + txt + '</div>'; };
     var why = function (txt) { return '<p class="muted small" style="margin-top:8px">' + txt + '</p>'; };
-    switch (i.kind) {
-      case 'mine': body = status(t('statusMine'), 'ok'); ask = 'skip'; break;
+    switch (d.kind) {
+      case 'mine': body = status(t('statusMine'), 'ok'); break;
       case 'skipped':
-        body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month }));
-        ask = i.row.breakId ? '' : 'unskip'; break;
-      case 'makeup': body = status(i.row.source === 'cancel' ? t('statusMakeupFree') : t('statusMakeup'), 'ok'); ask = 'changemk'; break;
-      case 'join': body = status(t('statusJoin'), 'ok'); ask = 'leave'; break;
+        body = status(t('statusSkipped')) + why(i.row.credit ? t('skippedCredit', { month: BC.monthOnly(ym, S.lang) }) : t('skippedNoCredit', { n: cfg.max_makeups_per_month })); break;
+      case 'makeup': body = status(i.row.source === 'cancel' ? t('statusMakeupFree') : t('statusMakeup'), 'ok'); break;
+      case 'join': body = status(t('statusJoin'), 'ok'); break;
       case 'free':
         body = status(t('statusFree'));
-        if (s.type !== 'fixed') ask = 'join';
-        else {
-          /* a make-up needs a credit. Without one she may still ask, but it is an extra lesson and the coach may say no */
-          var cs = BC.creditSummary(s.id, ym);
-          ask = cs.skipCredits || cs.free ? 'makeup' : 'extra';
-          if (ask === 'extra') body += why(t('noCreditNote'));
-        }
+        /* a rule is shown only when it is about to be broken */
+        if (d.note === 'noCredit') body += why(t('noCreditNote'));
+        else if (d.note === 'capReached') body += why(t('r_capReached', { n: cfg.max_makeups_per_month }) + ' ' + t('capNote'));
         break;
       case 'cancelled': {
         var got = BC.rows(s.id, 'cancel_credit', function (c) { return c.date === iso; }).length;
@@ -236,7 +226,7 @@
       case 'break': body = status(t('statusBreak')); break;
       default: body = status(t('statusNone'));
     }
-    if (i.past) { ask = ''; if (i.kind === 'free') body = status(t('statusPast')); else body += why(t('pastNote')); }
+    if (i.past) { if (d.kind === 'free') body = status(t('statusPast')); else body += why(t('pastNote')); }
     var acts = '';
     if (ask) acts = (i.locked ? why(t('noticeNote', { n: i.notice })) : '') + '<div id="ask-area" style="margin-top:12px">' + askButton(ask) + '</div>';
     return head + body + acts;
@@ -297,7 +287,6 @@
     if ((el = e.target.closest('[data-lang]'))) { setLang(el.getAttribute('data-lang')); return; }
     if ((el = e.target.closest('[data-nav]'))) { S.month = BC.addMonths(S.month, Number(el.getAttribute('data-nav'))); render(); return; }
     if ((el = e.target.closest('[data-iso]'))) { openDay(el.getAttribute('data-iso')); return; }
-    if ((el = e.target.closest('[data-legend]'))) { S.legend = !S.legend; render(); return; }
     if ((el = e.target.closest('[data-act]'))) {
       var a = el.getAttribute('data-act');
       if (a === 'pay') paySheet(); else if (a === 'rules') rulesSheet(); else if (a === 'skills') skillsSheet(); else if (a === 'fees') feesSheet(); else if (a === 'breaks') breaksSheet();
@@ -333,14 +322,20 @@
     else if (b.id === 'm-reset') { var who = me().name; BC.seed(); cfg = BC.config; S.sid = BC.byName(who).id; S.month = BC.ym(BC.today); render(); UI.toast('Reset'); }
   });
 
+  /* open a card link. A phone keeps one card, and an older link never replaces a newer card of the same student. */
   function bootCard(code, remember) {
-    return BC.cardDecode(code).then(function (card) {
-      if (!card) return false;
-      S.sid = BC.hydrate(card); S.card = true; S.month = BC.ym(BC.today);
-      var stored = null; try { stored = localStorage.getItem('bc_lang'); } catch (e) { /* ignore */ }
-      if (stored !== 'en' && stored !== 'vi') { S.lang = card.cfg.default_lang === 'en' ? 'en' : 'vi'; BC.lang = S.lang; }
+    var storedCode = ''; try { storedCode = localStorage.getItem('bc_card') || ''; } catch (e) { /* ignore */ }
+    var decode = function (c) { return c && c !== code ? BC.cardDecode(c) : Promise.resolve(null); };
+    return Promise.all([BC.cardDecode(code), decode(storedCode)]).then(function (r) {
+      var opened = r[0], stored = r[1];
+      if (!opened) return false;
+      var pick = remember ? BC.pickCard(stored, opened) : { show: opened, keep: false, older: null };
+      S.older = pick.older;
+      S.sid = BC.hydrate(pick.show); S.card = true; S.month = BC.ym(BC.today);
+      var lang = null; try { lang = localStorage.getItem('bc_lang'); } catch (e) { /* ignore */ }
+      if (lang !== 'en' && lang !== 'vi') { S.lang = pick.show.cfg.default_lang === 'en' ? 'en' : 'vi'; BC.lang = S.lang; }
       cfg = BC.config;
-      if (remember) { try { localStorage.setItem('bc_card', code); } catch (e) { /* ignore */ } }
+      if (remember && pick.keep) { try { localStorage.setItem('bc_card', code); } catch (e) { /* ignore */ } }
       return true;
     });
   }

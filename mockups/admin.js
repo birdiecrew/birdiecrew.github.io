@@ -153,8 +153,10 @@
     var ym = ymNow(), n = function (f) { return BC.students.filter(f).length; };
     var chips = [['all', 'All', BC.students.length],
       ['unpaid', 'Unpaid', n(function (s) { return s.active && BC.ym(s.start) <= ym && !BC.payRec(s.id, ym).paid; })], ['paused', 'Paused', n(function (s) { return !s.active; })]];
+    var need = BC.meta && BC.meta.sample ? [] : BC.cardsToSend();
+    var cardBanner = need.length ? '<div class="banner" style="margin-bottom:12px">' + icon('copy') + '<div><b>' + (need.length === 1 ? t('1 card to send') : t('{n} cards to send', { n: need.length })) + '</b><br>' + t('New students, or something changed since their last card.') + '<br><button class="btn sm" data-a="cards">' + t('Send cards') + '</button></div></div>' : '';
     return '<div class="view-h row between"><h2>' + t('Students') + '</h2><button class="btn primary" data-a="addstu"' + (BC.students.length >= BC.LIMITS.students ? ' disabled' : '') + '>' + icon('plus', 'sm') + ' ' + (BC.students.length >= BC.LIMITS.students ? t('Class is full') : t('Add student')) + '</button></div>' +
-      '<input class="inp" type="search" id="q" placeholder="' + t('Search name or code') + '" value="' + h(S.q) + '" style="margin-bottom:10px">' +
+      cardBanner + '<input class="inp" type="search" id="q" placeholder="' + t('Search name or code') + '" value="' + h(S.q) + '" style="margin-bottom:10px">' +
       '<div class="chips" style="margin-bottom:12px">' + chips.map(function (c) { return '<button class="chip" data-a="filter" data-x="' + c[0] + '" aria-pressed="' + (S.filter === c[0]) + '">' + t(c[1]) + ' ' + c[2] + '</button>'; }).join('') + '</div>' +
       '<div id="stu-list">' + stuRows() + '</div>';
   }
@@ -252,14 +254,45 @@
     draw();
   }
 
+  /* every card that is new or out of date, one tap each. The order is fixed when the sheet opens, so rows never jump. */
+  function openSendCards() {
+    var el = UI.sheet.open('', {}), order = BC.cardsToSend().concat(BC.students.filter(function (s) { return s.active && BC.cardState(s.id) === 'current'; }))
+      .sort(function (a, b) { return a.name.localeCompare(b.name, 'vi'); });
+    order.sort(function (a, b) { return (BC.cardState(a.id) === 'current') - (BC.cardState(b.id) === 'current'); });
+    var draw = function () {
+      var left = BC.cardsToSend().length;
+      el.innerHTML = '<div class="grab"></div>' + shd(t('Send cards'), left ? (left === 1 ? t('1 card to send') : t('{n} cards to send', { n: left })) : t('All cards are up to date')) +
+        '<div class="stack"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div>' +
+        '<p class="muted small">' + t('Tap Copy message, paste it into that student\'s Zalo chat, then tap the next one. A card counts as sent when you copy it.') + '</p><div>' +
+        order.map(function (s) {
+          var st = BC.cardState(s.id);
+          return '<div class="hist"><div><b>' + h(s.name) + '</b><div class="muted tiny">' + (st === 'never' ? t('No card yet') : st === 'stale' ? t('Out of date') : t('Up to date')) + '</div></div>' +
+            '<button class="btn sm' + (st === 'current' ? '' : ' primary') + '" data-cc="' + s.id + '">' + (st === 'current' ? t('Copy again') : t('Copy message')) + '</button></div>';
+        }).join('') + '</div></div>';
+    };
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-ml]'), c = e.target.closest('[data-cc]');
+      if (b) { S.msgLang = b.getAttribute('data-ml'); draw(); return; }
+      if (!c) return;
+      var sid = Number(c.getAttribute('data-cc')), s = BC.student(sid);
+      BC.cardLink(sid, cardBase()).then(function (link) {
+        UI.copy(BC.fill(BC.messages[S.msgLang].card, { name: s.name, date: BC.fmtDay(BC.today, S.msgLang), link: link }), t('Message copied. Paste it into Zalo.'));
+        BC.markCardSent(sid); render(); draw();
+      });
+    });
+    draw();
+  }
+
   /* the student's card: a link that holds only that student's own lessons. Nothing is stored anywhere. */
   function openSendCard(id) {
     var s = BC.student(id), link = '', el = UI.sheet.open('', {});
     var text = function (full) { return BC.fill(BC.messages[S.msgLang].card, { name: s.name, date: BC.fmtDay(BC.today, S.msgLang), link: full ? link : (link ? link.replace(/#c=.*/, '#c=…') : '…') }); };
     var draw = function () {
-      var kb = link ? Math.max(1, Math.round(link.length / 1024)) : 0;
+      var kb = link ? Math.max(1, Math.round(link.length / 1024)) : 0, st = BC.cardState(id), m = BC.meta.cards && BC.meta.cards[id];
+      var sentLine = st === 'never' ? t('No card sent yet.') : (st === 'stale' ? t('Last card sent {when}. Something changed since.', { when: ago(m.at) }) : t('Last card sent {when}. Nothing changed since.', { when: ago(m.at) }));
       el.innerHTML = '<div class="grab"></div>' + shd(t('Send card to {name}', { name: h(s.name) }), t('Card as of {date}', { date: dt(BC.today) })) +
         '<div class="stack"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div>' +
+        '<div class="why' + (st === 'current' ? ' ready' : '') + '" style="min-height:0">' + icon(st === 'current' ? 'check' : 'info') + '<span>' + sentLine + '</span></div>' +
         '<div class="msgbox">' + h(text(false)) + '</div>' +
         '<button class="btn primary block" data-cc' + (link ? '' : ' disabled') + '>' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button>' +
         '<button class="btn block" data-view' + (link ? '' : ' disabled') + '>' + icon('link', 'sm') + ' ' + t('See it as {name} sees it', { name: h(s.name) }) + '</button>' +
@@ -268,7 +301,7 @@
     el.addEventListener('click', function (e) {
       var b;
       if ((b = e.target.closest('[data-ml]'))) { S.msgLang = b.getAttribute('data-ml'); draw(); }
-      else if (e.target.closest('[data-cc]') && link) UI.copy(text(true), t('Message copied. Paste it into Zalo.'));
+      else if (e.target.closest('[data-cc]') && link) { UI.copy(text(true), t('Message copied. Paste it into Zalo.')); BC.markCardSent(id); render(); draw(); }
       else if (e.target.closest('[data-view]') && link) window.open(link, '_blank', 'noopener');
     });
     draw();
@@ -678,7 +711,7 @@
       return '<div class="card" style="margin-top:8px"><div class="row between"><b>' + dt(iso) + '</b>' + (o.cancelled ? '<span class="tag bad">' + t('Cancelled') + '</span>' : '<button class="btn sm icon" data-a="ovrm" data-x="' + iso + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button>') + '</div>' +
         (o.cancelled ? '<p class="muted small">' + h(o.note || '') + '</p>' : '<div class="ctl"><span>' + t('Extra seats') + '</span>' + stepper('extra:' + iso, o.extra || 0, 0, 2) + '</div><div class="ctl"><span>' + t('Courts available') + '</span>' + stepper('courts:' + iso, c, 1, cfg.venue_courts) + '</div>') + '</div>';
     }).join('');
-    return subHead(t('Timetable and seats')) + '<div class="card"><h3 style="margin-bottom:6px">' + t('Class days and times') + '</h3><p class="muted small">' + t('Switch a day off to have no class (Friday is off). One day always stays on.') + '</p>' + rows + '</div>' +
+    return subHead(t('Timetable and seats')) + '<div class="card"><h3 style="margin-bottom:6px">' + t('Class days and times') + '</h3><p class="muted small">' + t('Switch a day off to have no class (Friday is off). One day always stays on. A change starts today: lessons, bills and credits before today stay as they were.') + '</p>' + rows + '</div>' +
       '<div class="card"><h3>' + t('Special dates') + '</h3><p class="muted small">' + t('The venue has {courts} courts, {seats} players each: {total} seats. Add 0 to 2 extra seats, or fewer courts, on a date.', { courts: cfg.venue_courts, seats: cfg.seats_per_court, total: cfg.venue_courts * cfg.seats_per_court }) + '</p>' + ovs +
       '<div class="row" style="margin-top:12px"><input class="inp grow" type="date" id="ov-date" value="' + BC.addDays(BC.today, 8) + '" min="' + BC.today + '" max="' + BC.addDays(BC.today, BC.LIMITS.dayRange) + '"><button class="btn primary" data-a="ovadd">' + icon('plus', 'sm') + ' ' + t('Add date') + '</button></div></div>';
   }
@@ -790,6 +823,7 @@
         case 'filter': S.filter = x; render(); break;
         case 'stu': openStudent(Number(x)); break;
         case 'addstu': openAddStudent(); break;
+        case 'cards': openSendCards(); break;
         case 'pm': S.payMonth = BC.addMonths(S.payMonth, Number(x)); render(); break;
         case 'paid': BC.setPaid(Number(x), S.payMonth, true); render(); toast(t('{name} marked as paid', { name: BC.student(Number(x)).name })); break;
         case 'undopaid': BC.setPaid(Number(x), S.payMonth, false); render(); toast(t('Back to unpaid')); break;
@@ -844,9 +878,15 @@
           break;
         }
         case 'ttsw': {
-          var onNow = [1, 2, 3, 4, 5, 6, 0].filter(function (dd) { return BC.timetable[dd].on; }).length;
-          if (BC.timetable[x].on && onNow <= 1) { toast(t('One class day has to stay on.'), 'bad'); break; }
-          BC.timetable[x].on = !BC.timetable[x].on; render(); toast(t('Saved')); break;
+          var dowN = Number(x), onCount = [1, 2, 3, 4, 5, 6, 0].filter(function (dd) { return BC.timetable[dd].on; }).length;
+          if (!BC.timetable[dowN].on) { BC.setDay(dowN, true); render(); toast(t('Saved. It starts today.')); break; }
+          if (onCount <= 1) { toast(t('One class day has to stay on.'), 'bad'); break; }
+          var imp = BC.dayImpact(dowN);
+          UI.confirm({ title: t('Switch off {day}?', { day: BC.wdLong(dowN, S.lang) }), body: t('{n} students have this as a regular day and {m} make-ups or joins later on this day will be cancelled. Past lessons and bills stay as they were.', { n: imp.regular, m: imp.later }), ok: t('Switch off'), cancel: t('Keep it'), danger: true }).then(function (yes) {
+            if (!yes) return;
+            BC.setDay(dowN, false); render(); toast(t('Saved. It stops today.'));
+          });
+          break;
         }
         case 'ovadd': {
           var d = $('#ov-date').value; if (!d || d < BC.today || d > BC.addDays(BC.today, BC.LIMITS.dayRange)) { toast(t('Choose a date from today to a year ahead.'), 'bad'); break; }
@@ -881,7 +921,7 @@
     else if (b === 'tt') {
       var p = k.split(':'), row = BC.timetable[p[0]], nv = el.value;
       if (!nv || (p[1] === 'start' ? nv >= row.end : nv <= row.start)) { el.value = row[p[1]]; toast(t('The end of class must be after the start.'), 'bad'); return; }
-      row[p[1]] = nv; toast(t('Saved'));
+      BC.ttEdit(function (tt) { tt[p[0]][p[1]] = nv; }); toast(t('Saved. It starts today.'));
     }
     else if (b === 'vid') { var q = k.split(':'); BC.videos[q[0]][q[1]] = el.value; render(); toast(t('Saved')); }
     else if (b === 'set') {

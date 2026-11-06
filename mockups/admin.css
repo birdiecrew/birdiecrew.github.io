@@ -61,7 +61,7 @@ button.li:hover { background: var(--surface2); }
 .scorebtns button.was { box-shadow: inset 0 -3px 0 var(--accent); }
 .tt-row { display: grid; grid-template-columns: 56px 52px 1fr 1fr; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .tt-row:last-child { border-bottom: 0; }
-.tt-row .inp { min-height: 40px; padding: 6px 8px; }
+.tt-row .inp { min-height: var(--tap); padding: 6px 8px; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .set-row:last-child { border-bottom: 0; }
 .set-row .inp { width: 150px; }
@@ -81,7 +81,7 @@ button.li:hover { background: var(--surface2); }
 .tile .v.ok { color: var(--ok); }
 
 /* the amount is the edit target: no extra pencil button */
-button.amt-edit { border: 0; background: transparent; padding: 2px 0; color: inherit; font: inherit; font-weight: 800; text-decoration: underline dotted var(--muted); text-underline-offset: 4px; }
+button.amt-edit { border: 0; background: transparent; padding: 0 0 0 8px; min-height: var(--tap-sm); display: inline-flex; align-items: center; justify-content: flex-end; color: inherit; font: inherit; font-weight: 800; text-decoration: underline dotted var(--muted); text-underline-offset: 4px; }
 
 /* names in a session are buttons: tap to change that student's lesson */
 button.nm { border: 0; font: inherit; color: inherit; cursor: pointer; }

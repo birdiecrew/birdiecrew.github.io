@@ -82,6 +82,7 @@ window.STR = {
     ruleTitles: ['Fee', 'Timetable', 'Flexible members', 'Breaks', 'Make-up lessons', 'Sudden absence'],
     welcome: 'Welcome to {title}', pickLang: 'Choose your language',
     welcomeBody: 'This is your personal card: your lessons, fees and skills. It is a snapshot your coach sent you, so it shows the day she sent it. To skip or take a make-up, message your coach on Zalo: tap a day and the button writes the message for you. When something changes she sends you a new card. Please do not share it.',
+    olderOpened: 'You opened an older card, from {old}. Showing your newest card, from {now}.', capNote: 'You can still ask for an extra lesson, but the coach may say no.',
     asOf: 'Card as of {date}', stale: 'This card is {n} days old. Ask your coach for a fresh one.', badTitle: 'This link did not open', badBody: 'It may have been cut short when it was copied. Ask your coach to send your card again.', noVideo: 'Your coach has not added a video for this skill yet.',
     footer: 'Birdie Crew', pastNote: 'Past days cannot be changed.'
   },
@@ -167,6 +168,7 @@ window.STR = {
     ruleTitles: ['Học phí', 'Lịch học', 'Học viên linh hoạt', 'Nghỉ dài', 'Học bù', 'Vắng đột xuất'],
     welcome: 'Chào mừng đến với {title}', pickLang: 'Chọn ngôn ngữ',
     welcomeBody: 'Đây là thẻ cá nhân của bạn: lịch học, học phí và kỹ năng. Thẻ là bản chụp HLV gửi cho bạn nên hiện đúng ngày HLV gửi. Muốn nghỉ hoặc học bù, nhắn HLV qua Zalo: chạm vào một ngày và nút sẽ soạn sẵn tin nhắn giúp bạn. Khi có thay đổi, HLV sẽ gửi thẻ mới. Đừng chia sẻ thẻ này.',
+    olderOpened: 'Bạn vừa mở thẻ cũ, ngày {old}. Đang hiện thẻ mới nhất của bạn, ngày {now}.', capNote: 'Bạn vẫn có thể nhờ học thêm, nhưng HLV có thể không đồng ý.',
     asOf: 'Thẻ cập nhật ngày {date}', stale: 'Thẻ này đã {n} ngày tuổi. Hãy nhờ HLV gửi thẻ mới.', badTitle: 'Không mở được đường link này', badBody: 'Có thể link bị cắt ngắn khi sao chép. Hãy nhờ HLV gửi lại thẻ cho bạn.', noVideo: 'HLV chưa thêm video cho kỹ năng này.',
     footer: 'Birdie Crew', pastNote: 'Không thể đổi các ngày đã qua.'
   }

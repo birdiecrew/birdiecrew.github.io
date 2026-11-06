@@ -438,5 +438,25 @@ window.VI = {
   "This file is damaged. Open an earlier copy.": "File bị hỏng. Hãy mở một bản trước đó.",
   "That file could not be opened.": "Không mở được file này.",
   "The copy saved on this phone could not be read. Open your file instead.": "Không đọc được bản lưu trên điện thoại này. Hãy mở file của bạn.",
-  "Open a file or an earlier copy.": "Mở một file hoặc bản cũ."
+  "Open a file or an earlier copy.": "Mở một file hoặc bản cũ.",
+  /* cards to send, timetable changes */
+  "1 card to send": "1 thẻ cần gửi",
+  "{n} cards to send": "{n} thẻ cần gửi",
+  "New students, or something changed since their last card.": "Học viên mới, hoặc có thay đổi kể từ thẻ lần trước.",
+  "Send cards": "Gửi thẻ",
+  "All cards are up to date": "Tất cả thẻ đã mới nhất",
+  "Tap Copy message, paste it into that student's Zalo chat, then tap the next one. A card counts as sent when you copy it.": "Bấm Sao chép tin nhắn, dán vào chat Zalo của bạn ấy, rồi bấm bạn tiếp theo. Thẻ được tính là đã gửi khi bạn sao chép.",
+  "No card yet": "Chưa có thẻ",
+  "Out of date": "Đã cũ",
+  "Up to date": "Mới nhất",
+  "Copy again": "Sao chép lại",
+  "No card sent yet.": "Chưa gửi thẻ nào.",
+  "Last card sent {when}. Something changed since.": "Thẻ gần nhất gửi {when}. Sau đó đã có thay đổi.",
+  "Last card sent {when}. Nothing changed since.": "Thẻ gần nhất gửi {when}. Sau đó không có thay đổi.",
+  "Switch a day off to have no class (Friday is off). One day always stays on. A change starts today: lessons, bills and credits before today stay as they were.": "Tắt một ngày để không có lớp (thứ 6 đang tắt). Luôn phải có ít nhất một ngày bật. Thay đổi có hiệu lực từ hôm nay: buổi học, học phí và lượt học bù trước hôm nay giữ nguyên.",
+  "Saved. It starts today.": "Đã lưu. Có hiệu lực từ hôm nay.",
+  "Saved. It stops today.": "Đã lưu. Ngừng từ hôm nay.",
+  "Switch off {day}?": "Tắt lớp {day}?",
+  "{n} students have this as a regular day and {m} make-ups or joins later on this day will be cancelled. Past lessons and bills stay as they were.": "{n} học viên có ngày này là buổi cố định, và {m} buổi học bù hoặc đăng ký sau này vào ngày này sẽ bị hủy. Buổi đã học và học phí cũ giữ nguyên.",
+  "Switch off": "Tắt"
 };

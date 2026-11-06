@@ -103,6 +103,7 @@
       coach_zalo: '', currency: 'VND', fee_1day: 800000, fee_2days: 1300000, default_lang: 'vi'
     };
     BC.messages = BC.defaultMessages();
+    BC.ttHistory = [];   /* older timetables: [{ until: iso, tt }], each valid for dates before `until` */
     BC.timetable = {
       1: { on: true, start: '20:00', end: '22:00' }, 2: { on: true, start: '20:00', end: '22:00' },
       3: { on: true, start: '20:00', end: '22:00' }, 4: { on: true, start: '20:00', end: '22:00' },
@@ -226,7 +227,20 @@
     return BC.changes.filter(function (c) { return c.student === sid && c.type === type && !c.cancelled && (!f || f(c)); });
   };
   BC.skipRow = function (sid, iso) { return BC.rows(sid, 'skip', function (c) { return c.date === iso; })[0]; };
-  BC.classDay = function (iso) { var t = BC.timetable[BC.dow(iso)]; return !!(t && t.on); };
+  /* The timetable that was in force on a date. A change applies from the day it is made, so past
+     lessons, bills and credits never move when the coach adds or drops a class day later. */
+  BC.ttFor = function (iso) {
+    var h = BC.ttHistory || [], i;
+    for (i = 0; i < h.length; i++) if (iso < h[i].until) return h[i].tt;
+    return BC.timetable;
+  };
+  BC.ttEdit = function (fn) {
+    var h = BC.ttHistory = BC.ttHistory || [], last = h[h.length - 1];
+    if (!last || last.until !== BC.today) h.push({ until: BC.today, tt: JSON.parse(JSON.stringify(BC.timetable)) });
+    h.sort(function (a, b) { return a.until < b.until ? -1 : a.until > b.until ? 1 : 0; });
+    fn(BC.timetable);
+  };
+  BC.classDay = function (iso) { var t = BC.ttFor(iso)[BC.dow(iso)]; return !!(t && t.on); };
   BC.breakLen = function (b) { return BC.diff(b.from, b.to) + 1; };
   BC.isLong = function (b) { return BC.breakLen(b) >= BC.config.long_break_days; };
   BC.breaksOf = function (sid) { return BC.breaks.filter(function (b) { return b.student === sid; }); };
@@ -243,7 +257,7 @@
   /* ---------- sessions ---------- */
   BC.session = function (iso) {
     var ov = BC.overrides[iso] || {};
-    var tt = BC.timetable[BC.dow(iso)];
+    var tt = BC.ttFor(iso)[BC.dow(iso)];
     var o = { iso: iso, ov: ov, cancelled: !!ov.cancelled, isClass: !!(tt && tt.on), regular: [], skipped: [], makeups: [], joins: [], onBreak: [], coming: [] };
     if (!o.isClass) { o.seats = 0; o.count = 0; o.free = 0; o.courtsToBook = 0; o.courts = 0; o.extra = 0; return o; }
     o.start = tt.start; o.end = tt.end;
@@ -257,7 +271,7 @@
       if (BC.rows(s.id, 'makeup', function (c) { return c.date === iso; }).length) o.makeups.push(s.id);
       if (BC.rows(s.id, 'join', function (c) { return c.date === iso; }).length) o.joins.push(s.id);
     });
-    o.courts = ov.courts == null ? BC.config.venue_courts : ov.courts;
+    o.courts = Math.max(0, Math.min(BC.config.venue_courts, ov.courts == null ? BC.config.venue_courts : ov.courts));   /* never more courts than the venue has */
     o.extra = ov.extra || 0;
     o.seats = o.courts * BC.config.seats_per_court + o.extra;
     o.coming = o.cancelled ? [] : o.regular.concat(o.makeups, o.joins);
@@ -533,6 +547,38 @@
     return { ok: true, warned: W };
   };
 
+  /* Switching a class day on or off. It starts today: nothing before today changes. */
+  BC.dayImpact = function (dow) {
+    var later = BC.changes.filter(function (c) { return !c.cancelled && (c.type === 'makeup' || c.type === 'join') && c.date >= BC.today && BC.dow(c.date) === dow; });
+    var regular = BC.students.filter(function (s) { return s.active && s.type === 'fixed' && s.days.indexOf(dow) >= 0; });
+    return { regular: regular.length, later: later.length, rows: later };
+  };
+  BC.setDay = function (dow, on) {
+    var onN = [1, 2, 3, 4, 5, 6, 0].filter(function (d) { return BC.timetable[d].on; }).length;
+    if (!on && BC.timetable[dow].on && onN <= 1) return { ok: false, reason: 'lastDay' };
+    if (!!BC.timetable[dow].on === !!on) return { ok: true, changed: false, cancelled: 0 };
+    var imp = on ? { rows: [] } : BC.dayImpact(dow);
+    BC.ttEdit(function (tt) { tt[dow].on = !!on; });
+    imp.rows.forEach(function (c) { c.cancelled = true; });
+    return { ok: true, changed: true, cancelled: imp.rows.length };
+  };
+
+  /* A change made with "Do it anyway" is written down with the rules it bent, so there is always a record. */
+  (function () {
+    var depth = 0;
+    ['skip', 'unskip', 'makeup', 'cancelMakeup', 'moveMakeup', 'join', 'leave', 'addBreak', 'removeBreak'].forEach(function (name) {
+      var f = BC[name];
+      BC[name] = function () {
+        var args = arguments, r; depth++;
+        try { r = f.apply(null, args); } finally { depth--; }
+        if (!depth && r && r.ok && r.warned && r.warned.length) {
+          BC.changeLog.push({ id: BC.nextId++, at: BC.today, student: args[0], act: name, date: typeof args[1] === 'string' ? args[1] : null, bent: r.warned.slice() });
+        }
+        return r;
+      };
+    });
+  })();
+
   /* what is on one day for one student (the calendar and the coach's day sheet both use this) */
   BC.dayInfo = function (s, iso) {
     var ses = BC.session(iso), n = s.type === 'fixed' ? BC.config.advance_days : BC.config.flex_notice_days;
@@ -557,6 +603,23 @@
   };
 
   /* ---------- coach actions ---------- */
+  /* What a student may ask the coach for on a day, and why not. Violations show up only when they apply:
+     note = 'noCredit' | 'capReached' when a make-up is not covered, so the ask becomes an extra lesson. */
+  BC.dayAsk = function (s, iso) {
+    var i = BC.dayInfo(s, iso), kind = i.kind === 'full' ? 'free' : i.kind, out = { kind: kind, ask: '', note: '', locked: i.locked, past: i.past, row: i.row };
+    if (i.past) return out;
+    switch (kind) {
+      case 'mine': out.ask = 'skip'; break;
+      case 'skipped': out.ask = i.row.breakId ? '' : 'unskip'; break;
+      case 'makeup': out.ask = 'changemk'; break;
+      case 'join': out.ask = 'leave'; break;
+      case 'free':
+        if (s.type !== 'fixed') out.ask = 'join';
+        else { var p = BC.pickCredit(s.id, BC.ym(iso)); if (p.reason) { out.ask = 'extra'; out.note = p.reason; } else out.ask = 'makeup'; }
+        break;
+    }
+    return out;
+  };
   BC.addStudent = function (o) {
     var id = BC.nextId++;
     var maxCode = Math.max.apply(null, [30].concat(BC.students.map(function (x) { return Number(x.code.slice(2)); })));

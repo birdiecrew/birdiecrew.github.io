@@ -106,6 +106,8 @@ These are the real rules of the class. The site must follow them, and every numb
 ### The timetable
 The weekly timetable is a setting (weekday, start, end), so nobody has to create lessons one by one. The file only holds a record when something is special: a cancelled day, a day with fewer courts, or extra seats (the "special dates" list).
 
+**Changing the timetable.** The coach can switch a class day on or off and change a time. **A change starts today**: nothing before today moves, so past lessons, bills, paid amounts and credits stay exactly as they were. The file keeps the older timetables, each with the date it stopped. Adding a day (for example Monday) adds sessions from today on, with 16 seats and nobody booked, and fixed students are not moved onto it. Switching a day off asks first, says how many students have it as a regular day, and cancels the make-ups and joins booked on later dates of that day (the credit comes back). Fees do not change when a day is dropped: if a student's days change, she edits the student. The last class day cannot be switched off. A flexible student's bill for the *current* month counts the new sessions from today on, because it is worked out over all sessions.
+
 ### Seats and courts (demand-driven)
 The venue has **4 courts** and the coach books courts after she knows who is coming. So seats are not fixed by a courts number. Instead:
 - A session holds up to **`venue_courts` x `seats_per_court` = 4 x 4 = 16 seats**. The coach can allow 0 to 2 **extra seats** on a session for a squeeze-in.
@@ -131,7 +133,7 @@ The venue has **4 courts** and the coach books courts after she knows who is com
 - The make-up can be on any session that month with a free seat (before or after the skipped lesson).
 - **Undo skip** ("I will attend after all"): the seat comes back, the credit goes away, and a later skip that got no credit (because of the cap of 3) takes the freed one. If that credit was already used for a make-up, the coach must cancel that make-up first. A skip that comes from a planned break is undone by removing the break. Change records are never deleted: they get a cancelled time.
 
-**Soft rules (warning first, then "Do it anyway").** The coach can bend these when she agrees. The change is saved and marked as **rule bent** in the change log, so there is a record.
+**Soft rules (warning first, then "Do it anyway").** The coach can bend these when she agrees. The change is saved and written in the change log with the rules it bent (for example `notice`, `noCredit`), so there is a record. A plain change leaves no mark.
 | Soft rule | Warning she sees |
 |---|---|
 | Notice | "Less than 7 days before the lesson." A last-minute skip still counts as attended unless she says otherwise. |
@@ -159,8 +161,12 @@ The venue has **4 courts** and the coach books courts after she knows who is com
 - The announcement goes through her private Zalo channel. The admin page writes the message for her to paste (see "Reminders and messages").
 
 ## What a student sees (one card, mostly pictures)
-The card is **read-only** and is a **snapshot**: the top says "Card as of 5 Nov". After 7 days a banner says "This card is N days old. Ask your coach for a fresh one." It shows the facts and has one kind of button: **Ask the coach**.
-1. **Calendar:** shows the month. Regular days are solid, skipped days are crossed out, make-up days have a thick outline, and a day that is not theirs has a plain outline. A counter says "make-ups left this month: 2 of 3". Tapping a day shows what it is, and where it makes sense one button: **Ask the coach to skip / let me attend / give me a make-up here / move or cancel this make-up / add or remove me** (flexible). With no make-up credit left, the same button says **Ask the coach for an extra lesson**, with a line explaining there is no credit and the coach may say no (she can still agree as a courtesy make-up). The button writes a ready-made message, copies it, and opens the coach's Zalo chat. A day inside the notice window says so: "You can still ask, but the coach may say no."
+The card is **read-only** and is a **snapshot**: the top says "Card as of 5 Nov, 14:32" (the day and the time it was made, so two cards can be told apart). After 7 days a banner says "This card is N days old. Ask your coach for a fresh one." It shows the facts and has one kind of button: **Ask the coach**.
+
+**Two cards on one phone.** A phone keeps one card per student, and **the newest wins**. If the student opens an older link from the chat, the page keeps and shows the newer card and says "You opened an older card, from … Showing your newest card, from …". Opening the page without a link shows the newest card. (A brother or sister who opens a card for another student replaces it, so each should keep their own link.)
+
+**Quiet by default.** The card has no "Key" button and no counters (make-ups left, credits). A day explains itself when tapped, and a rule is mentioned only when it is about to be broken (for example "You have no make-up credit this month. You can still ask for an extra lesson, but the coach may say no.").
+1. **Calendar:** shows the month. Regular days are solid, skipped days are crossed out, make-up days have a thick outline, and a day that is not theirs has a plain outline. Tapping a day shows what it is, and where it makes sense one button: **Ask the coach to skip / let me attend / give me a make-up here / move or cancel this make-up / add or remove me** (flexible). With no make-up credit left (or the monthly limit reached), the same button says **Ask the coach for an extra lesson**, with a line explaining why and that the coach may say no (she can still agree as a courtesy make-up). The button writes a ready-made message, copies it, and opens the coach's Zalo chat. A day inside the notice window says so: "You can still ask, but the coach may say no."
 2. **Rows under the calendar:** Skills, Fees, Breaks and Class rules, one line each. They open on tap, so the page is not a long scroll.
 3. **Skills:** 6 skills (Smash, Net, Footwork, Defense, Serve, Stamina), each scored 1 to 10 by the coach. The faint outline is the **previous scoring**, so growth is visible. The coach scores every 2 to 3 months, not every month. No score yet means the row is hidden. It also holds the clip for their weakest skill, from a YouTube or TikTok link the coach pastes in.
 4. **Fees:** this month's amount and status. **Pay now** shows the amount and their short payment code with copy buttons, and says to use the QR the coach pinned in Zalo (a link cannot carry a picture). It appears only while the bill is unpaid. Month dots show the history. If the fee is late, a banner says so.
@@ -185,7 +191,7 @@ No phone numbers, photos or emails are ever asked for. A class of 20 takes about
 
 **Every day:**
 1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, **courts to book**, and an "over capacity" warning. **Tap a name** to change that student's lesson, or **Add a student** to the session.
-2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. Then **Send card**: a ready message with the card link, **Copy message**, and **See it as the student sees it**. Also edit and pause a student. **Lessons and changes** opens their calendar: tap a day to skip, add a make-up, undo, join or leave, with warnings and **Do it anyway** (see "Skip and make-up").
+2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. Then **Send card**: a ready message with the card link, **Copy message**, and **See it as the student sees it**. The sheet says whether a card was ever sent and whether anything changed since. Also edit and pause a student. **Lessons and changes** opens their calendar: tap a day to skip, add a make-up, undo, join or leave, with warnings and **Do it anyway** (see "Skip and make-up").
 3. **Payments:** the month's list with the amount each student owes (worked out by the proration rule), unpaid students first. **One tap marks a student paid.** A pencil changes the amount.
 4. **Scores:** pick a student, tap 1 to 10 for each of the 6 skills, Save.
 5. **Breaks:** planned breaks and the worked-out fee reduction. **Plan a break** for a student, or remove one.
@@ -194,7 +200,8 @@ No phone numbers, photos or emails are ever asked for. A class of 20 takes about
 8. **Timetable and seats:** change class days and times with time pickers. Tap 0, 1 or 2 extra seats on a date.
 9. **Videos:** pick a skill, paste the link.
 10. **Settings:** every setting in the table below with a plain label and its default shown, plus the page picture and her QR image.
-11. **My data:** Save file, Open a file, Export report, earlier copies on the phone, and Start over (see "Where the data lives").
+11. **Cards to send:** a banner at the top of Students appears only when there is something to do ("5 cards to send": new students, or a change since their last card). **Send cards** lists them, each with one **Copy message** button; a card counts as sent when she copies it, and the list keeps its order so rows never jump. A change for one student makes only that student's card out of date. Changing the timetable makes every card out of date, because every card holds the class timetable.
+12. **My data:** Save file, Open a file, Export report, earlier copies on the phone, and Start over (see "Where the data lives").
 
 A chip at the top right always shows **Backed up** or **Back up now**, so she knows whether her latest work is in a file.
 
@@ -314,7 +321,7 @@ All numbers below are **settings in the Settings screen**, saved in her file, so
 ## Reminders and messages
 The coach talks to her students on a **private Zalo channel**. Zalo's official message service needs a registered business account and costs money, so version 1 does not send messages by itself. Instead:
 - The admin page has a **"to remind" list**: on the 3rd, students who have not paid yet (a friendly heads-up), and from the 6th, the late ones. Each row has a **Copy message** button, and she pastes it into Zalo. The message is ready in Vietnamese and English, with the student's name, payment code and amount.
-- **Send card** is the same kind of message: a friendly line plus the card link. She sends it to each new student, and again after changes. (Planned: a **Copy reply** button right after she records a request, giving "Done: Thursday 19 skipped. 2 make-ups left. Your new card: link" in one paste.)
+- **Send card** is the same kind of message: a friendly line plus the card link. She sends it to each new student, and again after changes, guided by the **cards to send** banner and list. (Planned: a **Copy reply** button right after she records a request, giving "Done: Thursday 19 skipped. 2 make-ups left. Your new card: link" in one paste.)
 - A cancelled session has a **Copy announcement** button the same way.
 - **The other direction:** the student's **Ask the coach** button writes the request message in the same style. It is the mirror of her Copy message buttons.
 - Message texts live in her settings, so she can reword them.
@@ -365,7 +372,8 @@ There is **no database and no server.** Think of it as a notebook the coach carr
 | **The coach does not want to use it.** This is the biggest risk, and she has not been asked yet. | Step 0: show her the demo and the rules page before building more. The admin page does her daily jobs (courts to book, who paid) so it saves her time, not adds work. |
 | Too many requests land on the coach, and each one now also means sending a fresh card. She becomes the bottleneck. (A rough guess for 100 students is 5 to 10 requests a day. Not measured.) | The Ask the coach button writes a complete, standard message, her calendar tools take about 3 taps per request, and **Copy reply** (planned) makes the answer one paste. Step 0 checks the volume with her. |
 | **She forgets to back up, or the browser clears its storage, or the phone is lost.** | The chip, the first-run backup step, Start over locked until a file exists, earlier copies, and the Home Screen tip. Test in step 2 how storage behaves on her phone. |
-| Students look at an old card. | The card shows its date and a banner after 7 days. The coach sends a fresh card with each change. If students want live data, we add a shared place later. |
+| Students look at an old card, or hold two cards. | The card shows its date and time, and a banner after 7 days. The newest card on a phone always wins, even if an old link is opened later. The coach sees which cards are new or out of date and sends them from one list. If students want live data, we add a shared place later. |
+| A timetable change rewrites history (past bills, credits, calendars). | Changes start today and older timetables are kept with the dates they ended, so nothing before today moves. Covered by tests. |
 | A leaked card link cannot be taken back. | The card holds only first names and a schedule, and it goes stale. Said honestly in "Access and privacy". |
 | The link is cut short or the in-app browser (Zalo) misbehaves. | A clear "this link did not open" message. Test the card in the Zalo browser in step 2. |
 | The file format has to change later. | A version number in the file, and the app upgrades old files. |
@@ -376,12 +384,27 @@ There is **no database and no server.** Think of it as a notebook the coach carr
 0. **Show the coach.** One page: the six rules, the demo, and the open questions below. *Done when she says yes and has answered the questions that are hers.* No code.
 1. **Mockups reviewed.** Click-through pages with made-up data (`mockups/`): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
 2. **Prove the risky parts on real phones.** One afternoon. (a) Save file and Open a file through the share sheet on her phone. (b) Storage survives a week, with and without the page on the Home Screen. (c) A card link opens in the Zalo in-app browser, and compression works there. (d) The security policy really blocks network calls. *Done when all four work on her phone, or we know the fallback.*
-3. **The rules and storage as real code, with tests.** Port the rules engine and the storage layer from the mockups. *Done when every example in the step 3 test list passes, the random-sequence test (`mockups/tests/rules-fuzz.js`) finds no broken rule, and the storage tests (`mockups/tests/store-test.js`) pass.*
+3. **The rules and storage as real code, with tests.** Port the rules engine and the storage layer from the mockups. *Done when `node mockups/tests/run-all.js` passes (see "Tests" below) and the screen tests in `mockups/tests/ui-tests.html` pass in a browser.*
 4. **Admin page.** Click and click, phone first: the wizard, Next 14 days with courts to book, students, each student's calendar with lesson changes, payments with worked-out amounts, breaks, cancel a session, the reminder list, timetable and seats, settings, My data. *Done when the coach can run a normal week without anything else.*
 5. **Card page.** Read-only, Vietnamese first, opened from the link, with the "as of" line and the old-card banner. *Done when it looks right on a phone and in a chat app's built-in browser.*
 6. **Send card and Copy reply.** The message with the link after every change. Backup nudges. The report.
 7. **Skills.** Scores, the polygon, and videos. (Open question: skills are the most valuable part for keeping students, so this may move earlier.)
 8. **Pay now page.** The amount and payment code with copy buttons. Late banner, and the reduced amount after a long break. Later, if she shares the bank and account number, a QR can be made in the browser with the amount and code filled in.
+
+## Tests
+Everything below is runnable now against the mockups. `node mockups/tests/run-all.js` runs all the command-line files (about a minute). The screen tests need a browser: serve `mockups/`, open `/tests/ui-tests.html`, and wait for "UI TESTS: N passed".
+
+| File | What it covers |
+|---|---|
+| `rules.test.js` | Skip, make-up, undo, seats and courts, late fee, cancelled sessions, breaks, flexible students, and the record of every forced change (the step 3 and step 5 lists below) |
+| `ask.test.js` | What a student may ask on each kind of day, extra lesson versus make-up, and that a rule is mentioned only when it would be broken |
+| `money.test.js` | Fees by days a week, proration, credits on the next bill, due dates, and that every bill is a whole number of thousands |
+| `cards.test.js` | What is in a card, link length, damaged links, two cards and which is newer, what the phone keeps, and when the coach's card is out of date |
+| `timetable.test.js` | Adding a day (Monday), dropping a day, changing a time: nothing before today moves, sessions, bills, credits, cards and the file |
+| `store-test.js` | The save file, hand-edit detection, names pasted from Zalo, the report |
+| `i18n.test.js` | No untranslated text, matching placeholders, a message for every Ask button |
+| `rules-fuzz.js` | Thousands of random actions checked against rules that must never break (run on 8 seeds) |
+| `ui-tests.html` | The screens: first-run gating, no layout jumps, limits, guarded forms, the timetable, My data, cards to send, the student card and two cards, big fingers (every control tall enough), no sideways scrolling |
 
 ## Test list for step 3
 Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and the student has paid. The coach records every change. "Warned" means: refused at first with a soft warning, and it succeeds with "Do it anyway" (marked rule bent). "Refused" means a hard refusal that never succeeds.
@@ -409,7 +432,7 @@ Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and th
 - Every change made with "Do it anyway" is stored with a rule-bent mark listing which rules were overridden. A change made without it has none.
 
 ## Test list for step 4 (storage, cards and the admin page)
-Most of these already run in `mockups/tests/store-test.js`.
+These run in `store-test.js`, `cards.test.js`, `timetable.test.js` and `ui-tests.html`.
 - Saving a file and opening it again gives exactly the same data.
 - Opening the Payments screen for a month with no records does not make the file look changed (so the Back up now chip does not nag for nothing).
 - A file edited by hand is refused ("changed outside the app"). Text that is not JSON, a file from another app, a file with a newer version number, and a file with the right fingerprint but a broken shape are each refused with their own plain message.
@@ -417,6 +440,9 @@ Most of these already run in `mockups/tests/store-test.js`.
 - The card link is under about 6,000 characters for a normal student, and a cut-short link gives a "this link did not open" screen.
 - A card, once opened, draws the same calendar and the same credit counts as the coach sees for that student.
 - Pasted names: bullets, numbers and commas are cleaned, repeats are dropped (accents ignored), names over 20 letters are cut and counted, and only the first 60 are used.
+- Two cards for one student: the newer one is always the one kept and shown, even when the older link is opened later. Two cards made on the same day still order by the time they were made.
+- The coach's card list: a new student is "no card", a change for that student makes only their card out of date, time passing alone does not, and sending clears it.
+- Adding Monday to a Tuesday and Thursday class: no fixed student's lessons, bills or paid amounts change, past months of a flexible student do not move, every card becomes out of date, an old card still draws its student correctly, and the file keeps the history.
 - The report is a plain CSV with one row per student per month, and opens in a spreadsheet.
 - Wizard: step 3 stays locked until step 2 has a name, Next stays dimmed with its reason, the 2-day fee cannot go under the 1-day fee, the last class day cannot be switched off, the end-time list only has times after the start, and Finish stays dimmed until the file is saved or skipped on purpose.
 - Add student: Save stays dimmed with a reason for each of: no name, a name already in the class, no day chosen, a date more than a year away. A class of 60 cannot take another.
@@ -442,7 +468,7 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 0. **Coach-only changes (decided by the owner, to confirm with her):** students ask on Zalo and she records every skip, make-up and break. How many requests a day is that for her? Does the Ask the coach button fit how her students already write to her? (Applied: yes, with soft warnings so she can say yes to exceptions. A self-service mode for simple cases can be added later if the volume is too high.)
 1. **Is "the last card she sent" enough for students?** Or do they need a page that is always up to date? (Guess: enough. If not, a shared place is added later and the cost is a sign-in or a small service.)
 2. **Does she use one device or two?** (Guess: her phone. Two devices means moving the file between them, or the Drive upgrade.)
-3. **Is the extra step per request fine?** After recording a change she copies the reply with the fresh card. (Planned: one tap and one paste.)
+3. **Is the extra step per request fine?** After recording a change she copies the reply with the fresh card. (The cards-to-send list is built. A one-tap **Copy reply** right after each change is planned.)
 4. **Does she agree with the fee rule?** A student pays only for the days they study (mid-month joiners and long breaks), rounded to the nearest 1,000 dong, with a credit on the next bill instead of a refund. (**Applied:** yes. It is flexible: `proration` and `credit_carry` in the settings.)
 5. **Flexible students:** is the rule "each session at least 7 days ahead", or "the whole week's plan sent during the week before"? And do they pay the same fee? (Each session at least 7 days ahead, with a fee set per student.)
 6. **Cancelled sessions:** is the make-up credit outside the cap of 3, and may it be used one extra month? (Yes to both.)
@@ -495,6 +521,9 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 - The coach scores skills every 2 to 3 months. The polygon compares with the previous scoring.
 - Both languages (Vietnamese by default, and English), with a toggle.
 - Go ahead without waiting for the coach's yes: the mockups cost her nothing, and the step 2 phone test comes before the big build.
+- A timetable change starts today and never rewrites the past. The file keeps the older timetables.
+- A phone keeps one card per student, the newest wins, and the card shows the day and time it was made. The coach sees which cards are new or out of date.
+- The card is quiet: no Key button and no counters. A rule is shown only when it is about to be broken, and with no credit the ask becomes an extra lesson.
 - No receipt upload.
 
 ## Status so far (2026-11-06)
@@ -509,6 +538,7 @@ Done:
 - Click-through HTML mockups of both pages (`mockups/`) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`mockups/tests/rules-fuzz.js`).
 - Changed to coach-only lesson changes, with soft and hard rules and fee tiers by days per week.
 - **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`mockups/tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
+- Student card made quiet (no Key, no counters, extra lesson when there is no credit), newest card wins on a phone, the coach sees cards to send, and timetable changes start today. A full test suite (about 140 scenario checks, the random-sequence test on 8 seeds, and 33 screen tests) was added. Writing the tests found and fixed: a card opened from an old link replaced a newer one, a timetable change rewrote past bills and credits, forced changes were not recorded in the log, the court limit was only enforced on screen, and a few tap targets were too small.
 - Git push from this computer works over SSH.
 
 Next:

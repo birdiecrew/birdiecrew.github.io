@@ -174,14 +174,17 @@ window.Setup = (function () {
         '<button class="btn primary" data-wz="' + (s === 5 ? 'finish' : 'next') + '"' + (ok ? '' : ' disabled') + '>' + (s === 5 ? t('Finish') : t('Next')) + '</button></div>';
     }
 
-    function wizardView() {
-      var s = W.step, steps = [1, 2, 3, 4, 5].map(function (k) {
-        var dis = !unlocked(k), done = k < s && VALID[k]();
-        return '<button data-wz="go" data-s="' + k + '" class="' + (done ? 'done' : '') + '"' + (k === s ? ' aria-current="step"' : '') + (dis ? ' disabled' : '') + ' aria-label="' + t('Step {n}', { n: k }) + '">' + (done ? icon('check', 'sm') : k) + '</button>';
+    function stepsHtml() {
+      return [1, 2, 3, 4, 5].map(function (k) {
+        var dis = !unlocked(k), done = k < W.step && VALID[k]();
+        return '<button data-wz="go" data-s="' + k + '" class="' + (done ? 'done' : '') + '"' + (k === W.step ? ' aria-current="step"' : '') + (dis ? ' disabled' : '') + ' aria-label="' + t('Step {n}', { n: k }) + '">' + (done ? icon('check', 'sm') : k) + '</button>';
       }).join('');
+    }
+    function wizardView() {
+      var s = W.step, steps = stepsHtml();
       return '<div class="wzv"><div class="row between" style="padding-top:12px"><span class="muted small">' + t('Step {a} of {b}', { a: s, b: 5 }) + '</span><div class="row" style="gap:8px">' + UI.themeBtn() +
         '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-        '<div class="steps" style="margin-top:10px">' + steps + '</div>' + [null, step1, step2, step3, step4, step5][s]() +
+        '<div class="steps" id="wz-steps" style="margin-top:10px">' + steps + '</div>' + [null, step1, step2, step3, step4, step5][s]() +
         '</div><div class="bar"><div class="bar-in" id="wz-bar">' + barHtml() + '</div></div>';
     }
 
@@ -249,6 +252,7 @@ window.Setup = (function () {
       if (!W || e.target.id !== 'wz-names') return false;
       touch(); W.text = e.target.value; reconcile();
       var p = $('#wz-prev'); if (p) p.innerHTML = prevHtml();
+      var st = $('#wz-steps'); if (st) st.innerHTML = stepsHtml();
       barRefresh(); return true;
     }
     function change(e) {
