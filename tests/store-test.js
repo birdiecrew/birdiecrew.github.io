@@ -1,5 +1,5 @@
 /* Tests for the storage layer (assets/store.js): save file round trip, hand-edit detection, student card link, pasted names, report.
-   Run: node mockups/tests/store-test.js */
+   Run: node tests/store-test.js */
 global.window = global; global.document = undefined;
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const dir = path.join(__dirname, '..', 'assets');

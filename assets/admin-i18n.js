@@ -524,5 +524,10 @@ window.VI = {
   "Zalo": "Zalo",
   "Your Zalo number": "Số Zalo của bạn",
   "Card language": "Ngôn ngữ thẻ",
-  "Pretend date": "Ngày giả định"
+  "Pretend date": "Ngày giả định",
+  "Copy reply": "Sao chép tin trả lời",
+  "Support copy": "Bản hỗ trợ",
+  "Support copy ready": "Bản hỗ trợ đã sẵn sàng",
+  "This browser may clear its data. Save a file.": "Trình duyệt này có thể xóa dữ liệu. Hãy lưu file.",
+  "Reply after a change": "Tin trả lời sau khi đổi lịch"
 };

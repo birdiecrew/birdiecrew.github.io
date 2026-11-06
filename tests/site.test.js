@@ -24,6 +24,14 @@ for (const [page, dir] of Object.entries(PAGES)) {
   });
   test(page + ': no mockup wording', () => assert(!/mock/i.test(read(page))));
 }
+test('the coach page can be installed: a manifest whose icons exist, and a touch icon', () => {
+  const m = JSON.parse(read('admin/manifest.webmanifest'));
+  assert(m.display === 'standalone' && m.start_url && m.name && m.lang === 'vi');
+  for (const i of m.icons) assert(fs.existsSync(path.join(root, 'admin', i.src)), i.src);
+  assert(m.icons.some((i) => i.sizes === '192x192') && m.icons.some((i) => i.sizes === '512x512'));
+  assert(/rel="manifest"/.test(read('admin/index.html')) && /manifest-src 'self'/.test(read('admin/index.html')));
+  assert(/apple-touch-icon/.test(read('admin/index.html')) && /apple-touch-icon/.test(read('index.html')));
+});
 test('every script in assets parses', () => {
   for (const f of fs.readdirSync(path.join(root, 'assets')).filter((x) => x.endsWith('.js'))) new vm.Script(read('assets/' + f), { filename: f });
 });

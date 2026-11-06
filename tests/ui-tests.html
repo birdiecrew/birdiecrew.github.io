@@ -238,7 +238,7 @@
   });
   test('my data: a short list, no paragraphs', async function () {
     wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '.dchip'); await sleep(100);
-    eq(qa(w, '.menu .li').length, 3); eq(qa(w, '#view p').length, 0); ok(txt(w, '#view').length < 160, txt(w, '#view'));
+    eq(qa(w, '.menu .li').length, 4); ok(q(w, '[data-a="support"]'), 'a support copy is one tap away'); eq(qa(w, '#view p').length, 0); ok(txt(w, '#view').length < 160, txt(w, '#view'));
   });
   test('my data: a saved copy that was edited by hand is explained on the start screen', async function () {
     wipe(); saveClass(two); var f = JSON.parse(localStorage.getItem('bc_data')); f.data.students[0].name = 'X'; localStorage.setItem('bc_data', JSON.stringify(f));
@@ -350,6 +350,44 @@
     wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id)); var before = JSON.stringify(w.BC.changes);
     await click(w, '[data-iso="2026-11-17"]'); await click(w, '[data-ask]'); await sleep(150);
     eq(JSON.stringify(w.BC.changes), before); ok(/John \(VM031\)/.test(txt(w, '.msgbox')), txt(w, '.msgbox'));
+  });
+
+
+  /* ================= the real site ================= */
+  test('pretend date: ?today= shows which day the page is pretending', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN); ok(/Pretend date/.test(txt(w, '.top + .banner')) && /2026-11-05/.test(txt(w, '.top + .banner')), txt(w, '.top + .banner'));
+  });
+  test('the card page with no card says what to do, and has no demo student', async function () {
+    wipe(); var w = await frame(CARD); ok(/No card yet/.test(txt(w, '#app')), txt(w, '#app')); ok(!q(w, '.cal-grid') && !q(w, '.hdr'), 'nothing to look at yet');
+    ok(q(w, '.langbtn'), 'the language button is there');
+  });
+  test('after a change the coach can copy one reply that holds the fresh card', async function () {
+    wipe(); var o = saveClass(two); BC.markCardSent(o.a.id); BC.autosave();
+    var w = await frame(ADMIN); await click(w, '[data-tab="students"]');
+    var john = qa(w, '[data-a="stu"]').filter(function (b) { return /John/.test(b.textContent); })[0]; await click(w, john); await click(w, '#st-cal'); await sleep(300);
+    await click(w, '[data-d="2026-11-17"]'); await sleep(250); await click(w, '#day-go'); await sleep(300);
+    ok(q(w, '[data-reply]') && /Skipped/.test(txt(w, '.sheet')), 'done, with a reply to copy: ' + txt(w, '.sheet'));
+    eq(w.BC.cardState(o.a.id), 'stale', 'the change made the old card out of date');
+    await click(w, '[data-reply]'); await sleep(900); eq(w.BC.cardState(o.a.id), 'current', 'copying the reply counts as sending the card');
+    await click(w, '.sheet [data-close]'); await sleep(250); ok(pageOpen(w), 'back on the calendar');
+  });
+  test('a skill video opens its link, and only a web link', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.scores[x.a.id] = [{ date: '2026-10-28', v: { smash: 2, net: 7, footwork: 7, defense: 7, serve: 7, stamina: 7 } }]; BC.videos.smash = { title: 'Smash', len: '', url: 'https://www.youtube.com/results?search_query=smash' }; return x; });
+    var w = await frame(await cardPage(o.a.id)); var opened = []; w.open = function (u) { opened.push(u); };
+    await click(w, '[data-act="skills"]'); await sleep(250); await click(w, '.thumb'); eq(opened, ['https://www.youtube.com/results?search_query=smash']);
+  });
+  test('a week with no saved file turns the save icon on, although nothing changed', async function () {
+    wipe(); saveClass(two); localStorage.setItem('bc_backup_at', String(Date.now() - 8 * 864e5));
+    var w = await frame(ADMIN); ok(q(w, '.dchip').classList.contains('primary'), 'icon asks for a save'); await click(w, '.dchip'); ok(/Saved/.test(txt(w, '#view')) && !/Back up/.test(txt(w, '#view')), txt(w, '#view'));
+  });
+  test('Settings lets her reword the reply message too', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    ok(qa(w, 'details textarea').some(function (t) { return t.getAttribute('data-k') === 'en.reply'; }), 'reply text is editable');
+  });
+  test('the sample class works from the real page and leaves the real date alone when she starts her own', async function () {
+    wipe(); var w = await frame(ADMIN); await click(w, '[data-wz="sample"]'); await sleep(250);
+    eq(w.BC.today, '2026-11-05'); ok(w.BC.students.length > 30); await click(w, '[data-a="clearsample"]'); await click(w, '.dialog [data-v="1"]'); await sleep(250);
+    ok(q(w, '[data-wz="new"]'), 'start screen again'); ok(w.BC.students.length === 0);
   });
 
   /* ================= every screen: big fingers ================= */

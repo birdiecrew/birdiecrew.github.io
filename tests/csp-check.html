@@ -6,7 +6,7 @@
 <!-- Does the page's security policy really stop it sending data out?
      It loads the real admin page and the real card page in frames, then tries every way a page can reach the network
      FROM INSIDE those frames (so their own policy applies). Every attempt must be blocked.
-     Serve the mockups folder, open /tests/csp-check.html, and wait for "CSP CHECK: ... passed". -->
+     Serve the repository root, open /tests/csp-check.html, and wait for "CSP CHECK: ... passed". -->
 <style>body{font:14px/1.5 system-ui,sans-serif;margin:16px}.ok{color:#1f7a4d}.bad{color:#b73428;font-weight:700}iframe{width:300px;height:200px;border:1px solid #bbb}</style>
 </head>
 <body>

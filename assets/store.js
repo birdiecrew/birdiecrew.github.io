@@ -5,7 +5,9 @@
 (function () {
   'use strict';
   var BC = window.BC;
-  var VERSION = 1, APP = 'birdie-crew';
+  var APP = 'birdie-crew';
+  /* the save file format. When it changes, add a function to `migrations` that turns version N data into version N+1 data. */
+  var F = BC.FORMAT = { version: 1, migrations: {} };
   var K_DATA = 'bc_data', K_HIST = 'bc_hist', K_BAK_AT = 'bc_backup_at', K_BAK_SUM = 'bc_backup_sum';
 
   /* the numbers the screens use to stop mistakes before they happen */
@@ -37,7 +39,8 @@
   };
   BC.load = function (d) {
     var c = JSON.parse(JSON.stringify(d));
-    BC.config = Object.assign({}, BC.config, c.config); BC.messages = c.messages; BC.timetable = c.timetable; BC.ttHistory = c.ttHistory || []; BC.overrides = c.overrides;
+    BC.config = Object.assign({}, BC.config, c.config);
+    BC.messages = { en: Object.assign({}, BC.defaultMessages().en, (c.messages || {}).en), vi: Object.assign({}, BC.defaultMessages().vi, (c.messages || {}).vi) };   /* an older file gets the newer texts */ BC.timetable = c.timetable; BC.ttHistory = c.ttHistory || []; BC.overrides = c.overrides;
     BC.videos = c.videos; BC.students = c.students; BC.changes = c.changes; BC.breaks = c.breaks; BC.payments = c.payments;
     BC.changeLog = c.changeLog || []; BC.scores = c.scores; BC.nextId = c.nextId; BC.meta = c.meta || { sample: false, setup: true };
     BC.qrImage = c.qr || '';
@@ -47,7 +50,7 @@
   /* ---------- the save file ---------- */
   BC.fileText = function () {
     var data = BC.dump();
-    return JSON.stringify({ app: APP, v: VERSION, saved: new Date().toISOString(), sum: sum(JSON.stringify(data)), data: data });
+    return JSON.stringify({ app: APP, v: F.version, saved: new Date().toISOString(), sum: sum(JSON.stringify(data)), data: data });
   };
   BC.fileName = function (ext) {
     var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
@@ -69,10 +72,15 @@
     var f;
     try { f = JSON.parse(text); } catch (e) { return { ok: false, reason: 'notJson' }; }
     if (!f || f.app !== APP || !f.data) return { ok: false, reason: 'notOurs' };
-    if (!isNum(f.v) || f.v > VERSION) return { ok: false, reason: 'newer' };
+    if (!isNum(f.v) || f.v > F.version) return { ok: false, reason: 'newer' };
     if (f.sum !== sum(JSON.stringify(f.data))) return { ok: false, reason: 'edited' };
-    if (!shapeOk(f.data)) return { ok: false, reason: 'broken' };
-    return { ok: true, data: f.data, saved: f.saved };
+    var data = f.data;
+    for (var v = f.v; v < F.version; v++) {          /* an older file is upgraded one version at a time */
+      if (typeof F.migrations[v] !== 'function') return { ok: false, reason: 'broken' };
+      try { data = F.migrations[v](JSON.parse(JSON.stringify(data))); } catch (e) { return { ok: false, reason: 'broken' }; }
+    }
+    if (!shapeOk(data)) return { ok: false, reason: 'broken' };
+    return { ok: true, data: data, saved: f.saved, upgraded: f.v < F.version };
   };
 
   /* give a file to the person: the phone's share sheet when there is one, else a normal download */
@@ -121,7 +129,24 @@
   BC.markBackedUp = function (atMs) { set(K_BAK_AT, String(atMs || Date.now())); set(K_BAK_SUM, sumNow()); };
   BC.backup = function () {
     var at = Number(get(K_BAK_AT)) || 0;
-    return { at: at || null, dirty: !at || get(K_BAK_SUM) !== sumNow() };
+    return { at: at || null, dirty: !at || get(K_BAK_SUM) !== sumNow(), old: !!at && Date.now() - at > 7 * 864e5 };
+  };
+
+  /* ---------- ask the browser to keep the working copy ---------- */
+  /* resolves true (kept), false (the browser may clear it, so the file matters) or null (cannot tell) */
+  BC.persist = function () {
+    try {
+      if (!(navigator.storage && navigator.storage.persist)) return Promise.resolve(null);
+      return navigator.storage.persisted().then(function (already) { return already ? true : navigator.storage.persist(); }).then(function (v) { BC.persisted = !!v; return !!v; }, function () { return null; });
+    } catch (e) { return Promise.resolve(null); }
+  };
+
+  /* ---------- a copy to send for support: same file, but no real names, QR or phone number ---------- */
+  BC.supportText = function () {
+    var d = JSON.parse(JSON.stringify(BC.dump()));
+    d.students.forEach(function (s, i) { s.name = 'S' + (i + 1); });
+    d.qr = ''; d.logo = ''; d.config.coach_zalo = ''; d.config.page_title = 'Support copy';
+    return JSON.stringify({ app: APP, v: F.version, saved: new Date().toISOString(), sum: sum(JSON.stringify(d)), data: d });
   };
 
   /* ---------- names pasted from Zalo, a notebook or a sheet ---------- */

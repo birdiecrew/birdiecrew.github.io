@@ -85,7 +85,7 @@ Two differences. Snowball's list of codes is public, but student scores are pers
 ## How it works
 - **Website:** plain static pages on GitHub Pages. No server, no database, no script in anyone's account. Two pages: the **card page** (`/`) and the **coach admin page** (`/admin/`). The pages hold code only, never data.
 - **The coach's data:** one **save file** (JSON, in a format the app owns). She opens it, works, and saves it. Between saves, the admin page keeps a working copy in her browser, so nothing is lost on a refresh. She never edits the file by hand.
-- **Rules:** the rules (credits, the cap of 3, warnings, fees) run in the admin page, in her browser. It is the same code the mockups run, tested by a random-sequence test.
+- **Rules:** the rules (credits, the cap of 3, warnings, fees) run in the admin page, in her browser. It is the same code the first prototype ran, tested by a random-sequence test.
 - **Student card:** a link made by the admin page (**Send card**). The data is in the part after `#`, so it never reaches any server. The card is a **snapshot** with an "as of" date. When something changes, the coach sends a fresh one.
 - **Who changes lessons:** only the coach, in the admin page, after the student asks her on Zalo. The card cannot change anything.
 - **The admin page is the referee.** It checks every rule and warns her. A few rules are **soft** (she can say "Do it anyway"). The impossible ones are **hard** and always refused. See "Skip and make-up".
@@ -300,7 +300,7 @@ All numbers below are **settings in the Settings screen**, saved in her file, so
 - The file is a plain file. Opening a file from someone else loads their data into her phone, so the app checks the shape and refuses anything that is not a Birdie Crew file.
 
 **Other safety**
-- The repo is **public** (free Pages needs it). No student data, names or QR images are ever committed to it. The mockups use made-up names only.
+- The repo is **public** (free Pages needs it). No student data, names or QR images are ever committed to it. The sample class uses made-up names only.
 - **Names only.** The app keeps first names or nicknames, and nothing else personal: no phone, email, address or photo. Money is stored as "paid or not" with the amount the rules worked out, not as bank details.
 - Dates use one fixed time zone, set in the settings.
 - **File integrity:** every save file carries a version number and a fingerprint. If the file was changed outside the app, or damaged, the app says so in plain words and offers the last good copy. This catches mistakes. It is not a security feature.
@@ -394,9 +394,9 @@ There is **no database and no server.** Think of it as a notebook the coach carr
 
 ## Build order
 0. **Show the coach.** One page: the six rules, the demo, and the open questions below. *Done when she has tapped through it on her phone and said what felt wrong.* No code.
-1. **Mockups reviewed.** Click-through pages with made-up data (`mockups/`): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
+1. **Mockups reviewed.** Click-through pages with made-up data (first prototype, now the real site): the first-run wizard, the admin page, My data, Send card and the card opened from a link, with the rules running for real. *Done when the developer and the coach have looked at them on a phone.*
 2. **Prove the risky parts on real phones.** One afternoon. (a) Save file and Open a file through the share sheet on her phone. (b) Storage survives a week, with and without the page on the Home Screen. (c) A card link opens in the Zalo in-app browser, and compression works there. (d) The security policy blocks network calls: *tried in Chrome, passes; to confirm on iPhone Safari.* *Done when all four work on her phone, or we know the fallback.*
-3. **The rules and storage as real code, with tests.** Port the rules engine and the storage layer from the mockups. *Done when `node mockups/tests/run-all.js` passes (see "Tests" below) and the screen tests in `mockups/tests/ui-tests.html` pass in a browser.*
+3. **The rules and storage as real code, with tests.** Done: the prototype was moved into the real layout, so the rules engine and the storage layer are the shipped files. *Done when `node tests/run-all.js` passes (see "Tests" below) and the screen tests in `tests/ui-tests.html` pass in a browser.*
 4. **Skills first.** Scores, the polygon with the change since last time, and videos: the coach's scoring screen and the card's Skills page. (Decided: skills are what keeps students and brings new ones, so they come before payments and breaks.)
 5. **The rest of the admin page.** Click and click, phone first: the wizard, Next 14 days with courts to book, students, each student's calendar with lesson changes, payments with worked-out amounts, breaks, cancel a session, the reminder list, timetable and seats, settings, My data. *Done when the coach can run a normal week without anything else.*
 6. **The rest of the card page.** Read-only, Vietnamese first, opened from the link, with the old-card banner. *Done when it looks right on a phone and in a chat app's built-in browser.*
@@ -404,7 +404,7 @@ There is **no database and no server.** Think of it as a notebook the coach carr
 8. **Pay now page.** The amount and payment code with copy buttons. Late banner, and the reduced amount after a long break. A QR on the card only if needed (see "Open questions").
 
 ## Tests
-Everything below is runnable now against the mockups. `node mockups/tests/run-all.js` runs all the command-line files (about a minute). The screen tests need a browser: serve `mockups/`, open `/tests/ui-tests.html`, and wait for "UI TESTS: N passed".
+Everything below runs against the real site code. `node tests/run-all.js` runs all the command-line files (about a minute). The screen tests need a browser: run `node tests/run-screens.js` (Playwright), or serve the repository root and open `/tests/ui-tests.html`, and wait for "UI TESTS: N passed".
 
 | File | What it covers |
 |---|---|
@@ -508,7 +508,7 @@ Answers marked **(owner)** were given by the developer on 2026-11-07 on the coac
 - Two static pages on one address: the card page and the coach admin page. **No server, no database, no script in anyone's account.**
 - The coach's data is a **save file she keeps**, with an automatic working copy in her browser. The file is in the app's own format (JSON with a version and a fingerprint). She never edits it by hand.
 - The developer never sees her data, by construction. The developer builds the bike, she brings the gasoline. The developer tests on a sample class of made-up students.
-- The rules run in the admin page and are tested by a random-sequence test. They are the same code in the mockups and the real site.
+- The rules run in the admin page and are tested by a random-sequence test. It is one code base: the prototype became the site.
 - Students get a **card link** made by the admin page, holding only their own rows. It is read-only and a snapshot, with an "as of" date. No Google login for students.
 - No admin password: the data is on her device. The admin page cannot make network calls.
 - The coach keeps **names only**: no phone, email, address or student photos.
@@ -561,9 +561,9 @@ Done:
 - PR #2 merged: the plan became a build-ready spec.
 - PR #3 open: the class's real notice applied.
 - The coach's answers applied: fee proration, long breaks, cancelled sessions, Zalo reminders, her own QR, dong and Vietnam time, and the VM Badminton page title.
-- Click-through HTML mockups of both pages (`mockups/`) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`mockups/tests/rules-fuzz.js`).
+- Click-through HTML mockups of both pages (first prototype, now the real site) with the rules running for real, a neutral palette with green and red meaning only done and wrong, and a random-sequence test of the rules (`tests/rules-fuzz.js`).
 - Changed to coach-only lesson changes, with soft and hard rules and fee tiers by days per week.
-- **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`mockups/tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
+- **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
 - Student card made quiet (no Key, no counters, extra lesson when there is no credit), newest card wins on a phone, the coach sees cards to send, and timetable changes start today. A full test suite (about 140 scenario checks, the random-sequence test on 8 seeds, and 33 screen tests) was added. Writing the tests found and fixed: a card opened from an old link replaced a newer one, a timetable change rewrote past bills and credits, forced changes were not recorded in the log, the court limit was only enforced on screen, and a few tap targets were too small.
 - **Simplified every screen** (this change): shorter labels, no instruction text, icon-only navigation, full-page forms that slide in, one language button on the card, Vietnamese default, Flex chip, positive "Focus" wording, the polygon carries the change since last time, and a laptop layout. About 150 command-line checks and 53 screen tests cover it.
 - **Answered the open questions** (owner's answers, to confirm with the coach) and **tried the security policy**: it blocks every way of sending data out in Chrome, and the app still passes all its screen tests under it. `TICKETS.md` splits the plan into 114 small tickets with progress.

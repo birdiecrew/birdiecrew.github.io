@@ -76,13 +76,15 @@
         soft: 'Hi {name}, a friendly reminder: the {month} fee of {amount} is due by the end of {due}. Please transfer with the note {code}.',
         late: 'Hi {name}, the {month} fee ({amount}) is now overdue. Until it is paid you cannot skip, take make-ups or plan breaks (lessons already booked stay). Transfer note: {code}.',
         cancel: 'Notice: the {weekday} {date} session is cancelled. Everyone booked gets 1 free make-up lesson, valid until the end of {until}. Message me to pick a day.',
-        card: 'Hi {name}, here is your class card (as of {date}). Open it and bookmark it. When something changes I will send you a fresh one: {link}'
+        card: 'Hi {name}, here is your class card (as of {date}). Open it and bookmark it. When something changes I will send you a fresh one: {link}',
+        reply: 'Done: {what}. Your new card: {link}'
       },
       vi: {
         soft: 'Chào {name}, nhắc nhẹ: học phí {month} là {amount}, hạn đóng hết ngày {due}. Bạn chuyển khoản với nội dung {code} nhé.',
         late: 'Chào {name}, học phí {month} ({amount}) đã quá hạn. Khi chưa đóng, bạn chưa thể xin nghỉ, đặt học bù hay báo nghỉ dài (các buổi đã đặt vẫn giữ). Nội dung chuyển khoản: {code}.',
         cancel: 'Thông báo: buổi học {weekday} {date} được hủy. Mỗi bạn đã đăng ký được 1 buổi học bù miễn phí, dùng đến hết {until}. Nhắn cho HLV để chọn ngày học bù.',
-        card: 'Chào {name}, đây là thẻ lớp của bạn (cập nhật ngày {date}). Bạn mở và lưu lại nhé. Khi có thay đổi mình sẽ gửi thẻ mới: {link}'
+        card: 'Chào {name}, đây là thẻ lớp của bạn (cập nhật ngày {date}). Bạn mở và lưu lại nhé. Khi có thay đổi mình sẽ gửi thẻ mới: {link}',
+        reply: 'Đã xong: {what}. Thẻ mới của bạn: {link}'
       }
     };
   };
@@ -127,7 +129,7 @@
     BC.today = BC.realToday(); BC.pretend = false;
     try {
       var m = /[?&]today=(\d{4}-\d{2}-\d{2})(?:&|#|$)/.exec(window.location.search + '&');
-      if (m && !isNaN(BC.toDate(m[1]).getTime())) { BC.today = m[1]; BC.pretend = true; }
+      if (m && BC.iso(BC.toDate(m[1])) === m[1]) { BC.today = m[1]; BC.pretend = true; }   /* a real calendar day only */
     } catch (e) { /* not in a browser */ }
   };
 
