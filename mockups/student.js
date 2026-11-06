@@ -218,7 +218,16 @@
         ask = i.row.breakId ? '' : 'unskip'; break;
       case 'makeup': body = status(i.row.source === 'cancel' ? t('statusMakeupFree') : t('statusMakeup'), 'ok'); ask = 'changemk'; break;
       case 'join': body = status(t('statusJoin'), 'ok'); ask = 'leave'; break;
-      case 'free': body = status(t('statusFree')); ask = s.type === 'fixed' ? 'makeup' : 'join'; break;
+      case 'free':
+        body = status(t('statusFree'));
+        if (s.type !== 'fixed') ask = 'join';
+        else {
+          /* a make-up needs a credit. Without one she may still ask, but it is an extra lesson and the coach may say no */
+          var cs = BC.creditSummary(s.id, ym);
+          ask = cs.skipCredits || cs.free ? 'makeup' : 'extra';
+          if (ask === 'extra') body += why(t('noCreditNote'));
+        }
+        break;
       case 'cancelled': {
         var got = BC.rows(s.id, 'cancel_credit', function (c) { return c.date === iso; }).length;
         body = status(t('statusCancelled'), 'bad') + (ses.ov.note ? why(h(ses.ov.note)) : '') + (got ? status(icon('check') + ' ' + t('gotFree'), 'ok') : '');
