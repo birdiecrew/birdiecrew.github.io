@@ -112,10 +112,37 @@ button.nm.mk:hover, button.nm.jn:hover { background: var(--surface2); }
 .chips.grid .chip { min-width: 0; padding: 6px 0; text-align: center; }
 .pill-n { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 999px; background: var(--brand-soft); font-weight: 750; font-size: .82rem; }
 .sample-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.dchip { min-width: 136px; justify-content: center; }
+.dchip { flex: none; }
 .fchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: var(--surface2); font-size: .85rem; max-width: 100%; }
 textarea.names { min-height: 168px; }
 .hist { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .hist:last-child { border-bottom: 0; }
 .top .row.sub { margin-top: 8px; justify-content: space-between; }
 .stepper output.wide { min-width: 112px; }
+
+/* navigation is icons only: the page title says where you are, like Facebook */
+.nav button { min-height: 56px; padding: 0; justify-content: center; }
+.nav button .ico { width: 26px; height: 26px; }
+.badge { left: calc(50% + 6px); }
+.courts { display: grid; place-items: center; gap: 2px; }
+.courts .l { display: block; line-height: 0; }
+.courts .l .ico { width: 16px; height: 16px; vertical-align: 0; }
+button.amt-edit .ico { margin-left: 6px; color: var(--muted); width: 16px; height: 16px; }
+button.amt-edit { text-decoration: none; }
+.top .row.between { min-height: 44px; }
+details.card > summary { cursor: pointer; min-height: var(--tap); display: flex; align-items: center; list-style: none; }
+details.card > summary::-webkit-details-marker { display: none; }
+.menu .li + .li { margin-top: 8px; }
+
+/* on a laptop the same single column, with the icon bar moved to the top */
+@media (min-width: 900px) {
+  .nav { top: 0; bottom: auto; border-top: 0; border-bottom: 1px solid var(--line); padding-bottom: 0; }
+  body.has-mocktag .nav { top: 22px; }
+  .nav-in { max-width: 720px; }
+  .nav button[aria-current="page"]::before { top: auto; bottom: 0; border-radius: 3px 3px 0 0; }
+  .wrap-col.wide { padding-top: 60px; padding-bottom: 48px; }
+  .top { top: 56px; }
+  body.has-mocktag .top { top: 78px; }
+  .wrap-col.wz { padding-bottom: 200px; }
+  .bar { left: 50%; right: auto; transform: translateX(-50%); width: 720px; max-width: 100%; border: 1px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0; }
+}

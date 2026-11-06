@@ -4,7 +4,7 @@
   var h = UI.h, icon = UI.icon, $ = UI.$, $$ = UI.$$;
   var cfg = BC.config;
   var S = {
-    mode: 'app', lang: 'en', tab: 'sessions', sub: null, open: {}, filter: 'all', q: '', payMonth: BC.ym(BC.today),
+    mode: 'app', lang: 'vi', tab: 'sessions', sub: null, open: {}, filter: 'all', q: '', payMonth: BC.ym(BC.today),
     scoreSid: null, draft: null, cancelIso: null, msgLang: 'vi', reminded: {}
   };
   try { var l0 = localStorage.getItem('bc_admin_lang'); if (l0 === 'vi' || l0 === 'en') S.lang = l0; } catch (e) { /* ignore */ }
@@ -19,7 +19,7 @@
   function monthWord(ym, lang) { return lang === 'vi' ? 'tháng ' + Number(ym.slice(5)) : BC.monthOnly(ym, 'en'); }
   function cardBase() { try { return new URL('student.html', location.href).href; } catch (e) { return 'student.html'; } }
   var app = $('#app');
-  var SU = Setup.create({ t: t, h: h, icon: icon, money: money, S: S, $: $, render: function () { render(); }, toast: function (m, k) { UI.toast(m, k); } });
+  var SU = Setup.create({ t: t, h: h, icon: icon, money: money, S: S, $: $, render: function () { render(); }, toast: function (m, k) { if (m !== t('Saved')) UI.toast(m, k); } });
 
   /* ---------- data helpers ---------- */
   function payRows(ym) {
@@ -58,15 +58,13 @@
     var rd = remindData(), nRemind = rd.soft.length + rd.late.length, bk = BC.backup();
     var unpaid = payRows(ymNow()).filter(function (r) { return !r.rec.paid; }).length;
     var tabs = [['sessions', 'cal2', 'Sessions', 0], ['students', 'users', 'Students', 0], ['payments', 'wallet', 'Payments', unpaid], ['remind', 'bell', 'Remind', nRemind], ['more', 'more', 'More', 0]];
-    var isSample = !!(BC.meta && BC.meta.sample), nag = bk.dirty && !isSample;
-    var chip = '<button class="btn sm dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + t('Your data') + '">' + icon(nag ? 'copy' : (isSample ? 'info' : 'check'), 'sm') + ' ' + (isSample ? t('Sample') : (nag ? t('Back up now') : t('Backed up'))) + '</button>';
-    var sample = BC.meta && BC.meta.sample ? '<div class="banner sample-bar" style="margin-bottom:12px"><div>' + icon('info') + ' <b>' + t('Sample class') + '</b> · ' + t('made-up students') + '</div><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
-    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<div><h1>' + h(cfg.page_title) + '</h1></div></div>' +
-      '<div class="row" style="gap:8px">' + UI.themeBtn() + '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-      '<div class="row sub"><span class="muted small">' + t('Coach') + ' · ' + dt(BC.today) + '</span>' + chip + '</div></header>' + sample +
+    var isSample = !!(BC.meta && BC.meta.sample), nag = bk.dirty && !isSample, lbl = isSample ? t('Sample') : t('Save');
+    var chip = '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : (isSample ? 'info' : 'check')) + '</button>';
+    var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
+    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + sample +
       '<div id="view">' + view() + '</div>' +
       '<nav class="nav" aria-label="Main"><div class="nav-in">' + tabs.map(function (x) {
-        return '<button data-tab="' + x[0] + '" ' + ((!S.sub && S.tab === x[0]) || (S.sub && x[0] === 'more') ? 'aria-current="page"' : '') + '>' + icon(x[1]) + t(x[2]) + (x[3] ? '<span class="badge ' + (x[0] === 'payments' ? 'warn' : '') + '">' + x[3] + '</span>' : '') + '</button>';
+        return '<button data-tab="' + x[0] + '" aria-label="' + t(x[2]) + '" title="' + t(x[2]) + '" ' + ((!S.sub && S.tab === x[0]) || (S.sub && x[0] === 'more') ? 'aria-current="page"' : '') + '>' + icon(x[1]) + (x[3] ? '<span class="badge ' + (x[0] === 'payments' ? 'warn' : '') + '">' + x[3] + '</span>' : '') + '</button>';
       }).join('') + '</div></nav>';
   }
   function view() {
@@ -82,8 +80,8 @@
     var list = [], i;
     for (i = 0; i < 14; i++) { var s = BC.session(BC.addDays(BC.today, i)); if (s.isClass) list.push(s); }
     var over = list.filter(function (x) { return x.over; }).length;
-    var out = '<div class="view-h"><h2>' + t('Next 14 days') + '</h2><p class="muted small">' + dt(BC.today) + ' – ' + dt(BC.addDays(BC.today, 13)) + '</p></div>';
-    if (over) out += '<div class="banner bad" style="margin-bottom:12px">' + icon('ban') + '<div><b>' + t('{n} session over capacity', { n: over }) + '</b><br>' + t('Regular students are never bumped. Add extra seats or book another court.') + '</div></div>';
+    var out = '<div class="view-h"><h2>' + t('Next 14 days') + '</h2></div>';
+    if (over) out += '<div class="banner bad" style="margin-bottom:12px">' + icon('ban') + '<div><b>' + t('{n} session over capacity', { n: over }) + '</b></div></div>';
     out += list.map(sesCard).join('');
     return out;
   }
@@ -95,7 +93,7 @@
       if (ses.over) pills += '<span class="tag bad">' + t('Over capacity') + '</span>';
       else if (ses.free === 0) pills += '<span class="tag warn">' + t('Full') + '</span>';
     }
-    var courts = ses.cancelled ? '<div class="courts zero"><div class="big">0</div><div class="l">' + t('courts') + '</div></div>' : '<div class="courts ' + (ses.over ? 'bad' : '') + '"><div class="big">' + ses.courtsToBook + '</div><div class="l">' + t('courts to book') + '</div></div>';
+    var courts = ses.cancelled ? '<div class="courts zero" title="' + t('courts to book') + '"><div class="big">0</div><div class="l">' + icon('court', 'sm') + '</div></div>' : '<div class="courts ' + (ses.over ? 'bad' : '') + '" title="' + t('courts to book') + '" aria-label="' + t('courts to book') + '"><div class="big">' + ses.courtsToBook + '</div><div class="l">' + icon('court', 'sm') + '</div></div>';
     var body = '';
     if (open) {
       body = '<div class="ses-b">';
@@ -109,7 +107,7 @@
       if (ses.skipped.length) body += '<h3>' + t('Skipped ({n})', { n: ses.skipped.length }) + '</h3><div class="names">' + names(ses.skipped, 'sk') + '</div>';
       if (ses.onBreak.length) body += '<h3>' + t('On a long break ({n})', { n: ses.onBreak.length }) + '</h3><div class="names">' + names(ses.onBreak, 'sk') + '</div>';
       if (!ses.cancelled) {
-        body += '<p class="tiny muted" style="margin-top:8px">' + t('Tap a name to change their lesson.') + '</p><button class="btn sm" data-a="addtoses" data-x="' + ses.iso + '" style="margin-top:8px">' + icon('plus', 'sm') + ' ' + t('Add a student') + '</button>' +
+        body += '<button class="btn sm" data-a="addtoses" data-x="' + ses.iso + '" style="margin-top:8px">' + icon('plus', 'sm') + ' ' + t('Add a student') + '</button>' +
           '<hr class="sep"><div class="ctl"><div><b>' + t('Extra seats') + '</b><div class="muted small">' + t('0 to 2 on top of {n}', { n: ses.courts * cfg.seats_per_court }) + '</div></div>' + stepper('extra:' + ses.iso, ses.extra, 0, 2) + '</div>' +
           '<div class="ctl"><div><b>' + t('Courts available') + '</b><div class="muted small">' + t('The venue has {n}', { n: cfg.venue_courts }) + '</div></div>' + stepper('courts:' + ses.iso, ses.courts, 1, cfg.venue_courts) + '</div>' +
           '<button class="btn danger sm" data-a="cancelses" data-x="' + ses.iso + '">' + icon('ban', 'sm') + ' ' + t('Cancel this session') + '</button>';
@@ -146,32 +144,35 @@
       else if (late) tags = '<span class="tag bad">' + t('Late') + '</span>';
       else if (s.start > BC.today) tags = '<span class="tag">' + t('Starts {date}', { date: BC.fmtDay(s.start, S.lang) }) + '</span>';
       else if (started && !rec.paid) tags = '<span class="tag warn">' + t('Unpaid') + '</span>';
-      return '<button class="li" data-a="stu" data-x="' + s.id + '"><div class="avatar ' + (late ? 'late' : '') + '">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="muted small">' + h(s.code) + ' · ' + days + '</span></div><div class="row" style="gap:4px;flex-wrap:wrap;justify-content:flex-end">' + tags + '</div></button>';
+      return '<button class="li" data-a="stu" data-x="' + s.id + '"><div class="avatar ' + (late ? 'late' : '') + '">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="muted small">' + days + '</span></div><div class="row" style="gap:4px;flex-wrap:wrap;justify-content:flex-end">' + tags + '</div></button>';
     }).join('');
   }
   function studentsView() {
     var ym = ymNow(), n = function (f) { return BC.students.filter(f).length; };
     var chips = [['all', 'All', BC.students.length],
-      ['unpaid', 'Unpaid', n(function (s) { return s.active && BC.ym(s.start) <= ym && !BC.payRec(s.id, ym).paid; })], ['paused', 'Paused', n(function (s) { return !s.active; })]];
+      ['unpaid', 'Unpaid', n(function (s) { return s.active && BC.ym(s.start) <= ym && !BC.payRec(s.id, ym).paid; })], ['paused', 'Paused', n(function (s) { return !s.active; })]]
+      .filter(function (c) { return c[0] === 'all' || c[2] > 0 || S.filter === c[0]; });
+    if (!chips.some(function (c) { return c[0] === S.filter; })) S.filter = 'all';
     var need = BC.meta && BC.meta.sample ? [] : BC.cardsToSend();
-    var cardBanner = need.length ? '<div class="banner" style="margin-bottom:12px">' + icon('copy') + '<div><b>' + (need.length === 1 ? t('1 card to send') : t('{n} cards to send', { n: need.length })) + '</b><br>' + t('New students, or something changed since their last card.') + '<br><button class="btn sm" data-a="cards">' + t('Send cards') + '</button></div></div>' : '';
-    return '<div class="view-h row between"><h2>' + t('Students') + '</h2><button class="btn primary" data-a="addstu"' + (BC.students.length >= BC.LIMITS.students ? ' disabled' : '') + '>' + icon('plus', 'sm') + ' ' + (BC.students.length >= BC.LIMITS.students ? t('Class is full') : t('Add student')) + '</button></div>' +
-      cardBanner + '<input class="inp" type="search" id="q" placeholder="' + t('Search name or code') + '" value="' + h(S.q) + '" style="margin-bottom:10px">' +
-      '<div class="chips" style="margin-bottom:12px">' + chips.map(function (c) { return '<button class="chip" data-a="filter" data-x="' + c[0] + '" aria-pressed="' + (S.filter === c[0]) + '">' + t(c[1]) + ' ' + c[2] + '</button>'; }).join('') + '</div>' +
+    var cardBanner = need.length ? '<div class="banner" style="margin-bottom:12px">' + icon('chat') + '<div class="grow"><b>' + (need.length === 1 ? t('1 card to send') : t('{n} cards to send', { n: need.length })) + '</b></div><button class="btn sm" data-a="cards">' + t('Send cards') + '</button></div>' : '';
+    var full = BC.students.length >= BC.LIMITS.students;
+    return '<div class="view-h row between"><h2>' + t('Students') + '</h2><button class="btn primary" data-a="addstu"' + (full ? ' disabled' : '') + ' aria-label="' + t('Add student') + '">' + icon('plus', 'sm') + ' ' + (full ? t('Class is full') : t('Add')) + '</button></div>' +
+      cardBanner + '<input class="inp" type="search" id="q" placeholder="' + t('Search') + '" value="' + h(S.q) + '" style="margin-bottom:10px">' +
+      (chips.length > 1 ? '<div class="chips" style="margin-bottom:12px">' + chips.map(function (c) { return '<button class="chip" data-a="filter" data-x="' + c[0] + '" aria-pressed="' + (S.filter === c[0]) + '">' + t(c[1]) + ' ' + c[2] + '</button>'; }).join('') + '</div>' : '') +
       '<div id="stu-list">' + stuRows() + '</div>';
   }
 
-  /* student sheets */
-  function dayChips(sel, off) {
+  /* student pages */
+  function dayChips(ed, off) {
     return [1, 2, 3, 4, 5, 6, 0].filter(function (d) { return BC.timetable[d].on; }).map(function (d) {
-      return '<button type="button" class="chip" data-day="' + d + '" aria-pressed="' + (sel.indexOf(d) >= 0) + '"' + (off ? ' disabled' : '') + '>' + BC.wd(d, S.lang) + '</button>';
-    }).join('');
+      return '<button type="button" class="chip" data-day="' + d + '" aria-pressed="' + (ed.type === 'fixed' && ed.days.indexOf(d) >= 0) + '"' + (off ? ' disabled' : '') + '>' + BC.wd(d, S.lang) + '</button>';
+    }).join('') + '<button type="button" class="chip" data-flex aria-pressed="' + (ed.type === 'flexible') + '"' + (off ? ' disabled' : '') + '>' + t('Flex') + '</button>';
   }
   function firstBill(ed) {
     if (!ed.start) return '';
     var tmp = { id: -1, name: ed.name, type: ed.type, days: ed.days, start: ed.start, fee: ed.fee || null }, ym = BC.ym(ed.start);
     var amt = BC.calcAmount(tmp, ym), billed = BC.billedDates(tmp, ym).length, full = BC.lessonDates(tmp, ym).length;
-    return '<div class="banner">' + icon('wallet') + '<div><b>' + t('First bill') + ': ' + money(amt) + '</b><br>' + t('{a} of {b} lessons in {month}', { a: billed, b: full, month: BC.monthOnly(ym, S.lang) }) + '<br>' + t('Due {date}', { date: dt(BC.dueDate(tmp, ym)) }) + '</div></div>';
+    return '<div class="banner">' + icon('wallet') + '<div><b>' + t('First bill') + ': ' + money(amt) + '</b> · ' + t('{a} of {b} lessons', { a: billed, b: full }) + '</div></div>';
   }
   /* why the student cannot be saved yet, in the order the coach would fix it ('' = fine) */
   function studentReason(ed, selfId) {
@@ -183,25 +184,24 @@
     if (!ed.start || ed.start < BC.addDays(BC.today, -L.dayRange) || ed.start > BC.addDays(BC.today, L.dayRange)) return 'date';
     return '';
   }
+  /* a short reason under the button; empty when all is well. The line keeps its height so nothing jumps. */
   function reasonLine(r) {
-    var txt = { full: t('The class is full ({n} students).', { n: BC.LIMITS.students }), name: t('Type a name first.'), dup: t('Someone with this name is already in the class.'),
-      days: t('Pick at least one day.'), date: t('Choose a start date within a year of today.'), '': t('Ready.') }[r];
-    return '<div class="why' + (r ? '' : ' ready') + '" id="as-why">' + icon(r ? 'info' : 'check') + '<span>' + txt + '</span></div>';
+    var txt = { full: t('Class is full'), name: t('Type a name'), dup: t('Name already used'), days: t('Pick days or Flex'), date: t('Date out of range'), '': '' }[r];
+    return '<div class="why" id="as-why">' + (r ? icon('info') + '<span>' + txt + '</span>' : '') + '</div>';
   }
   function studentFormHtml(ed, gate) {
     var L = BC.LIMITS, noName = gate && !ed.name.trim();
-    return '<div class="stack"><label class="field"><span class="lbl">' + t('Name (first name or nickname)') + '</span><input class="inp" id="f-name" maxlength="' + L.nameLen + '" autocomplete="off" value="' + h(ed.name) + '" placeholder="' + t('e.g. Lan') + '"></label>' +
-      '<div class="field"><span class="lbl">' + t('Schedule') + '</span><div class="seg full"><button type="button" data-type="fixed" aria-pressed="' + (ed.type === 'fixed') + '">' + t('Fixed days') + '</button><button type="button" data-type="flexible" aria-pressed="' + (ed.type === 'flexible') + '">' + t('Flexible') + '</button></div></div>' +
-      '<div class="field"><span class="lbl">' + t('Weekly days') + '</span><div class="chips" id="f-days">' + dayChips(ed.type === 'fixed' ? ed.days : [], noName || ed.type !== 'fixed') + '</div>' +
-      '<span class="hint">' + (ed.type === 'fixed' ? t('Name first, then the days.') : t('Flexible students pick sessions themselves, at least {n} days ahead. No make-up credits.', { n: cfg.flex_notice_days })) + '</span></div>' +
-      '<label class="field"><span class="lbl">' + t('Start date') + '</span><input class="inp" type="date" id="f-start" value="' + ed.start + '" min="' + BC.addDays(BC.today, -L.dayRange) + '" max="' + BC.addDays(BC.today, L.dayRange) + '"></label>' +
-      '<label class="field"><span class="lbl">' + t('Own monthly fee (optional)') + '</span><input class="inp" type="number" inputmode="numeric" id="f-fee" step="1000" min="' + L.feeMin + '" max="' + L.feeMax + '" placeholder="' + BC.baseFee({ type: ed.type, days: ed.days || [], fee: null }) + '" value="' + (ed.fee || '') + '"><span class="hint">' + t('Leave empty for the usual {fee}', { fee: money(BC.baseFee({ type: ed.type, days: ed.days || [], fee: null })) }) + '</span></label></div>';
+    return '<div class="stack"><label class="field"><span class="lbl">' + t('Name') + '</span><input class="inp" id="f-name" maxlength="' + L.nameLen + '" autocomplete="off" value="' + h(ed.name) + '" placeholder="' + t('e.g. Lan') + '"></label>' +
+      '<div class="field"><span class="lbl">' + t('Days') + '</span><div class="chips" id="f-days">' + dayChips(ed, noName) + '</div></div>' +
+      '<label class="field"><span class="lbl">' + t('Start') + '</span><input class="inp" type="date" id="f-start" value="' + ed.start + '" min="' + BC.addDays(BC.today, -L.dayRange) + '" max="' + BC.addDays(BC.today, L.dayRange) + '"></label>' +
+      '<label class="field"><span class="lbl">' + t('Fee') + '</span><input class="inp" type="number" inputmode="numeric" id="f-fee" step="1000" min="' + L.feeMin + '" max="' + L.feeMax + '" placeholder="' + money(BC.baseFee({ type: ed.type, days: ed.days || [], fee: null })) + '" value="' + (ed.fee || '') + '"></label></div>';
   }
   function bindForm(el, ed, redraw, onInput) {
     el.addEventListener('click', function (e) {
       var b;
-      if ((b = e.target.closest('[data-type]'))) { ed.type = b.getAttribute('data-type'); redraw(); }
+      if ((b = e.target.closest('[data-flex]')) && !b.disabled) { if (ed.type === 'flexible') ed.type = 'fixed'; else { ed.type = 'flexible'; ed.days = []; } redraw(); }
       else if ((b = e.target.closest('[data-day]')) && !b.disabled) {
+        ed.type = 'fixed';
         var d = Number(b.getAttribute('data-day')), i = ed.days.indexOf(d); if (i >= 0) ed.days.splice(i, 1); else ed.days.push(d); redraw();
       }
     });
@@ -210,7 +210,7 @@
       else if (e.target.id === 'f-start') ed.start = e.target.value;
       else if (e.target.id === 'f-fee') ed.fee = e.target.value ? Number(e.target.value) : null;
       else return;
-      if (e.target.id === 'f-name') $$('#f-days .chip', el).forEach(function (c) { c.disabled = ed.type !== 'fixed' || !ed.name.trim(); });
+      if (e.target.id === 'f-name') $$('#f-days .chip', el).forEach(function (c) { c.disabled = !ed.name.trim(); });
       onInput && onInput();
     });
     el.addEventListener('change', function (e) {
@@ -230,25 +230,23 @@
     };
     var draw = function () {
       if (saved) {
-        el.innerHTML = '<div class="grab"></div><div class="sheet-h"><h2>' + t('{name} is added', { name: h(saved.name) }) + '</h2><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
-          '<div class="stack"><div class="banner ok">' + icon('check') + '<div>' + t('Send their card on Zalo so they can see their days and fees.') + '</div></div>' +
-          '<button class="btn primary block" data-a2="card">' + icon('copy', 'sm') + ' ' + t('Send card') + '</button>' +
-          '<div class="kv" style="display:flex;justify-content:space-between"><span class="muted">' + t('Payment code') + '</span><b class="code" style="font-family:ui-monospace,monospace">' + h(saved.code) + '</b></div>' + firstBill(saved) +
-          '<div class="row"><button class="btn grow" data-a2="another">' + t('Add another') + '</button><button class="btn primary grow" data-close>' + t('Done') + '</button></div></div>';
+        el.innerHTML = UI.pageHead(t('{name} added', { name: h(saved.name) }), '', t('Back')) +
+          '<div class="stack"><button class="btn primary block" data-a2="card">' + icon('chat', 'sm') + ' ' + t('Send card') + '</button>' +
+          '<div class="row"><button class="btn grow" data-a2="another">' + t('Add another') + '</button><button class="btn grow" data-close>' + t('Done') + '</button></div></div>';
         return;
       }
-      el.innerHTML = '<div class="grab"></div><div class="sheet-h"><h2>' + t('Add student') + '</h2><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' + studentFormHtml(ed, true) +
-        '<div id="as-prev" style="margin-top:12px;min-height:96px"></div>' + reasonLine(studentReason(ed)) + '<button class="btn primary block" id="as-save" disabled>' + t('Save') + '</button>';
+      el.innerHTML = UI.pageHead(t('Add student'), '', t('Back')) + studentFormHtml(ed, true) +
+        '<div id="as-prev" style="margin-top:12px;min-height:64px"></div>' + reasonLine(studentReason(ed)) + '<button class="btn primary block" id="as-save" disabled>' + t('Save') + '</button>';
       upd();
     };
-    el = UI.sheet.open('', {});
+    el = UI.sheet.open('', { page: true });
     bindForm(el, ed, draw, upd);
     el.addEventListener('click', function (e) {
       if (e.target.closest('#as-save')) {
         if (studentReason(ed)) return;
-        saved = BC.addStudent({ name: ed.name.trim(), type: ed.type, days: ed.days, start: ed.start, fee: ed.fee }); draw(); render();
+        saved = BC.addStudent({ name: ed.name.trim(), type: ed.type, days: ed.type === 'fixed' ? ed.days : [], start: ed.start, fee: ed.fee }); draw(); render();
       } else if (e.target.closest('[data-a2="another"]')) {
-        saved = null; ed.name = ''; ed.days = []; draw();
+        saved = null; ed.name = ''; ed.days = []; ed.type = 'fixed'; draw();
       } else if (e.target.closest('[data-a2="card"]')) openSendCard(saved.id);
     });
     draw();
@@ -256,18 +254,17 @@
 
   /* every card that is new or out of date, one tap each. The order is fixed when the sheet opens, so rows never jump. */
   function openSendCards() {
-    var el = UI.sheet.open('', {}), order = BC.cardsToSend().concat(BC.students.filter(function (s) { return s.active && BC.cardState(s.id) === 'current'; }))
+    var el = UI.sheet.open('', { page: true }), order = BC.cardsToSend().concat(BC.students.filter(function (s) { return s.active && BC.cardState(s.id) === 'current'; }))
       .sort(function (a, b) { return a.name.localeCompare(b.name, 'vi'); });
     order.sort(function (a, b) { return (BC.cardState(a.id) === 'current') - (BC.cardState(b.id) === 'current'); });
     var draw = function () {
       var left = BC.cardsToSend().length;
-      el.innerHTML = '<div class="grab"></div>' + shd(t('Send cards'), left ? (left === 1 ? t('1 card to send') : t('{n} cards to send', { n: left })) : t('All cards are up to date')) +
-        '<div class="stack"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div>' +
-        '<p class="muted small">' + t('Tap Copy message, paste it into that student\'s Zalo chat, then tap the next one. A card counts as sent when you copy it.') + '</p><div>' +
+      el.innerHTML = UI.pageHead(t('Send cards'), left ? (left === 1 ? t('1 card to send') : t('{n} cards to send', { n: left })) : t('All cards are up to date'), t('Back')) +
+        '<div class="stack"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div><div>' +
         order.map(function (s) {
           var st = BC.cardState(s.id);
           return '<div class="hist"><div><b>' + h(s.name) + '</b><div class="muted tiny">' + (st === 'never' ? t('No card yet') : st === 'stale' ? t('Out of date') : t('Up to date')) + '</div></div>' +
-            '<button class="btn sm' + (st === 'current' ? '' : ' primary') + '" data-cc="' + s.id + '">' + (st === 'current' ? t('Copy again') : t('Copy message')) + '</button></div>';
+            '<button class="btn sm' + (st === 'current' ? '' : ' primary') + '" data-cc="' + s.id + '">' + icon('copy', 'sm') + ' ' + (st === 'current' ? t('Copy again') : t('Copy message')) + '</button></div>';
         }).join('') + '</div></div>';
     };
     el.addEventListener('click', function (e) {
@@ -285,23 +282,21 @@
 
   /* the student's card: a link that holds only that student's own lessons. Nothing is stored anywhere. */
   function openSendCard(id) {
-    var s = BC.student(id), link = '', el = UI.sheet.open('', {});
-    var text = function (full) { return BC.fill(BC.messages[S.msgLang].card, { name: s.name, date: BC.fmtDay(BC.today, S.msgLang), link: full ? link : (link ? link.replace(/#c=.*/, '#c=…') : '…') }); };
+    var s = BC.student(id), link = '', el = UI.sheet.open('', { page: true });
+    var text = function () { return BC.fill(BC.messages[S.msgLang].card, { name: s.name, date: BC.fmtDay(BC.today, S.msgLang), link: link }); };
     var draw = function () {
-      var kb = link ? Math.max(1, Math.round(link.length / 1024)) : 0, st = BC.cardState(id), m = BC.meta.cards && BC.meta.cards[id];
+      var st = BC.cardState(id), m = BC.meta.cards && BC.meta.cards[id];
       var sentLine = st === 'never' ? t('No card sent yet.') : (st === 'stale' ? t('Last card sent {when}. Something changed since.', { when: ago(m.at) }) : t('Last card sent {when}. Nothing changed since.', { when: ago(m.at) }));
-      el.innerHTML = '<div class="grab"></div>' + shd(t('Send card to {name}', { name: h(s.name) }), t('Card as of {date}', { date: dt(BC.today) })) +
+      el.innerHTML = UI.pageHead(t('Send card'), h(s.name), t('Back')) +
         '<div class="stack"><div class="seg full"><button data-ml="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-ml="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div>' +
-        '<div class="why' + (st === 'current' ? ' ready' : '') + '" style="min-height:0">' + icon(st === 'current' ? 'check' : 'info') + '<span>' + sentLine + '</span></div>' +
-        '<div class="msgbox">' + h(text(false)) + '</div>' +
         '<button class="btn primary block" data-cc' + (link ? '' : ' disabled') + '>' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button>' +
-        '<button class="btn block" data-view' + (link ? '' : ' disabled') + '>' + icon('link', 'sm') + ' ' + t('See it as {name} sees it', { name: h(s.name) }) + '</button>' +
-        '<div class="why">' + icon('info') + '<span>' + (link ? t('The link holds only {name}\'s own lessons ({kb} KB). Nobody else\'s. Send a new card when something changes.', { name: h(s.name), kb: kb }) : t('Preparing the card...')) + '</span></div></div>';
+        '<button class="btn block" data-view' + (link ? '' : ' disabled') + '>' + icon('link', 'sm') + ' ' + t('Preview') + '</button>' +
+        '<div class="why' + (st === 'current' ? ' ready' : '') + '">' + icon(st === 'current' ? 'check' : 'info') + '<span>' + sentLine + '</span></div></div>';
     };
     el.addEventListener('click', function (e) {
       var b;
       if ((b = e.target.closest('[data-ml]'))) { S.msgLang = b.getAttribute('data-ml'); draw(); }
-      else if (e.target.closest('[data-cc]') && link) { UI.copy(text(true), t('Message copied. Paste it into Zalo.')); BC.markCardSent(id); render(); draw(); }
+      else if (e.target.closest('[data-cc]') && link) { UI.copy(text(), t('Message copied. Paste it into Zalo.')); BC.markCardSent(id); render(); draw(); }
       else if (e.target.closest('[data-view]') && link) window.open(link, '_blank', 'noopener');
     });
     draw();
@@ -405,16 +400,11 @@
         if (i.kind === 'free') m = i.ses.free; else if (i.kind === 'full') m = t('full'); else if (i.kind === 'makeup') m = '+'; else if (i.kind === 'join') m = '✓'; else if (i.kind === 'cancelled') m = t('off');
         return '<button class="' + cls.join(' ') + '" data-d="' + iso + '"><span class="n">' + day + '</span><span class="m">' + m + '</span></button>';
       }).join('');
-      var info = '';
-      if (s.type === 'fixed') {
-        var cs = BC.creditSummary(s.id, cur);
-        info = '<p class="small" style="margin-bottom:10px"><b>' + cs.left + '</b> ' + t('make-ups left this month') + ' · <b>' + cs.skipCredits + '</b> ' + t('credits to use') + (cs.free ? ' · <b>' + cs.free + '</b> ' + t('free credit') : '') + '</p>';
-      }
-      el.innerHTML = '<div class="grab"></div>' + shd(h(s.name) + ' · ' + t('Lessons'), h(s.code)) + info +
+      el.innerHTML = UI.pageHead(h(s.name), '', t('Back')) +
         '<div class="cal-nav"><button class="btn icon sm" data-n="-1" aria-label="Previous month">' + icon('chevL') + '</button><strong>' + h(BC.monthName(cur, S.lang)) + '</strong><button class="btn icon sm" data-n="1" aria-label="Next month">' + icon('chevR') + '</button></div>' +
-        '<div class="cal-grid">' + wd + blanks + cells + '</div><p class="muted small" style="margin-top:12px">' + t('Tap a day to change it. Solid = their lesson, outlined number = free seats, + = make-up.') + '</p>';
+        '<div class="cal-grid">' + wd + blanks + cells + '</div>';
     };
-    el = UI.sheet.open('', { full: true });
+    el = UI.sheet.open('', { page: true });
     var again = function () { openStudentCalendar(sid, cur); };
     el.addEventListener('click', function (e) {
       var n = e.target.closest('[data-n]'), d = e.target.closest('[data-d]');
@@ -453,11 +443,11 @@
         var tmp = { id: -1, student: s.id, from: st.from, to: st.to }; BC.breaks.push(tmp);
         for (var ym = BC.ym(st.from); ym <= BC.ym(st.to); ym = BC.addMonths(ym, 1)) out += '<div class="kv" style="display:flex;justify-content:space-between;margin-top:8px"><span>' + t('New fee for {month}', { month: BC.monthOnly(ym, S.lang) }) + '</span><b>' + money(BC.calcAmount(s, ym)) + '</b></div>';
         BC.breaks.pop();
-      } else out += '<p class="small muted" style="margin-top:8px">' + t('A short break is just normal skips, each with a make-up credit (up to {n} a month).', { n: cfg.max_makeups_per_month }) + '</p>';
+      }
       box.innerHTML = out;
     };
-    el = UI.sheet.open('', {});
-    el.innerHTML = '<div class="grab"></div>' + shd(t('Plan a break')) + '<div class="stack">' +
+    el = UI.sheet.open('', { page: true });
+    el.innerHTML = UI.pageHead(t('Plan a break'), '', t('Back')) + '<div class="stack">' +
       '<label class="field"><span class="lbl">' + t('Student') + '</span><select class="inp" id="bk-s">' + opts.map(function (s) { return '<option value="' + s.id + '">' + h(s.name) + ' · ' + h(s.code) + '</option>'; }).join('') + '</select></label>' +
       '<label class="field"><span class="lbl">' + t('From') + '</span><input class="inp" type="date" id="bk-f" value="' + st.from + '"></label>' +
       '<label class="field"><span class="lbl">' + t('To') + '</span><input class="inp" type="date" id="bk-t" value="' + st.to + '"></label>' +
@@ -481,16 +471,16 @@
     var upd = function () { var b = $('#st-save', el), w = $('#as-why', el), r = studentReason(ed, id); if (w) w.outerHTML = reasonLine(r); if (b) b.disabled = !!r; };
     var draw = function () {
       var st = BC.student(id);
-      el.innerHTML = '<div class="grab"></div><div class="sheet-h"><div><h2>' + h(st.name) + '</h2><div class="muted small">' + h(st.code) + (st.active ? '' : ' · ' + t('Paused')) + '</div></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
-        '<div class="stack"><button class="btn primary block" id="st-cal">' + icon('cal2', 'sm') + ' ' + t('Lessons and changes') + '</button>' +
-        '<button class="btn block" id="st-card">' + icon('copy', 'sm') + ' ' + t('Send card') + '</button>' +
-        '<div class="kv" style="display:flex;justify-content:space-between;align-items:center"><span class="muted">' + t('Payment code') + '</span><span class="row"><b style="font-family:ui-monospace,monospace;font-size:1.1rem">' + h(st.code) + '</b><button class="btn sm icon" data-copy="' + h(st.code) + '" aria-label="' + t('Copy') + '">' + icon('copy', 'sm') + '</button></span></div>' +
-        '<div class="row between"><span class="muted">' + h(BC.monthName(ym, S.lang)) + '</span>' + (BC.ym(st.start) > ym ? '<span class="tag">' + t('Not started') + '</span>' : (rec.paid ? '<span class="tag ok">' + t('Paid') + ' · ' + money(rec.amountPaid) + '</span>' : (BC.isLate(id) ? '<span class="tag bad">' + t('Late') + ' · ' + money(BC.amountDue(st, ym)) + '</span>' : '<span class="tag warn">' + t('Unpaid') + ' · ' + money(BC.amountDue(st, ym)) + '</span>'))) + '</div><hr class="sep">' +
+      var status = BC.ym(st.start) > ym ? '<span class="tag">' + t('Not started') + '</span>' : (rec.paid ? '<span class="tag ok">' + t('Paid') + '</span>' : (BC.isLate(id) ? '<span class="tag bad">' + t('Late') + '</span>' : '<span class="tag warn">' + t('Unpaid') + '</span>'));
+      el.innerHTML = UI.pageHead(h(st.name), (st.active ? '' : t('Paused')), t('Back')) +
+        '<div class="stack"><button class="btn primary block" id="st-cal">' + icon('cal2', 'sm') + ' ' + t('Lessons') + '</button>' +
+        '<button class="btn block" id="st-card">' + icon('chat', 'sm') + ' ' + t('Send card') + '</button>' +
+        '<div class="row between"><span class="row"><b class="code" style="font-family:ui-monospace,monospace;font-size:1.1rem">' + h(st.code) + '</b><button class="btn sm icon" data-copy="' + h(st.code) + '" aria-label="' + t('Copy') + '">' + icon('copy', 'sm') + '</button></span>' + status + '</div><hr class="sep">' +
         studentFormHtml(ed) + reasonLine(studentReason(ed, id)) +
-        '<button class="btn primary block" id="st-save"' + (studentReason(ed, id) ? ' disabled' : '') + '>' + t('Save changes') + '</button>' +
+        '<button class="btn primary block" id="st-save"' + (studentReason(ed, id) ? ' disabled' : '') + '>' + t('Save') + '</button>' +
         '<button class="btn block" id="st-pause">' + icon(st.active ? 'pause' : 'refresh', 'sm') + ' ' + (st.active ? t('Pause student') : t('Resume student')) + '</button></div>';
     };
-    el = UI.sheet.open('', {});
+    el = UI.sheet.open('', { page: true });
     bindForm(el, ed, draw, upd);
     el.addEventListener('click', function (e) {
       var b;
@@ -501,9 +491,9 @@
         if (studentReason(ed, id)) return;
         var st = BC.student(id);
         st.name = ed.name.trim(); st.type = ed.type; st.days = ed.type === 'fixed' ? ed.days.slice() : []; st.start = ed.start; st.fee = ed.fee;
-        UI.sheet.close(); render(); UI.toast(t('Saved'));
+        UI.sheet.close(); render();
       } else if (e.target.closest('#st-pause')) {
-        var s2 = BC.student(id); s2.active = !s2.active; UI.sheet.close(); render(); UI.toast(s2.active ? t('Resumed') : t('Paused'));
+        var s2 = BC.student(id); s2.active = !s2.active; UI.sheet.close(); render();
       }
     });
     draw();
@@ -518,45 +508,46 @@
       var ra = a.rec.paid ? 2 : (a.late ? 0 : 1), rb = b.rec.paid ? 2 : (b.late ? 0 : 1);
       return ra - rb || a.s.name.localeCompare(b.s.name, 'vi');
     });
-    var nav = '<div class="row between" style="margin-bottom:12px"><button class="btn icon sm" data-a="pm" data-x="-1" aria-label="Previous month"' + (ym <= '2026-09' ? ' disabled' : '') + '>' + icon('chevL') + '</button><b>' + BC.monthName(ym, S.lang) + '</b><button class="btn icon sm" data-a="pm" data-x="1" aria-label="Next month"' + (ym >= '2026-12' ? ' disabled' : '') + '>' + icon('chevR') + '</button></div>';
+    var first = BC.students.reduce(function (m, st) { return BC.ym(st.start) < m ? BC.ym(st.start) : m; }, ymNow());
+    var nav = '<div class="row between" style="margin-bottom:12px"><button class="btn icon sm" data-a="pm" data-x="-1" aria-label="‹"' + (ym <= first ? ' disabled' : '') + '>' + icon('chevL') + '</button><b>' + BC.monthName(ym, S.lang) + '</b><button class="btn icon sm" data-a="pm" data-x="1" aria-label="›"' + (ym >= ymNow() ? ' disabled' : '') + '>' + icon('chevR') + '</button></div>';
     var tiles = '<div class="tiles"><div class="tile"><div class="v ok">' + money(collected) + '</div><div class="l">' + t('Collected') + '</div></div><div class="tile"><div class="v">' + money(outstanding) + '</div><div class="l">' + t('Still to collect') + ' · ' + unpaidN + (lateN ? ' · <span style="color:var(--danger)">' + t('Late') + ' ' + lateN + '</span>' : '') + '</div></div></div>';
     var list = rows.map(function (r) {
       var s = r.s, note = '';
       if (r.billed < r.full) note += t('{a} of {b} lessons', { a: r.billed, b: r.full }) + ' · ';
       if (r.rec.override != null) note += '<span class="tag accent">' + t('edited') + '</span> ';
       if (r.rec.creditIn > 0 && cfg.credit_carry) note += t('credit -{amount}', { amount: money(r.rec.creditIn) }) + ' · ';
-      var status = r.rec.paid ? '<span class="tag ok">' + icon('check', 'sm') + ' ' + t('Paid {date}', { date: BC.fmtDay(r.rec.paidDate, S.lang) }) + '</span>' : (r.late ? '<span class="tag bad">' + t('Late since {date}', { date: BC.fmtDay(BC.addDays(r.due, 1), S.lang) }) + '</span>' : '<span class="tag warn">' + t('Due {date}', { date: BC.fmtDay(r.due, S.lang) }) + '</span>');
-      return '<div class="li pay"><div class="avatar ' + (r.late ? 'late' : (r.rec.paid ? '' : 'warn')) + '">' + ava(s) + '</div><div class="who"><b>' + h(s.name) + '</b> <span class="muted small">' + h(s.code) + '</span></div>' +
-        '<button class="amt amt-edit" data-a="editamt" data-x="' + s.id + '" aria-label="' + t('Change amount') + '">' + money(r.amount) + '</button><div class="st small">' + note + status + '</div><div class="acts">' +
+      var status = r.rec.paid ? '<span class="tag ok">' + icon('check', 'sm') + ' ' + BC.fmtDay(r.rec.paidDate, S.lang) + '</span>' : (r.late ? '<span class="tag bad">' + t('Late') + '</span>' : '');
+      return '<div class="li pay"><div class="avatar ' + (r.late ? 'late' : (r.rec.paid ? '' : 'warn')) + '">' + ava(s) + '</div><div class="who"><b>' + h(s.name) + '</b></div>' +
+        '<button class="amt amt-edit" data-a="editamt" data-x="' + s.id + '" aria-label="' + t('Change amount') + '">' + money(r.amount) + icon('pencil', 'sm') + '</button><div class="st small">' + note + status + '</div><div class="acts">' +
         (r.rec.paid ? '<button class="btn sm paid-btn" data-a="undopaid" data-x="' + s.id + '">' + t('Undo') + '</button>' : '<button class="btn primary paid-btn" data-a="paid" data-x="' + s.id + '">' + icon('check', 'sm') + ' ' + t('Paid') + '</button>') + '</div></div>';
     }).join('');
-    return '<div class="view-h"><h2>' + t('Payments') + '</h2><p class="muted small">' + t('Check your bank app, then tap Paid.') + '</p></div>' + nav + tiles + '<div>' + list + '</div>';
+    return '<div class="view-h"><h2>' + t('Payments') + '</h2></div>' + nav + tiles + '<div>' + list + '</div>';
   }
   function openEditAmount(sid) {
     var s = BC.student(sid), ym = S.payMonth, rec = BC.payRec(sid, ym), calc = BC.calcAmount(s, ym) - (cfg.credit_carry ? rec.creditIn : 0), cur = rec.paid ? rec.amountPaid : BC.amountDue(s, ym);
     var el = UI.sheet.open('<div class="sheet-h"><div><h2>' + t('Change amount') + '</h2><div class="muted small">' + h(s.name) + ' · ' + BC.monthName(ym, S.lang) + '</div></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
-      '<div class="stack"><div class="banner">' + icon('info') + '<div>' + t('Worked out by the rules: {amount}', { amount: money(Math.max(0, calc)) }) + '<br>' + t('{a} of {b} lessons', { a: BC.billedDates(s, ym).length, b: BC.lessonDates(s, ym).length }) + '</div></div>' +
-      '<label class="field"><span class="lbl">' + t('Amount (VND)') + '</span><input class="inp" type="number" id="amt" step="1000" min="0" value="' + cur + '"></label>' +
-      '<button class="btn primary block" id="amt-save">' + t('Save') + '</button><button class="btn block" id="amt-reset">' + t('Use the worked-out amount') + '</button></div>');
+      '<div class="stack"><div class="banner">' + icon('info') + '<div>' + t('Worked out: {amount}', { amount: money(Math.max(0, calc)) }) + ' · ' + t('{a} of {b} lessons', { a: BC.billedDates(s, ym).length, b: BC.lessonDates(s, ym).length }) + '</div></div>' +
+      '<label class="field"><span class="lbl">' + t('Amount') + '</span><input class="inp" type="number" id="amt" step="1000" min="0" value="' + cur + '"></label>' +
+      '<button class="btn primary block" id="amt-save">' + t('Save') + '</button><button class="btn block" id="amt-reset">' + t('Reset') + '</button></div>');
     el.addEventListener('click', function (e) {
       if (e.target.closest('#amt-save')) {
         var v = Number($('#amt', el).value); if (isNaN(v) || v < 0) return;
-        rec.override = v; if (rec.paid) rec.amountPaid = v; UI.sheet.close(); render(); UI.toast(t('Saved'));
+        rec.override = v; if (rec.paid) rec.amountPaid = v; UI.sheet.close(); render(); 
       } else if (e.target.closest('#amt-reset')) {
-        rec.override = null; if (rec.paid) rec.amountPaid = BC.amountDue(s, ym); UI.sheet.close(); render(); UI.toast(t('Saved'));
+        rec.override = null; if (rec.paid) rec.amountPaid = BC.amountDue(s, ym); UI.sheet.close(); render(); 
       }
     });
   }
 
   /* ---------- 4. To remind ---------- */
   function remindView() {
-    var d = remindData(), out = '<div class="view-h"><h2>' + t('To remind') + '</h2><p class="muted small">' + t('Copy the message, then paste it into Zalo.') + '</p></div>';
+    var d = remindData(), out = '<div class="view-h"><h2>' + t('To remind') + '</h2></div>';
     var group = function (title, sub, rows, kind) {
       if (!rows.length) return '';
-      return '<h3 style="margin:14px 0 8px">' + title + ' <span class="tag">' + rows.length + '</span></h3><p class="muted small" style="margin-bottom:8px">' + sub + '</p>' + rows.map(function (r) {
+      return '<h3 style="margin:14px 0 8px">' + title + ' <span class="tag">' + rows.length + '</span></h3>' + rows.map(function (r) {
         var key = kind + r.s.id, done = S.reminded[key];
-        return '<div class="li pay"><div class="avatar ' + (done ? 'done' : (kind === 'late' ? 'late' : 'warn')) + '">' + (done ? icon('check') : ava(r.s)) + '</div><div class="who"><b>' + h(r.s.name) + '</b> <span class="muted small">' + h(r.s.code) + '</span></div><div class="amt">' + money(BC.amountDue(r.s, ymNow())) + '</div>' +
-          '<div class="st small muted">' + (kind === 'late' ? t('Late since {date}', { date: BC.fmtDay(BC.addDays(r.due, 1), S.lang) }) : t('Due {date}', { date: BC.fmtDay(r.due, S.lang) })) + (done ? ' · <span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
+        return '<div class="li pay"><div class="avatar ' + (done ? 'done' : (kind === 'late' ? 'late' : 'warn')) + '">' + (done ? icon('check') : ava(r.s)) + '</div><div class="who"><b>' + h(r.s.name) + '</b></div><div class="amt">' + money(BC.amountDue(r.s, ymNow())) + '</div>' +
+          '<div class="st small muted">' + (done ? '<span class="tick">' + t('copied') + '</span>' : '') + '</div><div class="acts">' +
           '<button class="btn sm primary" data-a="prevmsg" data-x="' + kind + '|' + r.s.id + '">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button></div></div>';
       }).join('');
     };
@@ -570,7 +561,7 @@
           '<button class="btn sm primary" data-a="prevmsg" data-x="cancel|' + iso + '">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button></div></div>';
       }).join('');
     }
-    if (!d.soft.length && !d.late.length && !d.canc.length) out += '<div class="empty">' + icon('check') + '<p>' + t('Nothing to remind right now.') + '</p><p class="small">' + t('Reminders start on the 3rd for unpaid fees.') + '</p></div>';
+    if (!d.soft.length && !d.late.length && !d.canc.length) out += '<div class="empty">' + icon('check') + '<p>' + t('Nothing to remind right now.') + '</p></div>';
     return out;
   }
   function msgFromKey(x, lang) {
@@ -587,7 +578,7 @@
     var draw = function () {
       el.innerHTML = '<div class="grab"></div><div class="sheet-h"><div><h2>' + (isC ? t('Announcement') : t('Message to {name}', { name: h(s.name) })) + '</h2></div><button class="btn icon sm ghost" data-close aria-label="' + t('Close') + '">' + icon('x') + '</button></div>' +
         '<div class="seg full" style="margin-bottom:12px"><button data-l="vi" aria-pressed="' + (lang === 'vi') + '">Tiếng Việt</button><button data-l="en" aria-pressed="' + (lang === 'en') + '">English</button></div>' +
-        '<div class="msgbox">' + h(msgFromKey(x, lang)) + '</div><button class="btn primary block" style="margin-top:12px" id="pv-copy">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button><p class="muted small" style="margin-top:10px">' + t('You can reword these texts in Settings.') + '</p>';
+        '<div class="msgbox">' + h(msgFromKey(x, lang)) + '</div><button class="btn primary block" style="margin-top:12px" id="pv-copy">' + icon('copy', 'sm') + ' ' + t('Copy message') + '</button>';
     };
     el = UI.sheet.open('', {});
     el.addEventListener('click', function (e) {
@@ -600,36 +591,30 @@
 
   /* ---------- 5. More ---------- */
   function moreView() {
-    var items = [['data', 'copy', 'My data', 'Save a file, open a file, export a report'], ['scores', 'chart', 'Scores', 'Score a student on the six skills'], ['breaks', 'pause', 'Breaks', 'Planned breaks and fee reductions'], ['cancel', 'ban', 'Cancel a session', 'Public holiday or closed venue'],
-      ['timetable', 'clock', 'Timetable and seats', 'Class days, times and extra seats'], ['videos', 'video', 'Videos', 'One link per skill'], ['settings', 'settings', 'Settings', 'All the numbers and texts']];
+    var items = [['data', 'save', 'My data'], ['scores', 'chart', 'Scores'], ['breaks', 'pause', 'Breaks'], ['timetable', 'clock', 'Timetable'], ['settings', 'settings', 'Settings']];
     return '<div class="view-h"><h2>' + t('More') + '</h2></div><div class="menu">' + items.map(function (x) {
-      return '<button class="li" data-a="sub" data-x="' + x[0] + '">' + icon(x[1]) + '<div class="grow"><b>' + t(x[2]) + '</b><span class="muted small">' + t(x[3]) + '</span></div>' + icon('chevR') + '</button>';
-    }).join('') + '</div>';
+      return '<button class="li" data-a="sub" data-x="' + x[0] + '">' + icon(x[1]) + '<div class="grow"><b>' + t(x[2]) + '</b></div>' + icon('chevR') + '</button>';
+    }).join('') + '</div>' +
+      '<div class="card row between" style="margin-top:16px"><div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">Tiếng Việt</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">English</button></div>' + UI.themeBtn() + '</div>';
   }
   function subView() {
     return { data: dataView, scores: scoresView, breaks: breaksView, cancel: cancelView, timetable: timetableView, videos: videosView, settings: settingsView }[S.sub]();
   }
 
-  /* my data: the save file, the backup state, earlier copies */
+  /* my data: the save file, whether it is up to date, earlier copies */
   function dataView() {
     var bk = BC.backup(), hist = BC.history().slice(0, -1).reverse();
-    var state = !bk.at ? ['warn', t('You have not saved a file yet.'), t('If this phone is lost or the browser is cleared, the data is gone. Save a file now.')] :
-      bk.dirty ? ['warn', t('You have changes that are not in a file.'), t('Last file: {when}.', { when: ago(bk.at) })] : ['ok', t('Your file is up to date.'), t('Saved {when}.', { when: ago(bk.at) })];
-    var copies = hist.length ? hist.map(function (x, i) {
-      return '<div class="hist"><div><b>' + new Date(x.t).toLocaleString(S.lang === 'vi' ? 'vi-VN' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</b></div><button class="btn sm" data-a="restorehist" data-x="' + (hist.length - 1 - i) + '">' + t('Restore') + '</button></div>';
-    }).join('') : '<p class="muted small">' + t('No earlier copies yet. They appear as you work.') + '</p>';
+    var state = !bk.at ? ['warn', t('Not saved yet')] : bk.dirty ? ['warn', t('Not saved') + ' · ' + t('Last file: {when}.', { when: ago(bk.at) })] : ['ok', t('Saved {when}', { when: ago(bk.at) })];
+    var copies = hist.length ? '<h3 style="margin:18px 0 6px">' + t('Earlier copies') + '</h3><div class="card">' + hist.map(function (x, i) {
+      return '<div class="hist"><b>' + new Date(x.t).toLocaleString(S.lang === 'vi' ? 'vi-VN' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</b><button class="btn sm" data-a="restorehist" data-x="' + (hist.length - 1 - i) + '">' + t('Restore') + '</button></div>';
+    }).join('') + '</div>' : '';
     return subHead(t('My data')) +
-      '<div class="banner ' + state[0] + '" style="margin-bottom:14px">' + icon(state[0] === 'ok' ? 'check' : 'info') + '<div><b>' + state[1] + '</b><br>' + state[2] + '</div></div>' +
-      '<div class="card stack"><h3>' + t('Your file') + '</h3><p class="muted small">' + t('The file is the only copy that lives outside this phone. Keep it in Files, Zalo or email.') + '</p>' +
-      '<button class="btn primary block" data-a="savefile">' + icon('copy', 'sm') + ' ' + t('Save file') + '</button>' +
-      '<button class="btn block" data-a="openfile">' + icon('plus', 'sm') + ' ' + t('Open a file') + '</button></div>' +
-      '<div class="card stack"><h3>' + t('Report for Google Sheets') + '</h3><p class="muted small">' + t('A table of who paid and who came, month by month. Open it in Google Sheets to count, sum and draw charts. It is one way: changing it there changes nothing here.') + '</p>' +
-      '<button class="btn block" data-a="report">' + icon('chart', 'sm') + ' ' + t('Export report') + '</button></div>' +
-      '<div class="card"><h3 style="margin-bottom:6px">' + t('Earlier copies on this phone') + '</h3>' + copies + '</div>' +
-      '<div class="card stack"><h3>' + t('Where is my data?') + '</h3><ul class="small muted" style="margin:0;padding-left:18px"><li>' + t('On this phone, in this browser. Nothing is sent anywhere.') + '</li><li>' + t('Try it: switch on airplane mode. Everything still works.') + '</li><li>' + t('Students see only the card you send them, and only their own lessons.') + '</li></ul></div>' +
-      '<div class="card stack"><h3>' + t('Start over') + '</h3><p class="muted small">' + t('Clears this phone and takes you back to the start screen.') + '</p>' +
-      '<button class="btn danger block" data-a="startover"' + (bk.dirty ? ' disabled' : '') + '>' + icon('trash', 'sm') + ' ' + t('Start over') + '</button>' +
-      '<div class="why">' + (bk.dirty ? icon('info') + '<span>' + t('Save a file first, so nothing is lost.') + '</span>' : '') + '</div></div>';
+      '<div class="banner ' + state[0] + '" style="margin-bottom:14px">' + icon(state[0] === 'ok' ? 'check' : 'info') + '<div><b>' + state[1] + '</b></div></div>' +
+      '<div class="menu"><button class="li" data-a="savefile">' + icon('save') + '<div class="grow"><b>' + t('Save file') + '</b></div>' + icon('chevR') + '</button>' +
+      '<button class="li" data-a="openfile">' + icon('plus') + '<div class="grow"><b>' + t('Open file') + '</b></div>' + icon('chevR') + '</button>' +
+      '<button class="li" data-a="report">' + icon('chart') + '<div class="grow"><b>' + t('Export report') + '</b></div>' + icon('chevR') + '</button></div>' + copies +
+      '<div style="margin-top:24px"><button class="btn danger block" data-a="startover"' + (bk.dirty ? ' disabled' : '') + '>' + icon('trash', 'sm') + ' ' + t('Start over') + '</button>' +
+      '<div class="why">' + (bk.dirty ? icon('info') + '<span>' + t('Save a file first.') + '</span>' : '') + '</div></div>';
   }
 
   /* scores */
@@ -648,11 +633,12 @@
       var was = l ? l.v[k.id] : 0, cur = S.draft[k.id] || 0;
       var btns = '';
       for (var n = 1; n <= 10; n++) btns += '<button data-a="score" data-x="' + k.id + ':' + n + '" aria-pressed="' + (cur === n) + '" class="' + (was === n ? 'was' : '') + '">' + n + '</button>';
-      return '<div><div class="row between small" style="margin-bottom:4px"><b>' + k[S.lang] + '</b><span class="muted">' + (was ? t('last time {n}', { n: was }) : '') + '</span></div><div class="scorebtns">' + btns + '</div></div>';
+      return '<div><div class="small" style="margin-bottom:4px"><b>' + k[S.lang] + '</b></div><div class="scorebtns">' + btns + '</div></div>';
     }).join('');
-    return subHead(t('Scores')) + '<div class="card stack"><label class="field"><span class="lbl">' + t('Student') + '</span><select class="inp" data-bind="scoreSid">' + opts + '</select><span class="hint">' + (l ? t('Last scored {date}. Every 2 to 3 months is enough.', { date: dt(l.date) }) : t('Not scored yet.')) + '</span></label>' +
-      (complete ? BC.radar(S.draft, l ? l.v : null, S.lang) : '<div class="empty small">' + t('Tap a number for each of the six skills to see the polygon.') + '</div>') +
-      '<div class="stack">' + rows + '</div><p class="muted tiny">' + t('Orange underline = last scoring. Today is {date}.', { date: dt(BC.today) }) + '</p><button class="btn primary block" data-a="savescore"' + (complete ? '' : ' disabled') + '>' + t('Save scores') + '</button></div>';
+    return subHead(t('Scores')) + '<div class="card stack"><label class="field"><span class="lbl">' + t('Student') + '</span><select class="inp" data-bind="scoreSid">' + opts + '</select></label>' +
+      (complete ? BC.radar(S.draft, l ? l.v : null, S.lang) : '') +
+      '<div class="stack">' + rows + '</div><button class="btn primary block" data-a="savescore"' + (complete ? '' : ' disabled') + '>' + t('Save') + '</button></div>' +
+      '<button class="btn block" style="margin-top:12px" data-a="sub" data-x="videos">' + icon('video', 'sm') + ' ' + t('Videos') + '</button>';
   }
 
   /* breaks */
@@ -667,12 +653,12 @@
     var list = BC.breaks.slice().sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var rows = list.map(function (b) {
       var s = BC.student(b.student), long = BC.isLong(b), red = breakReduction(b);
-      return '<div class="li"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + ' <span class="muted small">' + h(s.code) + '</span></b><span class="small muted">' + dt(b.from) + ' – ' + dt(b.to) + ' · ' + t('{n} days', { n: BC.breakLen(b) }) + '</span><span class="small muted">' + t('Told you on {date}', { date: BC.fmtDay(b.notified, S.lang) }) + (b.note ? ' · ' + h(b.note) : '') + '</span></div>' +
+      return '<div class="li"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="small muted">' + dt(b.from) + ' – ' + dt(b.to) + ' · ' + t('{n} days', { n: BC.breakLen(b) }) + '</span>' + (b.note ? '<span class="small muted">' + h(b.note) + '</span>' : '') + '</div>' +
         '<div class="right"><span class="tag ' + (long ? 'info' : '') + '">' + (long ? t('Long break') : t('Short break')) + '</span><div class="bold" style="margin-top:4px">' + (long ? '−' + money(red) : t('No fee change')) + '</div></div>' +
         (long ? '<button class="btn icon sm" data-a="adjbreak" data-x="' + b.student + '|' + BC.ym(b.from) + '" aria-label="' + t('Change amount') + '">' + icon('pencil', 'sm') + '</button>' : '') +
         '<button class="btn icon sm" data-a="rmbreak" data-x="' + b.student + '|' + b.id + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button></div>';
     }).join('');
-    return subHead(t('Breaks')) + '<p class="muted small" style="margin-bottom:12px">' + t('Students ask you on Zalo and you plan the break here. A long break ({n} days or more) lowers the fee and gives no make-ups. A short break is just normal skips.', { n: cfg.long_break_days }) + '</p><button class="btn primary" style="margin-bottom:14px" data-a="addbreak">' + icon('plus', 'sm') + ' ' + t('Plan a break') + '</button>' + (rows || '<div class="empty">' + t('No planned breaks.') + '</div>');
+    return subHead(t('Breaks')) + '<button class="btn primary" style="margin-bottom:14px" data-a="addbreak">' + icon('plus', 'sm') + ' ' + t('Plan a break') + '</button>' + (rows || '<div class="empty">' + t('No planned breaks.') + '</div>');
   }
 
   /* cancel a session */
@@ -690,13 +676,13 @@
       var late = BC.diff(BC.today, sel.iso) < cfg.advance_days, until = BC.addMonths(BC.ym(sel.iso), cfg.cancel_credit_months);
       var sample = BC.student(sel.regular[0] || BC.students[0].id);
       detail = '<div class="card stack" style="margin-top:14px"><h3>' + dt(sel.iso) + '</h3>' +
-        (late ? '<div class="banner warn">' + icon('info') + '<div><b>' + t('Inside the {n}-day notice window.', { n: cfg.advance_days }) + '</b><br>' + t('Students did not get a week of warning. Sort it out with them on Zalo.') + '</div></div>' : '<div class="banner ok">' + icon('check') + '<div>' + t('You are giving enough notice ({n} days or more).', { n: cfg.advance_days }) + '</div></div>') +
-        '<div class="banner">' + icon('users') + '<div>' + t('{n} students are booked. Each one gets 1 free make-up lesson, usable until the end of {month}. No refunds.', { n: sel.regular.length, month: BC.monthOnly(until, S.lang) }) + (sel.makeups.length || sel.joins.length ? '<br>' + t('{n} make-ups or joins on this date are cancelled and go back to their owners.', { n: sel.makeups.length + sel.joins.length }) : '') + '</div></div>' +
-        '<label class="field"><span class="lbl">' + t('Reason (shown to you only)') + '</span><input class="inp" id="cx-note" placeholder="' + t('e.g. Public holiday') + '"></label>' +
+        (late ? '<div class="banner warn">' + icon('info') + '<div><b>' + t('Under {n} days notice', { n: cfg.advance_days }) + '</b></div></div>' : '') +
+        '<div class="banner">' + icon('users') + '<div>' + t('{n} students get 1 free make-up (until the end of {month})', { n: sel.regular.length, month: BC.monthOnly(until, S.lang) }) + '</div></div>' +
+        '<label class="field"><span class="lbl">' + t('Reason') + '</span><input class="inp" id="cx-note" placeholder="' + t('e.g. Public holiday') + '"></label>' +
         '<div><div class="seg full" style="margin-bottom:8px"><button data-a="msglang" data-x="vi" aria-pressed="' + (S.msgLang === 'vi') + '">Tiếng Việt</button><button data-a="msglang" data-x="en" aria-pressed="' + (S.msgLang === 'en') + '">English</button></div><div class="msgbox">' + h(msg('cancel', sample, S.msgLang, sel.iso)) + '</div></div>' +
         '<button class="btn block" data-a="copycancel">' + icon('copy', 'sm') + ' ' + t('Copy announcement') + '</button><button class="btn danger block" data-a="docancel">' + icon('ban', 'sm') + ' ' + t('Cancel this session') + '</button></div>';
     }
-    return subHead(t('Cancel a session')) + '<p class="muted small" style="margin-bottom:12px">' + t('Pick the date. You will see who is affected and get the message to paste into Zalo.') + '</p>' + detail.replace('margin-top:14px', 'margin:0 0 14px') + '<div>' + list + '</div>';
+    return subHead(t('Cancel a session')) + detail.replace('margin-top:14px', 'margin:0 0 14px') + '<div>' + list + '</div>';
   }
 
   /* timetable and seats */
@@ -711,8 +697,9 @@
       return '<div class="card" style="margin-top:8px"><div class="row between"><b>' + dt(iso) + '</b>' + (o.cancelled ? '<span class="tag bad">' + t('Cancelled') + '</span>' : '<button class="btn sm icon" data-a="ovrm" data-x="' + iso + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button>') + '</div>' +
         (o.cancelled ? '<p class="muted small">' + h(o.note || '') + '</p>' : '<div class="ctl"><span>' + t('Extra seats') + '</span>' + stepper('extra:' + iso, o.extra || 0, 0, 2) + '</div><div class="ctl"><span>' + t('Courts available') + '</span>' + stepper('courts:' + iso, c, 1, cfg.venue_courts) + '</div>') + '</div>';
     }).join('');
-    return subHead(t('Timetable and seats')) + '<div class="card"><h3 style="margin-bottom:6px">' + t('Class days and times') + '</h3><p class="muted small">' + t('Switch a day off to have no class (Friday is off). One day always stays on. A change starts today: lessons, bills and credits before today stay as they were.') + '</p>' + rows + '</div>' +
-      '<div class="card"><h3>' + t('Special dates') + '</h3><p class="muted small">' + t('The venue has {courts} courts, {seats} players each: {total} seats. Add 0 to 2 extra seats, or fewer courts, on a date.', { courts: cfg.venue_courts, seats: cfg.seats_per_court, total: cfg.venue_courts * cfg.seats_per_court }) + '</p>' + ovs +
+    return subHead(t('Timetable')) + '<div class="card">' + rows + '</div>' +
+      '<button class="btn danger block" style="margin-bottom:14px" data-a="sub" data-x="cancel">' + icon('ban', 'sm') + ' ' + t('Cancel a session') + '</button>' +
+      '<div class="card"><h3>' + t('Special dates') + '</h3>' + ovs +
       '<div class="row" style="margin-top:12px"><input class="inp grow" type="date" id="ov-date" value="' + BC.addDays(BC.today, 8) + '" min="' + BC.today + '" max="' + BC.addDays(BC.today, BC.LIMITS.dayRange) + '"><button class="btn primary" data-a="ovadd">' + icon('plus', 'sm') + ' ' + t('Add date') + '</button></div></div>';
   }
 
@@ -721,26 +708,23 @@
     var rows = BC.skills.map(function (k) {
       var v = BC.videos[k.id];
       return '<div class="card stack" style="margin-top:10px"><div class="row between"><b>' + k[S.lang] + '</b><span class="tag ' + (v.url ? 'ok' : '') + '">' + (v.url ? t('link set') : t('no link yet')) + '</span></div>' +
-        '<label class="field"><span class="lbl">' + t('YouTube or TikTok link') + '</span><input class="inp" type="url" data-bind="vid" data-k="' + k.id + ':url" placeholder="https://" value="' + h(v.url) + '"></label>' +
-        '<label class="field"><span class="lbl">' + t('Title (optional)') + '</span><input class="inp" data-bind="vid" data-k="' + k.id + ':title" value="' + h(v.title) + '"></label></div>';
+        '<label class="field"><span class="lbl">' + t('Link') + '</span><input class="inp" type="url" data-bind="vid" data-k="' + k.id + ':url" placeholder="https://" value="' + h(v.url) + '"></label>' +
+        '<label class="field"><span class="lbl">' + t('Title') + '</span><input class="inp" data-bind="vid" data-k="' + k.id + ':title" value="' + h(v.title) + '"></label></div>';
     }).join('');
-    return subHead(t('Videos')) + '<p class="muted small">' + t('Students see the clip for their weakest skill. Paste the link and it saves by itself.') + '</p>' + rows;
+    return subHead(t('Videos')) + rows;
   }
 
   /* settings */
   var DEFS = { advance_days: 7, flex_notice_days: 7, pay_by_day: 5, first_bill_days: 3, max_makeups_per_month: 3, long_break_days: 14, cancel_credit_months: 1, venue_courts: 4, seats_per_court: 4, fee_1day: 800000, fee_2days: 1300000, proration: true, credit_carry: true, page_title: 'VM Badminton', coach_zalo: '', default_lang: 'vi', timezone: 'Asia/Ho_Chi_Minh' };
   var SET = [
-    ['Class rules', [['advance_days', 'Notice for skips, make-ups and breaks (calendar days)', 'n', 0, 30], ['flex_notice_days', 'Flexible students join a session this many days ahead', 'n', 0, 30], ['pay_by_day', 'Fee is paid by the end of this day of the month', 'n', 1, 28], ['first_bill_days', 'A new student\'s first bill is due this many days after the start date', 'n', 0, 14],
-      ['max_makeups_per_month', 'Make-ups per student per month', 'n', 0, 10], ['long_break_days', 'A break this long or longer is a long break (days)', 'n', 2, 60], ['cancel_credit_months', 'A cancelled-lesson credit stays valid this many more months', 'n', 0, 3]]],
-    ['Seats', [['venue_courts', 'Courts the venue has', 'n', 1, 8], ['seats_per_court', 'Players per court', 'n', 2, 6]]],
-    ['Money', [['fee_1day', 'Monthly fee, 1 day a week (VND)', 'money'], ['fee_2days', 'Monthly fee, 2 days a week (VND)', 'money'], ['proration', 'Pay only for the lessons studied (mid-month joiners, long breaks)', 'bool'], ['credit_carry', 'A too-high paid bill becomes a credit on the next bill', 'bool']]],
-    ['Page', [['page_title', 'Page title (browser tab and link previews)', 'text'], ['coach_zalo', 'Your Zalo phone number (the Ask-the-coach button opens this chat)', 'text'], ['default_lang', 'Default language on the student card', 'lang'], ['timezone', 'Time zone', 'tz']]]
+    ['Rules', [['advance_days', 'Notice (days)', 'n', 0, 30], ['flex_notice_days', 'Flexible notice (days)', 'n', 0, 30], ['pay_by_day', 'Pay by (day of month)', 'n', 1, 28], ['first_bill_days', 'First bill (days after start)', 'n', 0, 14],
+      ['max_makeups_per_month', 'Make-ups a month', 'n', 0, 10], ['long_break_days', 'Long break (days)', 'n', 2, 60], ['cancel_credit_months', 'Free make-up valid (months)', 'n', 0, 3]]],
+    ['Seats', [['venue_courts', 'Courts', 'n', 1, 8], ['seats_per_court', 'Players per court', 'n', 2, 6]]],
+    ['Money', [['fee_1day', 'Fee, 1 day a week', 'money'], ['fee_2days', 'Fee, 2 days a week', 'money'], ['proration', 'Pay only for lessons studied', 'bool'], ['credit_carry', 'Overpaid becomes credit', 'bool']]],
+    ['Zalo', [['coach_zalo', 'Your Zalo number', 'text'], ['default_lang', 'Card language', 'lang']]]
   ];
+  SET.unshift(['Class', [['page_title', 'Class name', 'text']]]);
   function settingsView() {
-    var def = function (k, type) {
-      var d = DEFS[k]; if (type === 'bool') d = d ? t('on') : t('off'); else if (type === 'money') d = money(d); else if (type === 'lang') d = d === 'vi' ? 'Tiếng Việt' : 'English';
-      return t('Default: {v}', { v: d });
-    };
     var sections = SET.map(function (sec) {
       return '<div class="card"><h3>' + t(sec[0]) + '</h3>' + sec[1].map(function (r) {
         var k = r[0], type = r[2], v = cfg[k], ctl;
@@ -750,8 +734,7 @@
         else if (type === 'text') ctl = '<input class="inp" data-bind="set" data-k="' + k + '" maxlength="' + (k === 'coach_zalo' ? 15 : 40) + '"' + (k === 'coach_zalo' ? ' inputmode="tel"' : '') + ' value="' + h(v) + '">';
         else if (type === 'lang') ctl = '<select class="inp" data-bind="set" data-k="' + k + '"><option value="vi"' + (v === 'vi' ? ' selected' : '') + '>Tiếng Việt</option><option value="en"' + (v === 'en' ? ' selected' : '') + '>English</option></select>';
         else ctl = '<select class="inp" data-bind="set" data-k="' + k + '"><option' + (v === 'Asia/Ho_Chi_Minh' ? ' selected' : '') + '>Asia/Ho_Chi_Minh</option><option' + (v === 'Asia/Bangkok' ? ' selected' : '') + '>Asia/Bangkok</option><option' + (v === 'UTC' ? ' selected' : '') + '>UTC</option></select>';
-        var changed = v !== DEFS[k];
-        return '<div class="set-row"><div class="l"><div>' + t(r[1]) + '</div><div class="muted tiny">' + def(k, type) + (changed ? ' · <a href="#" data-a="setreset" data-x="' + k + '">' + t('reset') + '</a>' : '') + '</div></div>' + ctl + '</div>';
+        return '<div class="set-row"><div class="l">' + t(r[1]) + '</div>' + ctl + '</div>';
       }).join('') + '</div>';
     }).join('');
     var msgs = ['vi', 'en'].map(function (lg) {
@@ -760,16 +743,16 @@
         return '<label class="field"><span class="lbl">' + t(lbl) + ' · ' + (lg === 'vi' ? 'Tiếng Việt' : 'English') + '</span><textarea class="inp" data-bind="msg" data-k="' + lg + '.' + kind + '">' + h(BC.messages[lg][kind]) + '</textarea></label>';
       }).join('');
     }).join('');
-    var qr = '<div class="card stack"><h3>' + t('Your QR image') + '</h3><p class="muted small">' + t('Kept in your save file. A student card is a link and cannot carry a picture, so pin this QR in your Zalo chat once.') + '</p>' +
-      '<div class="qr-preview">' + (BC.qrImage ? '<img alt="QR" style="width:100%;display:block;border-radius:8px" src="' + BC.qrImage + '">' : BC.fakeQR(7)) + '</div><p class="muted tiny">' + (BC.qrImage ? t('Your image.') : t('Demo QR. Upload your own bank QR.')) + '</p>' +
+    var qr = '<div class="card stack"><h3>QR</h3>' +
+      '<div class="qr-preview">' + (BC.qrImage ? '<img alt="QR" style="width:100%;display:block;border-radius:8px" src="' + BC.qrImage + '">' : BC.fakeQR(7)) + '</div>' +
       '<input type="file" id="qr-file" accept="image/*" class="hide"><button class="btn" data-a="qrpick">' + icon('plus', 'sm') + ' ' + t('Choose image') + '</button></div>';
     var hasLogo = !!UI.pics.get('logo');
-    var pic = '<div class="card stack"><h3>' + t('Page picture') + '</h3><p class="muted small">' + t('Shown at the top of every page and in the browser tab. Use a square picture.') + '</p>' +
+    var pic = '<div class="card stack"><h3>' + t('Page picture') + '</h3>' +
       '<div class="row">' + UI.logo(72) + '<div class="stack-s grow"><button class="btn" data-a="logopick">' + icon('plus', 'sm') + ' ' + t('Choose picture') + '</button>' +
       (hasLogo ? '<button class="btn ghost" data-a="logoreset">' + t('Use the default picture') + '</button>' : '') + '</div></div></div>';
-    return subHead(t('Settings')) + '<p class="muted small" style="margin-bottom:12px">' + t('Every number the site uses. Changes save by themselves.') + '</p>' + pic + sections + qr +
-      '<div class="card stack"><h3>' + t('Message texts') + '</h3><p class="muted small">' + t('Placeholders: {name} {month} {amount} {due} {code} {weekday} {date} {until} {link} (class card only)') + '</p>' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset texts to the defaults') + '</button></div>' +
-      '<button class="btn danger block" style="margin-top:14px" data-a="setresetall">' + t('Reset all settings to defaults') + '</button>';
+    return subHead(t('Settings')) + pic + sections + qr +
+      '<details class="card"><summary class="bold">' + t('Messages') + '</summary><div class="stack" style="margin-top:12px">' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset') + '</button></div></details>' +
+      '<button class="btn danger block" style="margin-top:14px" data-a="setresetall">' + t('Reset all') + '</button>';
   }
 
   /* ---------- render and events ---------- */
@@ -784,7 +767,7 @@
     syncPanel();
     if (focus === 'q') { var q = $('#q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
   }
-  function toast(msg, kind) { UI.toast(msg, kind); }
+  function toast(msg, kind) { if (msg === t('Saved')) return; UI.toast(msg, kind); }
 
   function stepAction(key, d) {
     var p = key.split(':'), kind = p[0];
@@ -864,7 +847,7 @@
         case 'savescore': {
           var arr = BC.scores[S.scoreSid] || (BC.scores[S.scoreSid] = []), v = {};
           BC.skills.forEach(function (k) { v[k.id] = S.draft[k.id]; });
-          arr.push({ date: BC.today, v: v }); S.draft = null; render(); toast(t('Scores saved. The student sees the new polygon.')); break;
+          arr.push({ date: BC.today, v: v }); S.draft = null; render(); toast(t('Scores saved')); break;
         }
         case 'adjbreak': { var pp = x.split('|'); S.payMonth = pp[1]; S.sub = null; S.tab = 'payments'; render(); openEditAmount(Number(pp[0])); break; }
         case 'pickcancel': S.cancelIso = x; render(); window.scrollTo(0, 0); break;

@@ -23,6 +23,18 @@
   --shadow: none;
   color-scheme: dark;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --bg: #1d1e20; --surface: #2e2e33; --surface2: #37383e; --text: #dadadb; --muted: #9b9c9d; --line: #414244;
+  --brand: #dadadb; --brand-ink: #1d1e20; --brand-soft: #37383e; --brand-strong: #dadadb;
+  --accent: #dadadb; --accent-soft: #37383e; --accent-ink: #1d1e20;
+  --ok: #66c78f; --ok-soft: #1f3b2b; --ok-ink: #0f2a1b;
+  --danger: #f28376; --danger-soft: #4a2420; --danger-ink: #3a0f0b; --warn: #dadadb; --warn-soft: #37383e;
+  --info: #dadadb; --info-soft: #37383e;
+  --shadow: none;
+  color-scheme: dark;
+}
+}
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
@@ -193,3 +205,15 @@ body.has-mocktag { padding-top: 22px; }
 .bar-in { max-width: 720px; margin: 0 auto; }
 .bar-in .row > .btn { flex: 1; }
 .bar-in .row > .btn.back { flex: 0 0 auto; min-width: 96px; }
+
+/* full-screen pages that slide in, like the iPhone's Settings. Small sheets stay for one-tap things. */
+.sheet-back.page { background: var(--bg); align-items: stretch; justify-content: center; animation: slidein .22s ease-out; z-index: 55; }
+.sheet.page { max-width: 720px; width: 100%; max-height: none; height: 100%; border-radius: 0; box-shadow: none; background: var(--bg); padding: 0 16px 120px; animation: none; overflow: auto; }
+body.has-mocktag .sheet.page { padding-top: 22px; }
+.page-h { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0 8px; margin: 0 0 8px; }
+.page-h h2 { font-size: 1.25rem; }
+.page-h .btn { flex: none; }
+@keyframes slidein { from { transform: translateX(28px); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (min-width: 900px) { .sheet.page { border-left: 1px solid var(--line); border-right: 1px solid var(--line); } }
+@media (prefers-reduced-motion: reduce) { .sheet-back.page, .sheet-back, .sheet, .toast { animation: none; } }
+.langbtn { min-width: var(--tap-sm); font-weight: 750; }

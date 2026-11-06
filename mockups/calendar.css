@@ -1,10 +1,10 @@
 /* Calendar cells and legend, shared by the student card and the coach's student calendar. */
 .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .cal-nav strong { font-size: 1.02rem; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cal-wd { text-align: center; font-size: .72rem; color: var(--muted); font-weight: 700; padding: 4px 0; }
 .cd {
-  aspect-ratio: 1 / 1.08; min-height: 44px; border-radius: 10px; border: 1px solid transparent; background: transparent;
+  height: 46px; min-height: 44px; min-width: 0; border-radius: 10px;   /* a fixed height, so a narrow phone shrinks the width instead of overflowing */ border: 1px solid transparent; background: transparent;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; font-weight: 650; color: var(--text);
   font-size: .95rem; position: relative;
 }

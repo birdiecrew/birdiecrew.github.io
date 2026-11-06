@@ -160,61 +160,73 @@ The venue has **4 courts** and the coach books courts after she knows who is com
 - **No refund.** Instead, every affected fixed student gets **1 free make-up credit** ("compensation"). It does not count toward the 3-make-up cap, and it stays valid for `cancel_credit_months` more month(s) (default 1), so a holiday near the end of a month can still be made up. The make-up date still follows the notice rule.
 - The announcement goes through her private Zalo channel. The admin page writes the message for her to paste (see "Reminders and messages").
 
+## How the screens talk (all of them)
+The screens say as little as possible. The picture, the layout and the dimmed buttons do the explaining.
+- **One-word labels.** "Name", "Days", "Start", "Fee". A sentence only for a warning or an error, and only when it applies.
+- **No instruction text.** No "tap a day to change it", no "check your bank app, then tap Paid", no hints under fields. Blocked buttons give a reason of about three words.
+- **Nothing in green to say "ready".** When all is well the reason line is empty. It keeps its height, so nothing jumps.
+- **Positive words.** The card says "Focus: Smash", never "weakest".
+- **No "Coach" or "Student" labels.** The logo and the title are enough. The coach's page has the icon bar and the save icon, so the two pages already look different.
+- **One word per action.** It is **Save** everywhere (the save icon, the Save file button, "Saved 2 min ago"). There is no second word such as "back up".
+- **Icon-only navigation**, like Facebook. The page title is the label, and every icon keeps a name for screen readers and a badge where there is work.
+- **Full pages, not pop-ups.** Forms and detail open as a full screen that slides in with a back arrow, like iPhone Settings. A small bottom sheet is kept only for a one-tap action (a day, a confirmation).
+- **Toasts only for errors** and for things that are not already visible. No "Saved" after every change.
+- **Look:** the screens follow the phone's light or dark setting. A manual switch lives under More.
+- **Language:** **Vietnamese is the default** on both pages, because the coach is more comfortable in it. English is one small button on the card and a switch under More on the coach's page.
+- **Layout:** one column, up to about 720 px wide. On a laptop the same column is centred and the icon bar moves to the top. Every control is at least 48 px tall (40 px for compact ones), and nothing scrolls sideways, even at 320 px.
+
 ## What a student sees (one card, mostly pictures)
-The card is **read-only** and is a **snapshot**: the top says "Card as of 5 Nov, 14:32" (the day and the time it was made, so two cards can be told apart). After 7 days a banner says "This card is N days old. Ask your coach for a fresh one." It shows the facts and has one kind of button: **Ask the coach**.
+The card is **read-only** and is a **snapshot**. The header is one line: the student's name and when the card was made ("Jane · 5 Nov, 14:32"), with one small language button. After 7 days a banner says "Old card. Ask your coach for a new one."
 
-**Two cards on one phone.** A phone keeps one card per student, and **the newest wins**. If the student opens an older link from the chat, the page keeps and shows the newer card and says "You opened an older card, from … Showing your newest card, from …". Opening the page without a link shows the newest card. (A brother or sister who opens a card for another student replaces it, so each should keep their own link.)
+**Two cards on one phone.** A phone keeps one card per student, and **the newest wins**. If the student opens an older link from the chat, the page keeps and shows the newer card and says so. Opening the page without a link shows the newest card. (A brother or sister who opens a card for another student replaces it, so each should keep their own link.)
 
-**Quiet by default.** The card has no "Key" button and no counters (make-ups left, credits). A day explains itself when tapped, and a rule is mentioned only when it is about to be broken (for example "You have no make-up credit this month. You can still ask for an extra lesson, but the coach may say no.").
-1. **Calendar:** shows the month. Regular days are solid, skipped days are crossed out, make-up days have a thick outline, and a day that is not theirs has a plain outline. Tapping a day shows what it is, and where it makes sense one button: **Ask the coach to skip / let me attend / give me a make-up here / move or cancel this make-up / add or remove me** (flexible). With no make-up credit left (or the monthly limit reached), the same button says **Ask the coach for an extra lesson**, with a line explaining why and that the coach may say no (she can still agree as a courtesy make-up). The button writes a ready-made message, copies it, and opens the coach's Zalo chat. A day inside the notice window says so: "You can still ask, but the coach may say no."
-2. **Rows under the calendar:** Skills, Fees, Breaks and Class rules, one line each. They open on tap, so the page is not a long scroll.
-3. **Skills:** 6 skills (Smash, Net, Footwork, Defense, Serve, Stamina), each scored 1 to 10 by the coach. The faint outline is the **previous scoring**, so growth is visible. The coach scores every 2 to 3 months, not every month. No score yet means the row is hidden. It also holds the clip for their weakest skill, from a YouTube or TikTok link the coach pastes in.
-4. **Fees:** this month's amount and status. **Pay now** shows the amount and their short payment code with copy buttons, and says to use the QR the coach pinned in Zalo (a link cannot carry a picture). It appears only while the bill is unpaid. Month dots show the history. If the fee is late, a banner says so.
-5. **Breaks:** their planned breaks (read-only) and **Ask the coach to plan a break**.
-6. **Class rules:** one screen that shows the six rules. Its numbers come from the coach's settings, so the page and her real rules never disagree.
+**Quiet by default.** There is no "Key" button, no counters (make-ups left, credits), and no title above the calendar. A rule is mentioned only when it is about to be broken, for example "No make-up left. The coach may say no."
+1. **Calendar:** the month and the grid, nothing else. Regular days are solid, skipped days are crossed out, make-up days have a thick outline, and a day that is not theirs has a plain outline. Tapping a day shows what it is, and where it makes sense one button that is the action itself, with a chat icon: **Skip this lesson / I will attend / Make-up here / Extra lesson here / Add me / Remove me / Move or cancel**. With no make-up credit left (or the monthly limit reached) the make-up becomes **Extra lesson here**, with a line saying why. Tapping the button copies a ready message (name, payment code, date, in the card's language) and opens the coach's Zalo chat when her number is set; otherwise it shows the message to paste. A day inside the notice window says so: "Under 7 days: the coach may say no."
+2. **Rows under the calendar:** Skills, Fees, Rules, and Break only when the student has one planned. Each opens a full page.
+3. **Skills:** 6 skills (Smash, Net, Footwork, Defense, Serve, Stamina), each scored 1 to 10 by the coach. The polygon prints each number and, next to it, the change since the previous scoring ("Smash 6 +1"). There is no separate table, because it would repeat the polygon. Below it: "Next focus: Smash" and the clip for that skill, when the coach has set a link. The coach scores every 2 to 3 months. No score yet means the row is hidden.
+4. **Fees:** this month's amount and status, six month dots, and **Pay** while the bill is unpaid. Pay shows the amount and the short payment code with copy buttons, and says "Pay with the QR in Zalo" (a link cannot carry a picture).
+5. **Rules:** the six class rules with the coach's real numbers, and at the end **Ask for a break**, which is how a student asks to plan a break.
 
-Language toggle (Vietnamese / English) on every screen. **Vietnamese is the default**, because the class notice is in Vietnamese. Some students are English speakers. The page stays plain (no fancy browser features) so it works inside chat apps' built-in browsers.
-
-If the link is cut short when copied, the card says so and asks the student to get a new one from the coach. The page remembers the last card it opened, so reopening the address without the link still shows it.
+There is no welcome pop-up: the page just opens. If the link is cut short, the card says "Link did not open. Ask your coach to send your card again." The page remembers the last card it opened.
 
 ## What the coach sees (admin page)
 Design rule: **click and click.** The coach manages all student data herself, from her phone, with big buttons, pickers instead of typing, and about 3 taps per job. She never touches the file by hand.
 
-**First run.** A start screen with three big buttons: **New class**, **Open my file**, **Try a sample class** (made-up students, clearly marked, cleared with one tap). New class is a 5-step wizard:
+**The frame.** The header is the logo, the class name and one **save icon** (a tick when everything is in a file, a tray when there are changes not yet saved). The bottom bar has five icons: Sessions, Students, Payments, Remind, More, with a badge where there is work. On a laptop the bar sits at the top.
+
+**First run.** A start screen with the logo, one line ("Your data stays on this phone."), one main button **New class**, and two quiet ones: **Open file** and **Sample** (made-up students, clearly marked, cleared with one tap). New class is a 5-step wizard with only a title and fields on each step:
 1. **Your class:** tap the days she teaches, check the times, courts and the two fees (all prefilled with her usual numbers).
-2. **Your students:** paste first names, one per line, from Zalo, notes or a spreadsheet column. Numbers, bullets and repeats are cleaned up; she sees the count.
-3. **Their days:** one row of day chips sets everyone at once, then she fixes the few who are different (fixed or flexible).
-4. **Who has paid this month:** a switch per student, or All / None. She can skip it.
-5. **Save your file:** the first backup, through the phone's share sheet (Files, Zalo, email). Finish stays dimmed until she saves or chooses "I will do it later".
+2. **Students:** paste first names, one per line, from Zalo, notes or a spreadsheet column. Numbers, bullets and repeats are cleaned up, and she sees the count.
+3. **Days:** one row of day chips sets everyone at once, then she fixes the few who are different. Each student's row ends with a **Flex** chip.
+4. **Paid:** a switch per student, or All / None. She can skip it.
+5. **Save file:** the first save, through the phone's share sheet (Files, Zalo, email). Finish stays dimmed until she saves or taps Skip and confirms.
 
 No phone numbers, photos or emails are ever asked for. A class of 20 takes about 5 minutes.
 
 **Every day:**
-1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, **courts to book**, and an "over capacity" warning. **Tap a name** to change that student's lesson, or **Add a student** to the session.
-2. **Students:** **Add student** = type a name, tap the weekday chips (Mon, Tue ...), pick the start date, choose fixed or flexible, Save. Then **Send card**: a ready message with the card link, **Copy message**, and **See it as the student sees it**. The sheet says whether a card was ever sent and whether anything changed since. Also edit and pause a student. **Lessons and changes** opens their calendar: tap a day to skip, add a make-up, undo, join or leave, with warnings and **Do it anyway** (see "Skip and make-up").
-3. **Payments:** the month's list with the amount each student owes (worked out by the proration rule), unpaid students first. **One tap marks a student paid.** A pencil changes the amount.
-4. **Scores:** pick a student, tap 1 to 10 for each of the 6 skills, Save.
-5. **Breaks:** planned breaks and the worked-out fee reduction. **Plan a break** for a student, or remove one.
-6. **Cancel a session:** pick a date (usually a public holiday). It warns if the date is inside the notice window, shows who gets compensation, and gives a message to paste into Zalo.
-7. **To remind:** today's reminder list with copy buttons (see "Reminders and messages").
-8. **Timetable and seats:** change class days and times with time pickers. Tap 0, 1 or 2 extra seats on a date.
-9. **Videos:** pick a skill, paste the link.
-10. **Settings:** every setting in the table below with a plain label and its default shown, plus the page picture and her QR image.
-11. **Cards to send:** a banner at the top of Students appears only when there is something to do ("5 cards to send": new students, or a change since their last card). **Send cards** lists them, each with one **Copy message** button; a card counts as sent when she copies it, and the list keeps its order so rows never jump. A change for one student makes only that student's card out of date. Changing the timetable makes every card out of date, because every card holds the class timetable.
-12. **My data:** Save file, Open a file, Export report, earlier copies on the phone, and Start over (see "Where the data lives").
+1. **Next 14 days:** for each session, the headcount, who is coming, who skipped, who is on a make-up, and the **courts to book** (a court icon and a number), with an "over capacity" warning. **Tap a name** to change that student's lesson, or **Add a student** to the session.
+2. **Students:** a list with the name and days (no codes on the rows), a search box, and filter chips only when they have something to show. A banner "3 cards to send" appears only when there is something to do. **Add** opens a full page with four fields: **Name**, **Days** (the weekday chips plus **Flex**), **Start**, **Fee** (empty means the usual 800,000 or 1,300,000, shown as the placeholder). Choosing Flex clears the days and choosing a day clears Flex. A student page has **Lessons** (their calendar: tap a day to skip, add a make-up, undo, join or leave, with warnings and **Do it anyway**), **Send card**, the payment code with a copy button, the same four fields, Save, and Pause.
+3. **Payments:** the month's list, unpaid students first, with the amount (tap to change it) and one **Paid** button. A status shows only when late or paid. She cannot go to a future month.
+4. **Remind:** today's reminder list with a **Copy message** button each (see "Reminders and messages").
+5. **More:** five plain rows: **My data**, **Scores**, **Breaks**, **Timetable**, **Settings**, then the language and light/dark switches.
+   - **Scores:** pick a student, last scores are prefilled, tap only what changed, Save. A **Videos** button lives here (one link per skill).
+   - **Breaks:** the list and **Plan a break**, which shows the new fee before she saves.
+   - **Timetable:** class days and times, and a **Cancel a session** button (pick a date, see how many students get a free make-up, copy the announcement). Special dates (extra seats, fewer courts) are below.
+   - **Settings:** short labels with no "default" lines: **Class name** first (so a typo in "VM Badminton" can be fixed at any time; every sent card then becomes out of date and appears in cards to send), page picture, rules, seats, money, her Zalo number, the card language, her QR image, and the message texts tucked under **Messages**. One **Reset all** at the bottom.
+   - **My data:** a status line (Saved 2 min ago / Not saved), **Save file**, **Open file**, **Export report**, earlier copies on the phone (only when there are some), and **Start over** at the bottom (dimmed until the data is in a file).
 
-A chip at the top right always shows **Backed up** or **Back up now**, so she knows whether her latest work is in a file.
+**Cards to send.** The Students banner opens a page that lists every card that is new or out of date, each with one **Copy message** button; a card counts as sent when she copies it, and the list keeps its order so rows never jump. A change for one student makes only that student's card out of date. Changing the timetable or the class name makes every card out of date, because every card holds them. **Send card** on a student shows only the language choice, **Copy message**, **Preview** and one short line saying whether anything changed since the last card.
 
 ### Making mistakes hard
 The screens stop mistakes before they happen, instead of explaining them afterwards.
 - **Order is enforced.** In the wizard a step opens only when the steps before it are complete. In Add student, the day chips stay dimmed until there is a name.
-- **Dimmed, never hidden.** A button that cannot be used yet stays in place, dimmed, and a reserved line under it says why ("2 students still need a day"). Nothing appears or disappears, so the layout does not jump.
+- **Dimmed, never hidden.** A button that cannot be used yet stays in place, dimmed, and a reserved line under it says why in a few words ("2 students need days", "Type a name", "Name already used", "Pick days or Flex", "Date out of range"). When all is well that line is empty. Nothing appears or disappears, so the layout does not jump.
 - **Numbers cannot run away.** Steppers stop at their limits. Fees move in steps of 50,000 dong. Linked numbers cannot cross: the 2-day fee can never be below the 1-day fee, the buttons just stop. A typed fee is rounded and clamped, with a message.
 - **Pick, don't type.** Times come from a list, and the end list offers only times after the start. Dates have a window of a year around today.
 - **Names:** at most 20 letters, no repeats (accents ignored), at most 60 students per class.
 - **One class day always stays on.** The last day's switch is dimmed.
 - **Start over is dimmed** until the data is in a saved file.
-- **Big fingers.** Every control is at least 48 px tall (40 px for compact ones), with one size, one set of colours and one wording for the same kind of control everywhere.
+- **Big fingers.** Every control is at least 48 px tall (40 px for compact ones), with one size, one set of colours and one wording for the same kind of control everywhere. A narrow phone (320 px) shrinks the calendar's width instead of overflowing.
 
 ## Rules and settings
 All numbers below are **settings in the Settings screen**, saved in her file, so the coach can change them without touching code. Defaults are shown.
@@ -404,7 +416,7 @@ Everything below is runnable now against the mockups. `node mockups/tests/run-al
 | `store-test.js` | The save file, hand-edit detection, names pasted from Zalo, the report |
 | `i18n.test.js` | No untranslated text, matching placeholders, a message for every Ask button |
 | `rules-fuzz.js` | Thousands of random actions checked against rules that must never break (run on 8 seeds) |
-| `ui-tests.html` | The screens: first-run gating, no layout jumps, limits, guarded forms, the timetable, My data, cards to send, the student card and two cards, big fingers (every control tall enough), no sideways scrolling |
+| `ui-tests.html` | The screens: Vietnamese by default, icon-only navigation, pages versus sheets, the laptop layout, first-run gating, no layout jumps, limits, the Flex chip and own fee, renaming the class, My data, cards to send, the student card and two cards, big fingers (every control tall enough), no sideways scrolling at 375 and 320 px |
 
 ## Test list for step 3
 Assume `advance_days` = 7, `max_makeups_per_month` = 3, `pay_by_day` = 5, and the student has paid. The coach records every change. "Warned" means: refused at first with a soft warning, and it succeeds with "Do it anyway" (marked rule bent). "Refused" means a hard refusal that never succeeds.
@@ -524,6 +536,11 @@ Each has a current guess in brackets, so nothing blocks the start. "Coach" means
 - A timetable change starts today and never rewrites the past. The file keeps the older timetables.
 - A phone keeps one card per student, the newest wins, and the card shows the day and time it was made. The coach sees which cards are new or out of date.
 - The card is quiet: no Key button and no counters. A rule is shown only when it is about to be broken, and with no credit the ask becomes an extra lesson.
+- Screens use as few words as possible (see "How the screens talk"). One word per action: Save. Icon-only navigation. Full pages for forms and detail, small sheets only for one-tap things. No toasts for ordinary saves.
+- **Vietnamese is the default language** on both pages. The screens follow the phone's light or dark setting.
+- A student's schedule is either fixed days or **Flex** (no fixed days). In the form, Flex is one chip at the end of the days row. A student can have their own monthly fee, which overrides the usual tiers.
+- The class name (the page title) is editable in Settings, like a student's name.
+- The page is one column on every screen. On a laptop it is centred and the icon bar moves to the top.
 - No receipt upload.
 
 ## Status so far (2026-11-06)
@@ -539,6 +556,7 @@ Done:
 - Changed to coach-only lesson changes, with soft and hard rules and fee tiers by days per week.
 - **Changed to the file model (this change):** no server and no Google. Mockups now have the first-run wizard, autosave plus a save file, My data, Export report, Send card, and a card page that opens from a link. A storage test (`mockups/tests/store-test.js`) covers the file, the card and name pasting. Admin password, student keys, student photos and seat numbers on the card are gone. This plan is rewritten to match.
 - Student card made quiet (no Key, no counters, extra lesson when there is no credit), newest card wins on a phone, the coach sees cards to send, and timetable changes start today. A full test suite (about 140 scenario checks, the random-sequence test on 8 seeds, and 33 screen tests) was added. Writing the tests found and fixed: a card opened from an old link replaced a newer one, a timetable change rewrote past bills and credits, forced changes were not recorded in the log, the court limit was only enforced on screen, and a few tap targets were too small.
+- **Simplified every screen** (this change): shorter labels, no instruction text, icon-only navigation, full-page forms that slide in, one language button on the card, Vietnamese default, Flex chip, positive "Focus" wording, the polygon carries the change since last time, and a laptop layout. About 150 command-line checks and 53 screen tests cover it.
 - Git push from this computer works over SSH.
 
 Next:

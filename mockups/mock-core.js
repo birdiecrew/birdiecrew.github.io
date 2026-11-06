@@ -653,7 +653,8 @@
       var q = pt(i, cur[k.id]);
       s += '<circle class="rd" cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.5"/>';
       s += '<text class="rl" x="' + p[0].toFixed(1) + '" y="' + (p[1] - 2).toFixed(1) + '" text-anchor="' + anchor + '">' + k[lang] + '</text>';
-      s += '<text class="rv" x="' + p[0].toFixed(1) + '" y="' + (p[1] + 12).toFixed(1) + '" text-anchor="' + anchor + '">' + cur[k.id] + '</text>';
+      var dl = prev ? cur[k.id] - prev[k.id] : 0;   /* the change since the last scoring is printed next to the number */
+      s += '<text class="rv" x="' + p[0].toFixed(1) + '" y="' + (p[1] + 12).toFixed(1) + '" text-anchor="' + anchor + '">' + cur[k.id] + (dl > 0 ? ' +' + dl : dl < 0 ? ' ' + dl : '') + '</text>';
     });
     return s + '</svg>';
   };

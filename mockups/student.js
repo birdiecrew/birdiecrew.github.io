@@ -34,9 +34,8 @@
   /* ---------- sections ---------- */
   function header() {
     var s = me();
-    return '<header class="hdr"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' +
-      '<div class="row" style="gap:8px">' + UI.themeBtn() + '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-      '<div class="me"><div class="hi">' + t('hi', { name: h(s.name) }) + '</div><div class="asof">' + t('asOf', { date: BC.fmtDay(asOf(), S.lang) + madeTime() }) + '</div></div></header>';
+    return '<header class="hdr"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + UI.langBtn(S.lang) + '</div>' +
+      '<div class="me"><b>' + h(s.name) + '</b> <span class="muted">· ' + BC.fmtDay(asOf(), S.lang) + madeTime() + '</span></div></header>';
   }
   function asOf() { return (BC.meta && BC.meta.asOf) || BC.today; }
   function madeTime(m) {
@@ -46,11 +45,11 @@
 
   function banners() {
     var s = me(), ymNow = BC.ym(BC.today), out = '';
-    if (S.older) out += '<div class="banner warn" role="status">' + icon('info') + '<div>' + t('olderOpened', { old: BC.fmtDay(S.older.asOf, S.lang) + madeTime(S.older.made), now: BC.fmtDay(asOf(), S.lang) + madeTime() }) + '</div></div>';
+    if (S.older) out += '<div class="banner warn" role="status">' + icon('info') + '<div>' + t('olderOpened', { now: BC.fmtDay(asOf(), S.lang) + madeTime() }) + '</div></div>';
     var age = BC.diff(asOf(), BC.today);
-    if (age >= 7) out += '<div class="banner warn" role="status">' + icon('refresh') + '<div>' + t('stale', { n: age }) + '</div></div>';
+    if (age >= 7) out += '<div class="banner warn" role="status">' + icon('refresh') + '<div>' + t('stale') + '</div></div>';
     if (BC.isLate(s.id)) {
-      out += '<div class="banner bad" role="alert">' + icon('lock') + '<div><b>' + t('lateTitle', { month: BC.monthOnly(ymNow, S.lang) }) + '</b><br>' + t('lateBody') + '<br><button class="btn danger sm" data-act="pay" style="background:#fff3">' + t('payNow') + '</button></div></div>';
+      out += '<div class="banner bad" role="alert">' + icon('lock') + '<div><b>' + t('lateTitle', { month: BC.monthOnly(ymNow, S.lang) }) + '</b><br><button class="btn danger sm" data-act="pay">' + t('payNow') + '</button></div></div>';
     } else if (!BC.payRec(s.id, ymNow).paid && ymNow >= BC.ym(s.start)) {
       out += '<div class="banner warn">' + icon('clock') + '<div>' + t('dueSoon', { month: BC.monthOnly(ymNow, S.lang), due: BC.fmtDay(BC.dueDate(s, ymNow), S.lang) }) + '</div></div>';
     }
@@ -74,10 +73,8 @@
     var wd = [1, 2, 3, 4, 5, 6, 0].map(function (d) { return '<div class="cal-wd">' + BC.wd(d, S.lang) + '</div>'; }).join('');
     var blanks = ''; for (var b = 0; b < lead; b++) blanks += '<div class="cd blank"></div>';
     var cells = days.map(function (d) { return cell(s, d); }).join('');
-    /* nothing but the calendar: a day explains itself when tapped, and a rule is mentioned only when it is about to be broken */
-    var top = s.type === 'fixed' ? '' : '<div class="banner" style="margin-bottom:12px">' + icon('info') + '<div>' + t('flexHint', { n: cfg.flex_notice_days }) + '</div></div>';
-    return '<section class="card" aria-labelledby="h-cal"><div class="card-h"><h2 id="h-cal">' + t('calendar') + '</h2></div>' + top +
-      '<div class="cal-nav"><button class="btn icon sm" data-nav="-1" aria-label="Previous month"' + (prevOk ? '' : ' disabled') + '>' + icon('chevL') + '</button><strong>' + BC.monthName(ym, S.lang) + '</strong><button class="btn icon sm" data-nav="1" aria-label="Next month"' + (nextOk ? '' : ' disabled') + '>' + icon('chevR') + '</button></div>' +
+    return '<section class="card">' +
+      '<div class="cal-nav"><button class="btn icon sm" data-nav="-1" aria-label="‹"' + (prevOk ? '' : ' disabled') + '>' + icon('chevL') + '</button><strong>' + BC.monthName(ym, S.lang) + '</strong><button class="btn icon sm" data-nav="1" aria-label="›"' + (nextOk ? '' : ' disabled') + '>' + icon('chevR') + '</button></div>' +
       '<div class="cal-grid">' + wd + blanks + cells + '</div></section>';
   }
 
@@ -98,13 +95,12 @@
   }
   function menu() {
     var s = me(), arr = BC.scores[S.sid], now = BC.ym(BC.today), b = billInfo(s, now), list = BC.breaksOf(s.id), out = '';
-    if (arr && arr.length) out += row('skills', t('skills'), t('weakest', { skill: weakest(arr[arr.length - 1].v)[S.lang] }));
-    var fee = money(b.amount) + ' · ' + (b.rec.paid ? t('paidOn', { date: BC.fmtDay(b.rec.paidDate, S.lang) }) : t('dueBy', { date: BC.fmtDay(BC.dueDate(s, now), S.lang) }));
-    out += row('fees', t('fees'), fee);
+    if (arr && arr.length) out += row('skills', t('skills'), t('focus', { skill: weakest(arr[arr.length - 1].v)[S.lang] }));
+    out += row('fees', t('fees'), money(b.amount) + ' · ' + (b.rec.paid ? t('paidOn', { date: BC.fmtDay(b.rec.paidDate, S.lang) }) : t('dueBy', { date: BC.fmtDay(BC.dueDate(s, now), S.lang) })));
     var next = list.slice().sort(function (a, c) { return a.from < c.from ? -1 : 1; })[0];
-    out += row('breaks', t('breaks'), next ? BC.fmtDay(next.from, S.lang) + ' – ' + BC.fmtDay(next.to, S.lang) : t('noBreaks'));
+    if (next) out += row('breaks', t('breaks'), BC.fmtDay(next.from, S.lang) + ' – ' + BC.fmtDay(next.to, S.lang));
     out += row('rules', t('rules'), '');
-    return '<nav class="menu-list" aria-label="More">' + out + '</nav>';
+    return '<nav class="menu-list">' + out + '</nav>';
   }
 
   /* ---------- render ---------- */
@@ -126,7 +122,6 @@
     el.addEventListener('click', function (e) {
       var c = e.target.closest('[data-copy]'); if (c) { UI.copy(c.getAttribute('data-copy'), t('copied')); return; }
       var q = e.target.closest('[data-ask]'); if (q) { showAsk($('#ask-area', el), q.getAttribute('data-ask'), null); return; }
-      var z = e.target.closest('[data-zalo]'); if (z && z.getAttribute('href') === '#') { e.preventDefault(); UI.toast(t('zaloMock')); return; }
       var a = e.target.closest('[data-sheet]'); if (!a || a.disabled) return;
       var k = a.getAttribute('data-sheet');
       if (k === 'pay') paySheet(); else if (k === 'video') UI.toast(t('videoToast'));
@@ -137,16 +132,10 @@
   function skillsSheet() {
     var arr = BC.scores[S.sid]; if (!arr || !arr.length) return;
     var last = arr[arr.length - 1], prev = arr.length > 1 ? arr[arr.length - 2] : null, w = weakest(last.v), v = BC.videos[w.id] && BC.videos[w.id].url ? BC.videos[w.id] : null;
-    var rows = BC.skills.map(function (k) {
-      var d = prev ? last.v[k.id] - prev.v[k.id] : 0;
-      return '<div><span>' + k[S.lang] + '</span><span><b>' + last.v[k.id] + '</b> ' + (d > 0 ? '<span class="up">+' + d + '</span>' : d < 0 ? '<span class="dn">' + d + '</span>' : '') + '</span></div>';
-    }).join('');
-    wire(UI.sheet.open(sheetHead(t('skills')) + BC.radar(last.v, prev ? prev.v : null, S.lang) +
-      '<p class="muted small center" style="margin-top:6px">' + t('scoredOn', { date: BC.fmtDay(last.date, S.lang) }) + ' ' + (prev ? t('prevOn', { date: BC.fmtDay(prev.date, S.lang) }) : t('firstScore')) + '</p>' +
-      '<div class="skills">' + rows + '</div>' +
-      '<h3 style="margin:18px 0 8px">' + t('nextFocus') + ' <span class="tag accent">' + t('weakest', { skill: w[S.lang] }) + '</span></h3>' +
+    wire(UI.sheet.open(UI.pageHead(t('skills'), t('scoredOn', { date: BC.fmtDay(last.date, S.lang) })) + BC.radar(last.v, prev ? prev.v : null, S.lang) +
+      '<h3 style="margin:16px 0 8px">' + t('nextFocus') + ': ' + w[S.lang] + '</h3>' +
       (v ? '<button class="thumb" data-sheet="video" aria-label="' + h(v.title || w[S.lang]) + '"><span class="play">' + icon('play') + '</span>' + (v.len ? '<span class="len">' + h(v.len) + '</span>' : '') + '</button>' +
-        '<div style="margin-top:10px"><b>' + h(v.title || w[S.lang]) + '</b><div class="muted small">YouTube</div></div>' : '<p class="muted small">' + t('noVideo') + '</p>'), { full: true }));
+        (v.title ? '<div style="margin-top:10px"><b>' + h(v.title) + '</b></div>' : '') : ''), { page: true }));
   }
 
   function feesSheet() {
@@ -167,38 +156,36 @@
     var lines = '';
     if (b.billed < b.full) lines += '<div class="muted small">' + t('prorated', { a: b.billed, b: b.full }) + '</div>';
     if (b.rec.creditIn > 0 && cfg.credit_carry) lines += '<div class="muted small">' + t('creditLine', { amount: money(b.rec.creditIn) }) + '</div>';
-    wire(UI.sheet.open(sheetHead(t('fees')) +
+    wire(UI.sheet.open(UI.pageHead(t('fees')) +
       '<div class="bill"><div class="row between wrap"><div><div class="muted small">' + BC.monthName(now, S.lang) + '</div><div class="amt">' + money(b.amount) + '</div></div>' + status + '</div>' + lines +
-      /* the pay button exists only when there is something to pay */
-      (b.rec.paid ? '<div class="muted small" style="margin-top:8px">' + t('nextBill') + '</div>' : '<button class="btn primary block" style="margin-top:12px" data-sheet="pay">' + t('payNow') + '</button>') + '</div>' +
-      '<div class="dots" style="margin:16px 0 0">' + dots + '</div>'));
+      (b.rec.paid ? '' : '<button class="btn primary block" style="margin-top:12px" data-sheet="pay">' + t('payNow') + '</button>') + '</div>' +
+      '<div class="dots" style="margin:16px 0 0">' + dots + '</div>', { page: true }));
   }
 
   function breaksSheet() {
     var s = me(), list = BC.breaksOf(s.id).sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var items = list.map(function (b) {
-      var long = BC.isLong(b);
-      return '<div class="brk"><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + ' · ' + (long ? t('longBreak') : t('shortBreak')) + '</div></div>';
+      return '<div class="brk"><b>' + BC.fmtDay(b.from, S.lang) + ' – ' + BC.fmtDay(b.to, S.lang) + '</b><div class="muted small">' + t('nDays', { n: BC.breakLen(b) }) + ' · ' + (BC.isLong(b) ? t('longBreak') : t('shortBreak')) + '</div></div>';
     }).join('<div style="height:8px"></div>');
-    wire(UI.sheet.open(sheetHead(t('breaks')) +
-      (items || '<p class="muted">' + t('noBreaks') + '</p>') +
-      '<p class="muted small" style="margin-top:10px">' + t('longNote') + '</p>' +
-      '<div id="ask-area" style="margin-top:14px">' + askButton('break') + '</div>'));
+    wire(UI.sheet.open(UI.pageHead(t('breaks')) + items, { page: true }));
   }
 
   function msgFor(kind, iso) {
     var s = me();
     return t('msg_' + kind, { name: s.name, code: s.code, date: iso ? BC.fmtLong(iso, S.lang) : '' });
   }
-  /* copy the message, show it, and offer Zalo. The coach decides and updates the calendar herself. */
+  /* copy the message and go to Zalo. The coach decides and updates the calendar herself. */
   function showAsk(area, kind, iso) {
     var msg = msgFor(kind, iso);
     UI.copy(msg, t('copiedAsk'));
-    area.innerHTML = '<div class="msgbox">' + h(msg) + '</div>' +
-      '<a class="btn primary block" style="margin-top:10px" data-zalo href="' + (cfg.coach_zalo ? 'https://zalo.me/' + h(cfg.coach_zalo) : '#') + '" target="_blank" rel="noopener">' + t('openZalo') + '</a>' +
-      '<p class="muted small" style="margin-top:8px">' + t('askNote') + '</p>';
+    if (cfg.coach_zalo) {
+      try { window.open('https://zalo.me/' + encodeURIComponent(cfg.coach_zalo), '_blank', 'noopener'); } catch (e) { /* ignore */ }
+      area.innerHTML = '<div class="banner ok">' + icon('check') + '<div>' + t('copiedAsk') + '</div></div>';
+    } else {
+      area.innerHTML = '<div class="msgbox">' + h(msg) + '</div><p class="muted small" style="margin-top:8px">' + t('zaloMock') + '</p>';
+    }
   }
-  function askButton(kind) { return '<button class="btn primary block" data-ask="' + kind + '">' + t('ask_' + kind) + '</button>'; }
+  function askButton(kind) { return '<button class="btn primary block" data-ask="' + kind + '">' + icon('chat', 'sm') + ' ' + t('ask_' + kind) + '</button>'; }
 
   function dayHtml(i) {
     var s = me(), ses = i.ses, iso = i.iso, ym = BC.ym(iso), body = '';
@@ -216,7 +203,7 @@
         body = status(t('statusFree'));
         /* a rule is shown only when it is about to be broken */
         if (d.note === 'noCredit') body += why(t('noCreditNote'));
-        else if (d.note === 'capReached') body += why(t('r_capReached', { n: cfg.max_makeups_per_month }) + ' ' + t('capNote'));
+        else if (d.note === 'capReached') body += why(t('r_capReached', { n: cfg.max_makeups_per_month }));
         break;
       case 'cancelled': {
         var got = BC.rows(s.id, 'cancel_credit', function (c) { return c.date === iso; }).length;
@@ -226,7 +213,7 @@
       case 'break': body = status(t('statusBreak')); break;
       default: body = status(t('statusNone'));
     }
-    if (i.past) { if (d.kind === 'free') body = status(t('statusPast')); else body += why(t('pastNote')); }
+    if (i.past && d.kind === 'free') body = status(t('statusPast'));
     var acts = '';
     if (ask) acts = (i.locked ? why(t('noticeNote', { n: i.notice })) : '') + '<div id="ask-area" style="margin-top:12px">' + askButton(ask) + '</div>';
     return head + body + acts;
@@ -237,19 +224,16 @@
     var el = UI.sheet.open(dayHtml(i));
     el.addEventListener('click', function (e) {
       var b = e.target.closest('[data-ask]'); if (b) { showAsk($('#ask-area', el), b.getAttribute('data-ask'), iso); return; }
-      var z = e.target.closest('[data-zalo]'); if (z && z.getAttribute('href') === '#') { e.preventDefault(); UI.toast(t('zaloMock')); }
     });
   }
 
   function paySheet() {
     var s = me(), ym = BC.ym(BC.today), b = billInfo(s, ym);
-    var html = sheetHead(t('payTitle', { month: BC.monthOnly(ym, S.lang) })) +
-      (BC.isLate(s.id) ? '<div class="banner bad" style="margin-bottom:12px">' + icon('lock') + '<div>' + t('lateBody') + '</div></div>' : '') +
+    var html = UI.pageHead(t('payTitle', { month: BC.monthOnly(ym, S.lang) })) +
       '<div class="banner" style="margin-bottom:12px">' + icon('wallet') + '<div>' + t('scanQR') + '</div></div>' +
       '<div class="kv"><span class="muted">' + t('amount') + '</span><span class="row"><span class="v">' + money(b.amount) + '</span><button class="btn sm icon" data-copy="' + b.amount + '" aria-label="' + t('copy') + '">' + icon('copy', 'sm') + '</button></span></div>' +
-      '<div class="kv"><span class="muted">' + t('note') + '</span><span class="row"><span class="code">' + h(s.code) + '</span><button class="btn sm icon" data-copy="' + h(s.code) + '" aria-label="' + t('copy') + '">' + icon('copy', 'sm') + '</button></span></div>' +
-      '<p class="muted small" style="margin-top:12px">' + t('payInfo') + '</p>';
-    var el = UI.sheet.open(html);
+      '<div class="kv"><span class="muted">' + t('note') + '</span><span class="row"><span class="code">' + h(s.code) + '</span><button class="btn sm icon" data-copy="' + h(s.code) + '" aria-label="' + t('copy') + '">' + icon('copy', 'sm') + '</button></span></div>';
+    var el = UI.sheet.open(html, { page: true });
     el.addEventListener('click', function (e) { var c = e.target.closest('[data-copy]'); if (c) UI.copy(c.getAttribute('data-copy'), t('copied')); });
   }
 
@@ -259,32 +243,16 @@
       t('rule4', { n: cfg.advance_days, long: cfg.long_break_days }), t('rule5', { n: cfg.advance_days, max: cfg.max_makeups_per_month }), t('rule6', { n: cfg.advance_days })
     ];
     var titles = t('ruleTitles');
-    return '<div class="rules"><ol>' + items.map(function (x, k) { return '<li><div><b>' + titles[k] + '</b>' + x + '</div></li>'; }).join('') + '</ol></div>' +
-      '<p class="muted small" style="margin-top:12px">' + t('rulesNote', { pay: cfg.pay_by_day }) + '</p>';
+    return '<div class="rules"><ol>' + items.map(function (x, k) { return '<li><div><b>' + titles[k] + '</b>' + x + '</div></li>'; }).join('') + '</ol></div>';
   }
-  function rulesSheet() { UI.sheet.open(sheetHead(t('rules')) + rulesList(), { full: true }); }
-
-  function welcomeSheet() {
-    var build = function () {
-      return '<div class="center stack"><div style="margin:6px auto">' + UI.logo(56) + '</div><h2>' + t('welcome', { title: h(cfg.page_title) }) + '</h2>' +
-        '<p class="muted small">' + t('pickLang') + '</p><div class="row"><button class="chip langbtn grow" data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">Tiếng Việt</button><button class="chip langbtn grow" data-lang="en" aria-pressed="' + (S.lang === 'en') + '">English</button></div>' +
-        '<p class="muted small">' + t('welcomeBody') + '</p></div><div style="text-align:left;margin-top:10px">' + sheetHead(t('rules')) + rulesList() + '</div>' +
-        '<button class="btn primary block" style="margin-top:16px" data-close>' + t('gotIt') + '</button>';
-    };
-    var el = UI.sheet.open(build(), { full: true, onClose: function () { try { localStorage.setItem('bc_seen', '1'); } catch (e) { /* ignore */ } } });
-    el.addEventListener('click', function (e) {
-      var l = e.target.closest('[data-lang]'); if (!l) return;
-      setLang(l.getAttribute('data-lang'));
-      el.innerHTML = '<div class="grab"></div>' + build();
-    });
-  }
+  function rulesSheet() { wire(UI.sheet.open(UI.pageHead(t('rules')) + rulesList() + '<div id="ask-area" style="margin-top:16px">' + askButton('break') + '</div>', { page: true })); }
 
   /* ---------- events ---------- */
   function setLang(l) { S.lang = l; BC.lang = l; try { localStorage.setItem('bc_lang', l); } catch (e) { /* ignore */ } render(); }
 
   app.addEventListener('click', function (e) {
     var el;
-    if ((el = e.target.closest('[data-lang]'))) { setLang(el.getAttribute('data-lang')); return; }
+    if ((el = e.target.closest('[data-lang-to]'))) { setLang(el.getAttribute('data-lang-to')); return; }
     if ((el = e.target.closest('[data-nav]'))) { S.month = BC.addMonths(S.month, Number(el.getAttribute('data-nav'))); render(); return; }
     if ((el = e.target.closest('[data-iso]'))) { openDay(el.getAttribute('data-iso')); return; }
     if ((el = e.target.closest('[data-act]'))) {
@@ -300,7 +268,6 @@
       '<label>Who is looking</label><select id="m-who"><option value="Lan">Lan: fixed Tue/Thu, has scores</option><option value="Tuấn">Tuấn: flexible schedule</option><option value="Hà">Hà: new student, starts 17 Nov, no scores</option></select>') +
     '<label>Pretend today is</label><div class="seg full" id="m-today"><button data-v="2026-11-03">3 Nov</button><button data-v="2026-11-05">5 Nov</button><button data-v="2026-11-06">6 Nov</button><button data-v="2026-11-12">12 Nov</button></div>' +
     '<label>This month\'s fee</label><div class="seg full" id="m-paid"><button data-v="1">Paid</button><button data-v="0">Unpaid</button></div>' +
-    '<label>Screens</label><button class="mb" id="m-welcome">Show the first-open welcome</button>' +
     (S.card ? '<label>Card</label><button class="mb" id="m-demo">Forget this card and show the demo student</button>' : '<label>Data</label><button class="mb" id="m-reset">Reset all fake data</button>')
   );
   function syncPanel() {
@@ -317,7 +284,6 @@
     var grp = b.parentElement && b.parentElement.id, v = b.getAttribute('data-v');
     if (grp === 'm-today') { BC.today = v; S.month = BC.ym(v); render(); }
     else if (grp === 'm-paid') { BC.setPaid(S.sid, BC.ym(BC.today), v === '1'); render(); }
-    else if (b.id === 'm-welcome') { panel.classList.add('hide'); welcomeSheet(); }
     else if (b.id === 'm-demo') { try { localStorage.setItem('bc_card', ''); } catch (er) { /* ignore */ } location.hash = ''; location.reload(); }
     else if (b.id === 'm-reset') { var who = me().name; BC.seed(); cfg = BC.config; S.sid = BC.byName(who).id; S.month = BC.ym(BC.today); render(); UI.toast('Reset'); }
   });
@@ -342,11 +308,7 @@
   function badLink() {
     app.innerHTML = '<div style="padding:60px 0 0;text-align:center"><div style="margin:0 auto 12px;width:52px">' + UI.logo(52) + '</div><h1 style="font-size:1.2rem">' + t('badTitle') + '</h1><p class="muted" style="margin-top:8px">' + t('badBody') + '</p></div>';
   }
-  function start() {
-    render();
-    var seen = false; try { seen = !!localStorage.getItem('bc_seen'); } catch (e) { /* ignore */ }
-    if (!seen) welcomeSheet();
-  }
+  function start() { render(); }
   var m = /^#c=(.+)$/.exec(location.hash), saved = null;
   try { saved = localStorage.getItem('bc_card'); } catch (e) { /* ignore */ }
   if (m) bootCard(m[1], true).then(function (ok) { if (ok) start(); else badLink(); });

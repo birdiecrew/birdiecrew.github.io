@@ -43,7 +43,10 @@
     list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.5M4 12h.5M4 18h.5"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
-    auto: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'
+    auto: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
+    save: '<path d="M12 4v10M7.5 10l4.5 4.5 4.5-4.5M5 19h14"/>',
+    chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+    court: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M12 5v14M3 12h18"/>'
   };
   UI.icon = function (name, cls) {
     return '<svg class="ico ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || '') + '</svg>';
@@ -80,7 +83,8 @@
       opts = opts || {};
       UI.sheet.close(true);
       var back = document.createElement('div'); back.className = 'sheet-back';
-      back.innerHTML = '<div class="sheet' + (opts.full ? ' full' : '') + '" role="dialog" aria-modal="true"><div class="grab"></div>' + html + '</div>';
+      back.className = 'sheet-back' + (opts.page ? ' page' : '');
+      back.innerHTML = '<div class="sheet' + (opts.full ? ' full' : '') + (opts.page ? ' page' : '') + '" role="dialog" aria-modal="true">' + (opts.page ? '' : '<div class="grab"></div>') + html + '</div>';
       document.body.appendChild(back); sheetEl = back; onCloseCb = opts.onClose || null;
       document.body.style.overflow = 'hidden'; document.body.classList.add('sheet-open');
       back.addEventListener('click', function (e) {
@@ -98,6 +102,16 @@
     }
   };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') UI.sheet.close(); });
+
+  /* the header of a full-screen page: a back arrow and a title */
+  UI.pageHead = function (title, sub, backLabel) {
+    return '<div class="page-h"><button class="btn icon sm ghost" data-close aria-label="' + UI.h(backLabel || 'Back') + '">' + UI.icon('back') + '</button><div class="grow"><h2>' + title + '</h2>' + (sub ? '<div class="muted small">' + sub + '</div>' : '') + '</div></div>';
+  };
+  /* one small button that switches between Vietnamese and English; it shows the language it switches TO */
+  UI.langBtn = function (cur) {
+    var to = cur === 'vi' ? 'EN' : 'VI';
+    return '<button class="btn sm langbtn" data-lang-to="' + to.toLowerCase() + '" aria-label="' + (to === 'EN' ? 'English' : 'Tiếng Việt') + '">' + to + '</button>';
+  };
 
   /* confirm dialog: returns a Promise<boolean> */
   UI.confirm = function (o) {

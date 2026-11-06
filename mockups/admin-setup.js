@@ -14,23 +14,17 @@ window.Setup = (function () {
 
     /* ---------- start screen ---------- */
     function errText(reason) {
-      return { notJson: 'That is not a Birdie Crew file.', notOurs: 'That is not a Birdie Crew file.', newer: 'This file was saved by a newer version. Open the latest page and try again.',
-        edited: 'This file was changed outside the app, so it cannot be trusted. Open your last saved copy instead.', broken: 'This file is damaged. Open an earlier copy.' }[reason] || 'That file could not be opened.';
+      return { notJson: 'Not a Birdie Crew file.', notOurs: 'Not a Birdie Crew file.', newer: 'Saved by a newer version. Open the latest page.',
+        edited: 'This file was changed outside the app. Open your last saved copy.', broken: 'This file is damaged. Open an earlier copy.' }[reason] || 'Could not open this file.';
     }
     function startView() {
-      return '<div class="start"><div class="row between" style="margin-bottom:14px"><span></span><div class="row" style="gap:8px">' + UI.themeBtn() +
-        '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-        '<div class="center" style="margin-bottom:18px"><div style="margin:0 auto 10px;width:64px">' + UI.logo(64) + '</div><h1 style="font-size:1.4rem">' + h(BC.config.page_title) + '</h1>' +
-        '<p class="muted" style="margin-top:6px">' + t('Your class, in your pocket. Start here.') + '</p></div>' +
-        '<div class="stack-s">' +
-        '<button class="opt" data-wz="new">' + icon('plus') + '<div class="grow"><b>' + t('New class') + '</b><span class="muted small">' + t('Set up in about 5 minutes. You only paste names and tap days.') + '</span></div>' + icon('chevR') + '</button>' +
-        '<button class="opt" data-wz="open">' + icon('copy') + '<div class="grow"><b>' + t('Open my file') + '</b><span class="muted small">' + t('Continue with the save file you made before.') + '</span></div>' + icon('chevR') + '</button>' +
-        '<button class="opt" data-wz="sample">' + icon('play') + '<div class="grow"><b>' + t('Try a sample class') + '</b><span class="muted small">' + t('Made-up students to play with. You can clear it any time.') + '</span></div>' + icon('chevR') + '</button></div>' +
-        '<div class="why" style="margin-top:12px;color:var(--danger)" role="alert">' + (startErr ? icon('ban') + '<span>' + t(startErr) + '</span>' : '') + '</div>' +
-        '<div class="card" style="margin-top:6px"><h3>' + t('Where does my data go?') + '</h3><ul class="small muted" style="margin:8px 0 0;padding-left:18px">' +
-        '<li>' + t('It stays on this phone, in this browser. Nothing is sent anywhere.') + '</li>' +
-        '<li>' + t('The person who built this page cannot see it.') + '</li>' +
-        '<li>' + t('You keep a save file as your backup. The app reminds you.') + '</li></ul></div></div>';
+      return '<div class="start"><div class="row between" style="margin-bottom:14px"><span></span>' + UI.langBtn(S.lang) + '</div>' +
+        '<div class="center" style="margin-bottom:22px"><div style="margin:0 auto 10px;width:64px">' + UI.logo(64) + '</div><h1 style="font-size:1.4rem">' + h(BC.config.page_title) + '</h1>' +
+        '<p class="muted" style="margin-top:6px">' + t('Your data stays on this phone.') + '</p></div>' +
+        '<div class="stack">' +
+        '<button class="btn primary block" data-wz="new">' + icon('plus', 'sm') + ' ' + t('New class') + '</button>' +
+        '<div class="row"><button class="btn grow" data-wz="open">' + icon('save', 'sm') + ' ' + t('Open file') + '</button><button class="btn grow" data-wz="sample">' + icon('play', 'sm') + ' ' + t('Sample') + '</button></div></div>' +
+        '<div class="why" style="margin-top:12px;color:var(--danger)" role="alert">' + (startErr ? icon('ban') + '<span>' + t(startErr) + '</span>' : '') + '</div></div>';
     }
 
     /* ---------- reading a save file ---------- */
@@ -49,7 +43,7 @@ window.Setup = (function () {
     }
     function adopt(r) {
       BC.load(r.data); BC.meta.setup = true; BC.markBackedUp(Date.parse(r.saved) || Date.now()); BC.autosave();
-      S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); E.toast(t('File opened.'));
+      S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); 0;
     }
 
     /* ---------- the wizard ---------- */
@@ -93,33 +87,30 @@ window.Setup = (function () {
         return '<div class="wz-row' + (x.on ? '' : ' off') + '"><button class="chip" data-wz="day" data-d="' + d + '" aria-pressed="' + x.on + '"' + (x.on && lastOn ? ' disabled' : '') + ' aria-label="' + BC.wdLong(d, S.lang) + '">' + BC.wd(d, S.lang) + '</button>' +
           sel('wz-s-' + d, x.start, TIMES.slice(0, -1), !x.on) + sel('wz-e-' + d, x.end, endOpts, !x.on) + '</div>';
       }).join('');
-      return '<h2 class="wz-h">' + t('Your class') + '</h2><p class="muted small" style="margin-bottom:12px">' + t('Tap the days you teach, then check the times. The fees are your usual ones.') + '</p>' +
-        '<div class="card"><div class="wz-row muted small" style="border-bottom:0;padding-bottom:0"><span>' + t('Day') + '</span><span>' + t('From') + '</span><span>' + t('To') + '</span></div>' +
-        rows + '</div>' +
-        '<div class="card"><div class="set-row"><div class="l">' + t('Courts the venue has') + '</div>' + numStepper('courts', W.courts, 1, BC.LIMITS.courts, String(W.courts)) + '</div>' +
-        '<div class="set-row"><div class="l">' + t('Monthly fee, 1 day a week') + '</div>' + numStepper('fee1', W.fee1, BC.LIMITS.feeMin, W.fee2, money(W.fee1)) + '</div>' +
-        '<div class="set-row"><div class="l">' + t('Monthly fee, 2 days a week') + '</div>' + numStepper('fee2', W.fee2, W.fee1, BC.LIMITS.feeMax, money(W.fee2)) + '</div>' +
-        '<p class="muted tiny" style="margin-top:6px">' + t('The 2-day fee can never be lower than the 1-day fee, so the buttons stop there.') + '</p></div>';
+      return '<h2 class="wz-h">' + t('Your class') + '</h2>' +
+        '<div class="card">' + rows + '</div>' +
+        '<div class="card"><div class="set-row"><div class="l">' + t('Courts') + '</div>' + numStepper('courts', W.courts, 1, BC.LIMITS.courts, String(W.courts)) + '</div>' +
+        '<div class="set-row"><div class="l">' + t('Fee, 1 day a week') + '</div>' + numStepper('fee1', W.fee1, BC.LIMITS.feeMin, W.fee2, money(W.fee1)) + '</div>' +
+        '<div class="set-row"><div class="l">' + t('Fee, 2 days a week') + '</div>' + numStepper('fee2', W.fee2, W.fee1, BC.LIMITS.feeMax, money(W.fee2)) + '</div></div>';
     }
 
     function prevHtml() {
       var p = W.parse, notes = [];
-      if (p.dup) notes.push(plural(p.dup, '{n} repeated name was left out.', '{n} repeated names were left out.'));
-      if (p.long) notes.push(plural(p.long, '{n} name was cut to {max} letters.'.replace('{max}', BC.LIMITS.nameLen), '{n} names were cut to {max} letters.'.replace('{max}', BC.LIMITS.nameLen)));
+      if (p.dup) notes.push(plural(p.dup, '{n} repeated name left out.', '{n} repeated names left out.'));
+      if (p.long) notes.push(plural(p.long, '{n} name cut to 20 letters.', '{n} names cut to 20 letters.'));
       if (p.over) notes.push(t('Only the first {n} names are used.', { n: BC.LIMITS.students }));
       return '<div class="row between" style="margin:12px 0 8px"><b class="cnt">' + plural(W.list.length, '{n} student', '{n} students') + '</b><span class="muted small">' + t('up to {n}', { n: BC.LIMITS.students }) + '</span></div>' +
         '<div class="chips" style="min-height:44px;max-height:168px;overflow:auto">' + W.list.map(function (s) { return '<span class="fchip">' + h(s.name) + '</span>'; }).join('') + '</div>' +
         '<div class="why" style="margin-top:6px">' + (notes.length ? icon('info') + '<span>' + notes.join(' ') + '</span>' : '') + '</div>';
     }
     function step2() {
-      return '<h2 class="wz-h">' + t('Your students') + '</h2><p class="muted small" style="margin-bottom:12px">' + t('Paste their first names, one per line. You can copy them from your Zalo group, your notes or a spreadsheet column.') + '</p>' +
-        '<div class="card"><label class="field"><span class="lbl">' + t('Names') + '</span><textarea class="inp names" id="wz-names" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Lan&#10;Minh&#10;Hùng">' + h(W.text) + '</textarea>' +
-        '<span class="hint">' + t('Numbers, dashes and bullets in front are ignored. Names are cut at {n} letters.', { n: BC.LIMITS.nameLen }) + '</span></label><div id="wz-prev">' + prevHtml() + '</div></div>';
+      return '<h2 class="wz-h">' + t('Students') + '</h2>' +
+        '<div class="card"><textarea class="inp names" id="wz-names" aria-label="' + t('Students') + '" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Lan&#10;Minh&#10;Hùng">' + h(W.text) + '</textarea><div id="wz-prev">' + prevHtml() + '</div></div>';
     }
 
     function dayChipsFor(i, s) {
-      var off = s.type !== 'fixed';
-      return onDays().map(function (d) { return '<button class="chip" data-wz="sday" data-i="' + i + '" data-d="' + d + '" aria-pressed="' + (s.days.indexOf(d) >= 0) + '"' + (off ? ' disabled' : '') + '>' + BC.wd(d, S.lang) + '</button>'; }).join('');
+      return onDays().map(function (d) { return '<button class="chip" data-wz="sday" data-i="' + i + '" data-d="' + d + '" aria-pressed="' + (s.type === 'fixed' && s.days.indexOf(d) >= 0) + '">' + BC.wd(d, S.lang) + '</button>'; }).join('') +
+        '<button class="chip" data-wz="flex" data-i="' + i + '" aria-pressed="' + (s.type === 'flexible') + '">' + t('Flex') + '</button>';
     }
     function step3() {
       var fixed = W.list.filter(function (s) { return s.type === 'fixed'; });
@@ -127,14 +118,14 @@ window.Setup = (function () {
         var on = fixed.length > 0 && fixed.every(function (s) { return s.days.indexOf(d) >= 0; });
         return '<button class="chip" data-wz="allday" data-d="' + d + '" aria-pressed="' + on + '"' + (fixed.length ? '' : ' disabled') + '>' + BC.wd(d, S.lang) + '</button>';
       }).join('');
+      var n = onDays().length + 1;
       var rows = W.list.map(function (s, i) {
         var fee = s.type === 'fixed' && !s.days.length ? '—' : money(feeOf(s));
         return '<div class="wz-stu"><div class="row between"><b>' + h(s.name) + '</b><span class="small muted">' + fee + '</span></div>' +
-          '<div class="seg full" role="group" style="margin-top:8px"><button data-wz="type" data-i="' + i + '" data-v="fixed" aria-pressed="' + (s.type === 'fixed') + '">' + t('Fixed days') + '</button><button data-wz="type" data-i="' + i + '" data-v="flexible" aria-pressed="' + (s.type === 'flexible') + '">' + t('Flexible') + '</button></div>' +
-          '<div class="chips grid" style="--n:' + onDays().length + '">' + dayChipsFor(i, s) + '</div></div>';
+          '<div class="chips grid" style="--n:' + n + '">' + dayChipsFor(i, s) + '</div></div>';
       }).join('');
-      return '<h2 class="wz-h">' + t('Their days') + '</h2><p class="muted small" style="margin-bottom:12px">' + t('Most students come on the same days. Set those first, then fix the few who are different.') + '</p>' +
-        '<div class="card"><b>' + t('Same days for everyone') + '</b><div class="chips grid" style="--n:' + onDays().length + ';margin-top:10px">' + all + '</div></div>' +
+      return '<h2 class="wz-h">' + t('Days') + '</h2>' +
+        '<div class="card"><b>' + t('All') + '</b><div class="chips grid" style="--n:' + onDays().length + ';margin-top:10px">' + all + '</div></div>' +
         '<div class="card" id="wz-list">' + rows + '</div>';
     }
 
@@ -144,36 +135,35 @@ window.Setup = (function () {
         var on = !!W.paid[BC.nameKey(s.name)];
         return '<div class="set-row"><div class="l"><b>' + h(s.name) + '</b><div class="muted tiny">' + money(feeOf(s)) + '</div></div><button class="switch" role="switch" aria-checked="' + on + '" data-wz="paid" data-i="' + i + '" aria-label="' + h(s.name) + '"></button></div>';
       }).join('');
-      return '<h2 class="wz-h">' + t('Who has paid {month}?', { month: BC.monthOnly(ym, S.lang) }) + '</h2><p class="muted small" style="margin-bottom:12px">' + t('Switch on everyone who has already paid this month. You can skip this and tick people later.') + '</p>' +
+      return '<h2 class="wz-h">' + t('Paid {month}', { month: BC.monthOnly(ym, S.lang) }) + '</h2>' +
         '<div class="card"><div class="row between" style="margin-bottom:6px"><b class="cnt">' + t('{a} of {b} paid', { a: n, b: W.list.length }) + '</b><div class="seg"><button data-wz="allpaid" data-v="1">' + t('All') + '</button><button data-wz="allpaid" data-v="0">' + t('None') + '</button></div></div>' + rows + '</div>';
     }
 
     function step5() {
       var paid = W.list.filter(function (s) { return W.paid[BC.nameKey(s.name)]; }).length;
-      return '<h2 class="wz-h">' + t('Save your file') + '</h2><p class="muted small" style="margin-bottom:12px">' + t('Your data lives on this phone. The file is your backup: keep it in Files, Zalo or email, and save a new one now and then.') + '</p>' +
+      return '<h2 class="wz-h">' + t('Save file') + '</h2>' +
         '<div class="card stack"><div class="kv" style="display:flex;justify-content:space-between"><span class="muted">' + t('Students') + '</span><b>' + W.list.length + '</b></div>' +
         '<div class="kv" style="display:flex;justify-content:space-between"><span class="muted">' + t('Class days') + '</span><b>' + onDays().length + '</b></div>' +
-        '<div class="kv" style="display:flex;justify-content:space-between"><span class="muted">' + t('Paid this month') + '</span><b>' + paid + '</b></div>' +
-        '<button class="btn primary block" data-wz="save">' + icon('copy', 'sm') + ' ' + (W.saved === true ? t('Save again') : t('Save file')) + '</button>' +
-        '<button class="btn ghost block" data-wz="later"' + (W.saved ? ' disabled' : '') + '>' + t('I will do it later') + '</button>' +
-        '<div class="why' + (W.saved === true ? ' ready' : '') + '">' + (W.saved === true ? icon('check') + '<span>' + t('Saved. Keep the file somewhere safe.') + '</span>' : (W.saved === 'later' ? icon('info') + '<span>' + t('No backup yet. The app will remind you.') + '</span>' : '')) + '</div></div>';
+        '<div class="kv" style="display:flex;justify-content:space-between"><span class="muted">' + t('Paid') + '</span><b>' + paid + '</b></div>' +
+        '<button class="btn primary block" data-wz="save">' + icon('save', 'sm') + ' ' + (W.saved === true ? t('Saved') : t('Save file')) + '</button>' +
+        '<button class="btn ghost block" data-wz="later"' + (W.saved ? ' disabled' : '') + '>' + t('Skip') + '</button></div>';
     }
 
+    /* a short reason under the button, only when something is missing. The line keeps its height so nothing jumps. */
     function whyHtml() {
-      var s = W.step, ok = VALID[s](), ready = ok && s !== 5, txt = '', ic = '';
-      if (s === 1) { txt = t('At least one day stays on.'); ic = 'info'; ready = false; }
-      else if (s === 2) { txt = ok ? plural(W.list.length, '{n} student. Next: their days.', '{n} students. Next: their days.') : t('Paste at least one name to continue.'); ic = ok ? 'check' : 'info'; }
-      else if (s === 3) { var n = needDay(); txt = ok ? t('Everyone has a day.') : plural(n, '{n} student still needs a day.', '{n} students still need a day.'); ic = ok ? 'check' : 'info'; }
-      else if (s === 4) { txt = t('You can skip this one.'); ic = 'info'; ready = false; }
-      else { txt = ok ? t('All set.') : t('Save the file first, or choose "I will do it later".'); ic = ok ? 'check' : 'info'; ready = ok; }
-      return '<div class="why' + (ready ? ' ready' : '') + '" id="wz-why">' + icon(ic) + '<span>' + txt + '</span></div>';
+      var s = W.step, ok = VALID[s](), txt = '';
+      if (!ok) {
+        if (s === 2) txt = t('Paste a name');
+        else if (s === 3) txt = plural(needDay(), '{n} student needs days', '{n} students need days');
+        else if (s === 5) txt = t('Save, or skip');
+      }
+      return '<div class="why" id="wz-why">' + (txt ? icon('info') + '<span>' + txt + '</span>' : '') + '</div>';
     }
     function barHtml() {
       var s = W.step, ok = VALID[s]();
-      return whyHtml() + '<div class="row"><button class="btn back" data-wz="back">' + icon('back', 'sm') + ' ' + t('Back') + '</button>' +
+      return whyHtml() + '<div class="row"><button class="btn back" data-wz="back" aria-label="' + t('Back') + '">' + icon('back', 'sm') + '</button>' +
         '<button class="btn primary" data-wz="' + (s === 5 ? 'finish' : 'next') + '"' + (ok ? '' : ' disabled') + '>' + (s === 5 ? t('Finish') : t('Next')) + '</button></div>';
     }
-
     function stepsHtml() {
       return [1, 2, 3, 4, 5].map(function (k) {
         var dis = !unlocked(k), done = k < W.step && VALID[k]();
@@ -181,10 +171,7 @@ window.Setup = (function () {
       }).join('');
     }
     function wizardView() {
-      var s = W.step, steps = stepsHtml();
-      return '<div class="wzv"><div class="row between" style="padding-top:12px"><span class="muted small">' + t('Step {a} of {b}', { a: s, b: 5 }) + '</span><div class="row" style="gap:8px">' + UI.themeBtn() +
-        '<div class="seg" role="group" aria-label="Language"><button data-lang="vi" aria-pressed="' + (S.lang === 'vi') + '">VI</button><button data-lang="en" aria-pressed="' + (S.lang === 'en') + '">EN</button></div></div></div>' +
-        '<div class="steps" id="wz-steps" style="margin-top:10px">' + steps + '</div>' + [null, step1, step2, step3, step4, step5][s]() +
+      return '<div class="wzv"><div class="steps" id="wz-steps" style="margin-top:14px">' + stepsHtml() + '</div>' + [null, step1, step2, step3, step4, step5][W.step]() +
         '</div><div class="bar"><div class="bar-in" id="wz-bar">' + barHtml() + '</div></div>';
     }
 
@@ -212,7 +199,7 @@ window.Setup = (function () {
       switch (a) {
         case 'new': startErr = ''; freshW(); S.mode = 'wizard'; E.render(); window.scrollTo(0, 0); break;
         case 'open': pickFile(function (r) { if (r.ok) adopt(r); else { startErr = errText(r.reason); E.render(); } }); break;
-        case 'sample': BC.seed(); BC.autosave(); S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); E.toast(t('Sample class loaded.')); break;
+        case 'sample': BC.seed(); BC.autosave(); S.mode = 'app'; S.tab = 'sessions'; S.sub = null; startErr = ''; E.render(); 0; break;
         case 'go': go(Number(el.getAttribute('data-s'))); break;
         case 'next': if (VALID[W.step]()) go(W.step + 1); break;
         case 'back': if (W.step === 1) { S.mode = 'start'; E.render(); } else go(W.step - 1); break;
@@ -224,8 +211,8 @@ window.Setup = (function () {
           else W.fee2 = Math.min(BC.LIMITS.feeMax, Math.max(W.fee1, W.fee2 + dir * BC.LIMITS.feeStep));
           E.render(); break;
         }
-        case 'type': touch(); W.list[i].type = v; if (v === 'flexible') W.list[i].days = []; E.render(); break;
-        case 'sday': { touch(); var s = W.list[i], p = s.days.indexOf(d); if (p >= 0) s.days.splice(p, 1); else s.days.push(d); E.render(); break; }
+        case 'flex': { touch(); var fs = W.list[i]; if (fs.type === 'flexible') fs.type = 'fixed'; else { fs.type = 'flexible'; fs.days = []; } E.render(); break; }
+        case 'sday': { touch(); var s = W.list[i], p = s.days.indexOf(d); s.type = 'fixed'; if (p >= 0) s.days.splice(p, 1); else s.days.push(d); E.render(); break; }
         case 'allday': {
           touch(); var fx = W.list.filter(function (x) { return x.type === 'fixed'; }), every = fx.every(function (x) { return x.days.indexOf(d) >= 0; });
           fx.forEach(function (x) { var q = x.days.indexOf(d); if (every && q >= 0) x.days.splice(q, 1); else if (!every && q < 0) x.days.push(d); });
@@ -238,12 +225,12 @@ window.Setup = (function () {
           BC.giveFile(BC.fileName(), BC.fileText(), 'application/json').then(function (done) { if (done) { BC.markBackedUp(); W.saved = true; E.render(); } });
           break;
         case 'later':
-          UI.confirm({ title: t('Skip the backup?'), body: t('If this phone is lost or the browser is cleared, you would have to start again. You can save a file any time from More.'), ok: t('I will do it later'), cancel: t('Save now') }).then(function (yes) { if (yes) { W.saved = 'later'; E.render(); } });
+          UI.confirm({ title: t('Skip saving?'), body: t('If this phone is lost, you start again.'), ok: t('Skip'), cancel: t('Save now') }).then(function (yes) { if (yes) { W.saved = 'later'; E.render(); } });
           break;
         case 'finish':
           if (!VALID[5]()) break;
           apply(); if (W.saved === true) BC.markBackedUp();
-          W = null; S.mode = 'app'; S.tab = 'sessions'; S.sub = null; E.render(); window.scrollTo(0, 0); E.toast(t('Your class is ready.'));
+          W = null; S.mode = 'app'; S.tab = 'sessions'; S.sub = null; E.render(); window.scrollTo(0, 0); 0;
           break;
       }
       return true;
