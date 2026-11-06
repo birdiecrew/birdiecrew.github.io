@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI tests</title>
+<!-- Screen tests. They drive the real admin and student pages inside a phone-sized frame (and one laptop-sized frame).
+     Run: serve the mockups folder with any static server, open /tests/ui-tests.html, wait for "UI TESTS: ... passed".
+     It clears this site's saved data in the browser first, so use a private window or a spare browser profile.
+     The pages open in Vietnamese by default; most tests switch to English first so they can read the text. -->
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 12px; display: flex; gap: 16px; align-items: flex-start; }
+  #out { flex: 1; min-width: 320px; } #out div { padding: 2px 0; } .ok { color: #1f7a4d; } .bad { color: #b73428; font-weight: 700; }
+  #frames iframe { border: 1px solid #bbb; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div id="out"><b id="sum">running...</b></div>
+<div id="frames"></div>
+<script src="../mock-core.js"></script>
+<script src="../store.js"></script>
+<script>
+(function () {
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var tests = [], res = { passed: 0, failed: 0, results: [] };
+  function test(name, fn) { tests.push([name, fn]); }
+  function ok(c, msg) { if (!c) throw new Error(msg || 'assertion failed'); }
+  function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((msg || 'not equal') + ': ' + JSON.stringify(a) + ' vs ' + JSON.stringify(b)); }
+  var q = function (w, s) { return w.document.querySelector(s); }, qa = function (w, s) { return [].slice.call(w.document.querySelectorAll(s)); };
+  var txt = function (w, s) { var e = q(w, s); return e ? e.innerText.replace(/\s+/g, ' ').trim() : ''; };
+  async function click(w, s) { var e = typeof s === 'string' ? q(w, s) : s; if (!e) throw new Error('missing ' + s); if (e.disabled) throw new Error('disabled ' + s); e.click(); await sleep(140); }
+  async function type(w, s, v, ev) { var e = q(w, s); e.value = v; e.dispatchEvent(new Event(ev || 'input', { bubbles: true })); await sleep(90); }
+  async function frame(url, width) {
+    var f = document.createElement('iframe'); f.style.cssText = 'width:' + (width || 375) + 'px;height:760px';
+    document.getElementById('frames').replaceChildren(f); f.src = url;
+    await new Promise(function (r) { f.onload = r; });
+    for (var i = 0; i < 60 && !f.contentWindow.document.querySelector('.hdr, .start, .top, .wzv, [style*="padding:60px"]'); i++) await sleep(100);   // wait until the page has drawn
+    if (url.indexOf('#c=') >= 0) for (i = 0; i < 40 && !localStorage.getItem('bc_card'); i++) await sleep(100);   // the page remembers the card once it has been read
+    await sleep(250); return f.contentWindow;
+  }
+  /* wipe everything, then choose the language the test reads in (default: English; pass 'vi' for the real default) */
+  function wipe(lang) { try { localStorage.clear(); if (lang !== 'vi') { localStorage.setItem('bc_admin_lang', 'en'); localStorage.setItem('bc_lang', 'en'); } } catch (e) { /* ignore */ } }
+  /* a saved class in the browser, so the admin page opens straight into it */
+  function saveClass(build) {
+    BC.blank(); BC.today = '2026-11-05'; var out = build() || {}; BC.meta = { sample: false, setup: true };
+    BC.autosave(); BC.markBackedUp(); return out;
+  }
+  function two() { var a = BC.addStudent({ name: 'John', type: 'fixed', days: [2, 4], start: '2026-09-01' }), b = BC.addStudent({ name: 'Jane', type: 'fixed', days: [2], start: '2026-09-01' }); [a, b].forEach(function (s) { BC.setPaid(s.id, '2026-11', true); }); return { a: a, b: b }; }
+  var wizText = 'Lan\nMinh\nHung\nThao\nQuang';
+  var pageOpen = function (w) { return !!q(w, '.sheet.page'); };
+
+  /* ================= language and look ================= */
+  test('Vietnamese is the default on both pages', async function () {
+    wipe('vi'); var w = await frame('../admin.html'); ok(/Lớp mới/.test(txt(w, '.start')), txt(w, '.start')); eq(w.document.documentElement.lang, 'vi');
+    var o = saveClass(two); var l = await BC.cardLink(o.a.id, 'x'); var s = await frame('../student.html' + l.slice(l.indexOf('#')));
+    eq(s.document.documentElement.lang, 'vi'); ok(/Học phí/.test(txt(s, '#app')), txt(s, '#app'));
+  });
+  test('the language can be switched, and the choice is remembered', async function () {
+    wipe('vi'); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-lang="en"]');
+    ok(/My data/.test(txt(w, '#view')), txt(w, '#view')); w = await frame('../admin.html'); eq(w.document.documentElement.lang, 'en');
+  });
+  test('no theme or language buttons in the headers: the system theme is followed, language lives in More', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html');
+    ok(!q(w, '.top .themebtn') && !q(w, '.top [data-lang]'), 'header is only logo, title and the save icon');
+    var o = BC.students[0], l = await BC.cardLink(o.id, 'x'); var s = await frame('../student.html' + l.slice(l.indexOf('#')));
+    ok(!q(s, '.hdr .themebtn'), 'no theme button on the card'); ok(q(s, '.hdr .langbtn'), 'one small language button on the card');
+  });
+  test('the words Coach and Student do not label the pages', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); ok(!/\bCoach\b/.test(txt(w, '.top')), txt(w, '.top'));
+    var l = await BC.cardLink(BC.students[0].id, 'x'); var s = await frame('../student.html' + l.slice(l.indexOf('#'))); ok(!/\bStudent\b/.test(txt(s, '.hdr')), txt(s, '.hdr'));
+  });
+  test('navigation is icons only, each with a name for screen readers', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); var b = qa(w, '.nav button');
+    eq(b.length, 5); ok(b.every(function (x) { return x.innerText.replace(/\s+/g, '').replace(/\d/g, '') === '' && x.getAttribute('aria-label'); }), 'no text, but a name');
+  });
+  test('on a laptop the icon bar moves to the top and the page stays one centred column', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html', 1100); var r = q(w, '.nav').getBoundingClientRect();
+    ok(r.top < 80 && r.height < 80, 'bar at the top: ' + r.top + ',' + r.height); var c = q(w, '.wrap-col').getBoundingClientRect(); ok(c.width <= 722 && c.left > 100, 'one centred column');
+  });
+  test('the app can be renamed: the class name is a setting and every sent card becomes out of date', async function () {
+    wipe(); var o = saveClass(two); BC.markCardSent(o.a.id); BC.markCardSent(o.b.id); BC.autosave();
+    var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    await type(w, '[data-k="page_title"]', 'VM Badmington Club', 'change'); await sleep(200);
+    ok(/VM Badmington Club/.test(txt(w, '.top h1')), 'header follows'); eq(w.BC.config.page_title, 'VM Badmington Club');
+    await click(w, '[data-tab="students"]'); ok(/2 cards to send/.test(txt(w, '#view')), txt(w, '#view'));
+  });
+
+  /* ================= coach: first run ================= */
+  test('first run: one main button and two quiet ones', async function () {
+    wipe(); var w = await frame('../admin.html');
+    eq(qa(w, '[data-wz]').map(function (b) { return b.getAttribute('data-wz'); }), ['new', 'open', 'sample']); ok(!q(w, '.top'), 'no app chrome before a class exists');
+    ok(q(w, '[data-wz="new"]').classList.contains('primary') && !q(w, '[data-wz="open"]').classList.contains('primary'));
+    ok(txt(w, '.start').length < 120, 'almost no text: ' + txt(w, '.start'));
+  });
+  test('wizard: later steps stay dimmed until the earlier ones are complete', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]');
+    eq(qa(w, '.steps button').map(function (b) { return b.disabled; }), [false, false, true, true, true]);
+    await click(w, '[data-wz="next"]');
+    ok(q(w, '[data-wz="next"]').disabled, 'Next is dimmed with no names');
+    ok(/Paste a name/.test(txt(w, '#wz-why')), 'reason is shown: ' + txt(w, '#wz-why'));
+    ok(q(w, '[data-wz="go"][data-s="3"]').disabled, 'step 3 is locked');
+    await type(w, '#wz-names', wizText); ok(!q(w, '[data-wz="next"]').disabled); ok(/5 students/.test(txt(w, '#wz-prev')));
+    ok(txt(w, '#wz-why') === '', 'nothing to say once it is fine');
+    ok(!q(w, '[data-wz="go"][data-s="3"]').disabled, 'step 3 opens');
+  });
+  test('wizard: the layout does not move when Next switches between dimmed and ready', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]'); await click(w, '[data-wz="next"]');
+    var r = function (s) { var b = q(w, s).getBoundingClientRect(); return [b.top, b.left, b.width, b.height].join(); };
+    var before = [r('#wz-bar'), r('[data-wz="next"]'), r('[data-wz="back"]'), r('.wz-h')];
+    await type(w, '#wz-names', wizText);
+    eq([r('#wz-bar'), r('[data-wz="next"]'), r('[data-wz="back"]'), r('.wz-h')], before);
+  });
+  test('wizard: numbers stop at their limits and the two fees cannot cross', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]');
+    var outs = function () { return qa(w, '.stepper output').map(function (o) { return o.textContent.replace(/\D/g, ''); }).map(Number); };
+    for (var i = 0; i < 90 && !q(w, '[data-k="fee2"][data-d="-1"]').disabled; i++) q(w, '[data-k="fee2"][data-d="-1"]').click();
+    await sleep(60); var o = outs(); eq(o[2], o[1], 'the 2-day fee stops at the 1-day fee');
+    ok(q(w, '[data-k="fee1"][data-d="1"]').disabled, 'the 1-day fee cannot go above it');
+    for (i = 0; i < 20 && !q(w, '[data-k="courts"][data-d="1"]').disabled; i++) q(w, '[data-k="courts"][data-d="1"]').click();
+    eq(outs()[0], BC.LIMITS.courts, 'courts stop at the limit');
+  });
+  test('wizard: the last class day cannot be switched off, and end times only follow the start', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]');
+    var on = qa(w, '[data-wz="day"]').filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; });
+    for (var i = 0; i < on.length - 1; i++) { qa(w, '[data-wz="day"]').filter(function (b) { return b.getAttribute('aria-pressed') === 'true' && !b.disabled; })[0].click(); await sleep(60); }
+    var last = qa(w, '[data-wz="day"]').filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; });
+    eq(last.length, 1); ok(last[0].disabled, 'the last day is dimmed');
+    var d = last[0].getAttribute('data-d'); await type(w, '#wz-s-' + d, '21:30', 'change');
+    ok([].slice.call(q(w, '#wz-e-' + d).options).every(function (o) { return o.text > q(w, '#wz-s-' + d).value; }), 'every end time is after the start');
+  });
+  test('wizard: every student needs days or Flex before Next', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]'); await click(w, '[data-wz="next"]');
+    await type(w, '#wz-names', wizText); await click(w, '[data-wz="next"]');
+    ok(q(w, '[data-wz="next"]').disabled); ok(/5 students need days/.test(txt(w, '#wz-why')), txt(w, '#wz-why'));
+    await click(w, '[data-wz="allday"][data-d="2"]'); ok(!q(w, '[data-wz="next"]').disabled);
+    await click(w, '[data-wz="flex"][data-i="0"]'); ok(q(w, '[data-wz="flex"][data-i="0"]').getAttribute('aria-pressed') === 'true');
+    ok(qa(w, '[data-wz="sday"][data-i="0"]').every(function (b) { return b.getAttribute('aria-pressed') === 'false'; }), 'Flex clears the days');
+    ok(!q(w, '[data-wz="next"]').disabled, 'a flexible student needs no days');
+    await click(w, '[data-wz="sday"][data-i="0"][data-d="2"]'); ok(q(w, '[data-wz="flex"][data-i="0"]').getAttribute('aria-pressed') === 'false', 'a day clears Flex');
+  });
+  test('wizard: Finish stays dimmed until the file is saved or skipped on purpose, then the class opens', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]'); await click(w, '[data-wz="next"]');
+    await type(w, '#wz-names', wizText); await click(w, '[data-wz="next"]'); await click(w, '[data-wz="allday"][data-d="2"]');
+    await click(w, '[data-wz="next"]'); await click(w, '[data-wz="paid"][data-i="0"]'); await click(w, '[data-wz="next"]');
+    ok(q(w, '[data-wz="finish"]').disabled, 'Finish is dimmed'); ok(/Save, or skip/.test(txt(w, '#wz-why')));
+    await click(w, '[data-wz="later"]'); await click(w, '.dialog [data-v="1"]');
+    ok(!q(w, '[data-wz="finish"]').disabled, 'skipping on purpose opens Finish');
+    await click(w, '[data-wz="finish"]'); await sleep(200);
+    ok(q(w, '.top'), 'the class opens'); eq(w.BC.students.length, 5); ok(q(w, '.dchip').classList.contains('primary'), 'the save icon asks for a save');
+  });
+  test('wizard: back from step 1 returns to the start screen and nothing is saved', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="new"]'); await click(w, '[data-wz="back"]');
+    ok(q(w, '[data-wz="new"]')); ok(!localStorage.getItem('bc_data'));
+  });
+
+  /* ================= coach: pages, add student, settings, data ================= */
+  test('forms open as full pages with a back arrow, not as pop-ups', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    ok(pageOpen(w), 'a full page'); ok(q(w, '.page-h [data-close]'), 'with a back arrow'); await click(w, '.page-h [data-close]'); ok(!q(w, '.sheet'), 'back closes it');
+    await click(w, '[data-a="stu"]'); await sleep(250); ok(pageOpen(w), 'a student is a page'); await click(w, '.page-h [data-close]');
+  });
+  test('a quick action stays a small sheet, not a page', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="sessions"]'); await click(w, '[data-a="toggle"]'); await click(w, '[data-a="nmday"]'); await sleep(250);
+    ok(q(w, '.sheet') && !pageOpen(w), 'a bottom sheet');
+  });
+  test('add student: Save stays dimmed with a short reason, in the order she would fix them', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    ok(q(w, '#as-save').disabled && /Type a name/.test(txt(w, '#as-why')));
+    ok(qa(w, '#f-days .chip').every(function (b) { return b.disabled; }), 'days wait for a name');
+    await type(w, '#f-name', 'jane'); ok(/Name already used/.test(txt(w, '#as-why')), 'repeat name, ignoring capitals');
+    await type(w, '#f-name', 'Hoa'); ok(/Pick days or Flex/.test(txt(w, '#as-why'))); ok(qa(w, '#f-days .chip').every(function (b) { return !b.disabled; }));
+    await click(w, '#f-days .chip'); ok(!q(w, '#as-save').disabled && txt(w, '#as-why') === '', 'ready says nothing');
+    await type(w, '#f-start', '2030-01-01'); ok(q(w, '#as-save').disabled && /Date out of range/.test(txt(w, '#as-why')));
+    eq(q(w, '#f-name').maxLength, BC.LIMITS.nameLen);
+  });
+  test('add student: Flex is a chip in the days row; it clears the days and a day clears it', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    await type(w, '#f-name', 'Hoa'); await click(w, '#f-days .chip'); await click(w, '[data-flex]');
+    ok(q(w, '[data-flex]').getAttribute('aria-pressed') === 'true'); ok(qa(w, '[data-day]').every(function (b) { return b.getAttribute('aria-pressed') === 'false'; }));
+    ok(!q(w, '#as-save').disabled, 'Flex alone is enough'); await click(w, '#as-save'); await sleep(200);
+    var s = w.BC.students.filter(function (x) { return x.name === 'Hoa'; })[0]; eq([s.type, s.days], ['flexible', []]);
+  });
+  test('add student: the field labels are one word and there are no hints', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    eq(qa(w, '.field > .lbl').map(function (e) { return e.textContent; }), ['Name', 'Days', 'Start', 'Fee']); eq(qa(w, '.field > .hint').length, 0);
+  });
+  test('add student: a student can have their own fee, and it is used for the bill', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    await type(w, '#f-name', 'Hoa'); await click(w, '#f-days .chip'); await type(w, '#f-fee', '1000000', 'change'); await click(w, '#as-save'); await sleep(200);
+    var s = w.BC.students.filter(function (x) { return x.name === 'Hoa'; })[0]; eq(s.fee, 1000000); eq(w.BC.baseFee(s), 1000000);
+  });
+  test('add student: the first bill preview has room reserved, so Save does not jump', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250);
+    var top = function () { return q(w, '#as-save').getBoundingClientRect().top; }, t0 = top();
+    await type(w, '#f-name', 'Hoa'); await click(w, '#f-days .chip'); eq(top(), t0);
+  });
+  test('settings: a fee is clamped, the two fees never cross, the Zalo number keeps only digits', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    await type(w, '[data-k="fee_1day"]', '9999999', 'change'); eq(w.BC.config.fee_1day, w.BC.config.fee_2days, 'cannot go above the 2-day fee');
+    await type(w, '[data-k="fee_2days"]', '1000', 'change'); ok(w.BC.config.fee_2days >= w.BC.config.fee_1day);
+    await type(w, '[data-k="coach_zalo"]', '09ab12-34 5', 'change'); eq(w.BC.config.coach_zalo, '0912345');
+  });
+  test('settings: no "Default:" line under each setting, and the long texts are tucked under Messages', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    ok(!/Default:/.test(txt(w, '#view'))); ok(q(w, 'details.card') && !q(w, 'details.card').open);
+  });
+  test('timetable: adding Monday starts today and the rest of the app follows', async function () {
+    wipe(); saveClass(function () { var o = two(); [0, 1, 3, 5, 6].forEach(function (d) { BC.timetable[d].on = false; }); return o; });
+    var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="timetable"]'); await sleep(150);
+    await click(w, '[data-a="ttsw"][data-x="1"]'); await sleep(200);
+    ok(w.BC.classDay('2026-11-09') && !w.BC.classDay('2026-11-02'), 'Monday starts today, not before');
+    ok(/starts today/i.test(txt(w, '#toast-root')), 'she is told: ' + txt(w, '#toast-root'));
+  });
+  test('timetable: switching a day off asks first and says who is affected; the last day stays on', async function () {
+    wipe(); saveClass(function () { var o = two(); [0, 1, 3, 5, 6].forEach(function (d) { BC.timetable[d].on = false; }); return o; });
+    var w = await frame('../admin.html'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="timetable"]'); await sleep(150);
+    await click(w, '[data-a="ttsw"][data-x="4"]'); ok(/1 students have this as a regular day/.test(txt(w, '.dialog')), txt(w, '.dialog'));
+    await click(w, '.dialog [data-v="0"]'); ok(w.BC.classDay('2026-11-12'), 'keeping it changes nothing');
+    await click(w, '[data-a="ttsw"][data-x="4"]'); await click(w, '.dialog [data-v="1"]'); ok(!w.BC.classDay('2026-11-12'));
+    ok(q(w, '[data-a="ttsw"][data-x="2"]').disabled, 'the last day is dimmed');
+  });
+  test('more: five rows with titles only; Cancel a session lives in Timetable, Videos in Scores', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="more"]');
+    eq(qa(w, '.menu .li').length, 5); ok(qa(w, '.menu .li').every(function (b) { return !b.querySelector('span.muted'); }), 'no subtitles');
+    await click(w, '[data-a="sub"][data-x="timetable"]'); ok(q(w, '[data-x="cancel"]'));
+    await click(w, '[data-a="back"]'); await click(w, '[data-a="sub"][data-x="scores"]'); ok(q(w, '[data-x="videos"]'));
+  });
+  test('my data: one word for saving; the icon and Start over follow whether the work is in a file', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html');
+    ok(!q(w, '.dchip').classList.contains('primary'), 'saved'); eq(q(w, '.dchip').getAttribute('aria-label'), 'Save');
+    await click(w, '[data-tab="payments"]'); await click(w, '[data-a="undopaid"]');
+    ok(q(w, '.dchip').classList.contains('primary'), 'asks for a save'); await click(w, '.dchip'); ok(q(w, '[data-a="startover"]').disabled, 'Start over is dimmed'); ok(/Save a file first/.test(txt(w, '#view')));
+    ok(!/Back up|Backup/i.test(txt(w, 'body')), 'no second word for saving');
+    await click(w, '[data-a="savefile"]'); await sleep(250); ok(!q(w, '.dchip').classList.contains('primary')); ok(!q(w, '[data-a="startover"]').disabled);
+  });
+  test('my data: a short list, no paragraphs', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '.dchip'); await sleep(100);
+    eq(qa(w, '.menu .li').length, 3); eq(qa(w, '#view p').length, 0); ok(txt(w, '#view').length < 160, txt(w, '#view'));
+  });
+  test('my data: a saved copy that was edited by hand is explained on the start screen', async function () {
+    wipe(); saveClass(two); var f = JSON.parse(localStorage.getItem('bc_data')); f.data.students[0].name = 'X'; localStorage.setItem('bc_data', JSON.stringify(f));
+    var w = await frame('../admin.html'); ok(q(w, '.start') && txt(w, '.why[role=alert]').length > 10, txt(w, '.start'));
+  });
+  test('a sample class opens with a banner, and no save nag or card nag', async function () {
+    wipe(); var w = await frame('../admin.html'); await click(w, '[data-wz="sample"]'); await sleep(200);
+    ok(q(w, '.sample-bar')); eq(q(w, '.dchip').getAttribute('aria-label'), 'Sample'); ok(!/cards to send/.test(txt(w, '#view')), 'no card nag in the sample');
+  });
+  test('payments: no instruction line, no code on the rows, a late tag only where it is late', async function () {
+    wipe(); saveClass(function () { var o = two(); BC.setPaid(o.a.id, '2026-11', false); BC.today = '2026-11-09'; return o; });
+    var w = await frame('../admin.html'); w.BC.today = '2026-11-09'; await click(w, '[data-tab="payments"]'); await sleep(100);
+    ok(!/Check your bank/.test(txt(w, '#view'))); ok(!/VM0/.test(txt(w, '#view')), 'no payment code on the row'); ok(/Late/.test(txt(w, '.li.pay')), 'late shows');
+    ok(q(w, '[data-a="pm"][data-x="1"]').disabled, 'cannot go to a future month');
+  });
+
+  /* ================= coach: cards ================= */
+  test('send card: the coach sees which cards are missing or out of date, and copying one clears it', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]');
+    ok(/2 cards to send/.test(txt(w, '#view')), txt(w, '#view'));
+    await click(w, '[data-a="cards"]'); await sleep(150); ok(pageOpen(w), 'a page'); eq(qa(w, '.sheet [data-cc]').length, 2); ok(qa(w, '.sheet p').length === 0, 'no paragraph');
+    await click(w, '.sheet [data-cc]'); await sleep(900);
+    ok(/1 card to send/.test(txt(w, '.sheet')), txt(w, '.sheet'));
+    qa(w, '.sheet [data-cc]').filter(function (b) { return /Copy message/.test(b.textContent); }).forEach(function (b) { b.click(); }); await sleep(900);
+    ok(/All cards are up to date/.test(txt(w, '.sheet'))); await click(w, '.sheet [data-close]'); await sleep(250);
+    ok(!/cards? to send/.test(txt(w, '#view')), 'the banner is gone');
+  });
+  test('send card: the rows keep their place while cards are marked as sent', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); await click(w, '[data-a="cards"]'); await sleep(200);
+    var names = function () { return qa(w, '.sheet .hist b').map(function (b) { return b.textContent; }); }, before = names();
+    await click(w, '.sheet [data-cc]'); await sleep(900); eq(names(), before);
+  });
+  test('send card: a change makes that one student\'s card out of date again, and the page says so', async function () {
+    wipe(); var o = saveClass(two); BC.markCardSent(o.a.id); BC.markCardSent(o.b.id); BC.autosave();
+    var w = await frame('../admin.html'); await click(w, '[data-tab="students"]'); ok(!/cards? to send/.test(txt(w, '#view')));
+    w.BC.skip(o.a.id, '2026-11-17'); await click(w, '[data-tab="sessions"]'); await click(w, '[data-tab="students"]');
+    ok(/1 card to send/.test(txt(w, '#view')), txt(w, '#view'));
+    var john = qa(w, '[data-a="stu"]').filter(function (b) { return /John/.test(b.textContent); })[0]; await click(w, john); await click(w, '#st-card'); await sleep(900);
+    ok(/Something changed since/.test(txt(w, '.sheet')), txt(w, '.sheet')); ok(!q(w, '.sheet .msgbox'), 'the message is not shown, only copied');
+  });
+  test('send card: Preview opens the card and it carries only that student', async function () {
+    wipe(); var o = saveClass(two); var link = await BC.cardLink(o.b.id, location.origin + '/mockups/student.html');
+    var s = await frame(link.replace(location.origin + '/mockups/', '../')); ok(/Jane/.test(txt(s, '.hdr')), txt(s, '.hdr'));
+    ok(!/John/.test(s.document.body.innerHTML), 'no other student on the page');
+  });
+
+  /* ================= student card ================= */
+  async function cardPage(sid, today) { var keep = BC.today; if (today) BC.today = today; var l = await BC.cardLink(sid, 'x'); BC.today = keep; return '../student.html' + l.slice(l.indexOf('#')); }
+  test('card: only the calendar, no title, no Key, no counters, and the header is one line', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id));
+    ok(!q(w, '[data-legend]') && !q(w, '.kpis') && !q(w, '.card-h'), 'no Key, counters or title'); ok(q(w, '.cal-grid'));
+    ok(/John/.test(txt(w, '.me')) && /5 Nov/.test(txt(w, '.me')), txt(w, '.me')); eq(qa(w, '.hdr .me').length, 1);
+  });
+  test('card: the rows are Skills, Fees, Rules; a Break row only when there is a break', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.scores[x.a.id] = [{ date: '2026-10-28', v: { smash: 6, net: 7, footwork: 4, defense: 6, serve: 7, stamina: 5 } }]; return x; });
+    var w = await frame(await cardPage(o.a.id)); eq(qa(w, '.menu-row').map(function (b) { return b.getAttribute('data-act'); }), ['skills', 'fees', 'rules']);
+    BC.addBreak(o.a.id, '2026-11-16', '2026-11-29'); w = await frame(await cardPage(o.a.id)); eq(qa(w, '.menu-row').map(function (b) { return b.getAttribute('data-act'); }), ['skills', 'fees', 'breaks', 'rules']);
+  });
+  test('card: Skills shows the polygon with its numbers and the change, a focus, and no repeated table', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.scores[x.a.id] = [{ date: '2026-08-29', v: { smash: 5, net: 4, footwork: 3, defense: 5, serve: 6, stamina: 4 } }, { date: '2026-10-28', v: { smash: 6, net: 5, footwork: 4, defense: 6, serve: 7, stamina: 5 } }]; return x; });
+    var w = await frame(await cardPage(o.a.id)); await click(w, '[data-act="skills"]'); await sleep(250);
+    ok(pageOpen(w), 'a page'); ok(q(w, '.radar'), 'polygon'); ok(!q(w, '.skills'), 'no table repeating the numbers'); ok(/focus/i.test(txt(w, '.sheet')), txt(w, '.sheet'));
+    ok(!/Weakest|Yếu nhất/.test(txt(w, '.sheet') + txt(w, '#app')), 'no negative word'); ok(/\+1/.test(q(w, '.radar').textContent), 'the change shows on the polygon: ' + q(w, '.radar').textContent);
+  });
+  test('card: with no credit, a day that is not theirs says so and offers an extra lesson, not a make-up', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.b.id));
+    await click(w, '[data-nav="1"]'); await click(w, '[data-iso="2026-12-10"]'); await sleep(250);
+    var t = txt(w, '.sheet'); ok(/No make-up left/i.test(t) && /Extra lesson/i.test(t) && !/Make-up here/i.test(t), t);
+  });
+  test('card: with a credit, the same day offers a make-up and says nothing about rules', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.skip(x.b.id, '2026-11-17'); return x; }); var w = await frame(await cardPage(o.b.id));
+    await click(w, '[data-iso="2026-11-14"]'); await sleep(250);
+    var t = txt(w, '.sheet'); ok(/Make-up here/i.test(t) && !/No make-up/i.test(t), t);
+  });
+  test('card: the buttons are the action itself, with a chat icon', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id)); await click(w, '[data-iso="2026-11-17"]'); await sleep(250);
+    eq(txt(w, '[data-ask]'), 'Skip this lesson'); ok(q(w, '[data-ask] svg'));
+  });
+  test('card: a card shows the day and time it was made', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id)); ok(/5 Nov, \d\d:\d\d/.test(txt(w, '.me')), txt(w, '.me'));
+  });
+  test('card: an old card says it is old, in a few words', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id, '2026-10-20')); ok(/Old card/.test(txt(w, '.banner')), txt(w, '#app')); ok(txt(w, '.banner').length < 60);
+  });
+  test('card: there is no welcome pop-up; the page just opens', async function () {
+    wipe('vi'); var o = saveClass(two); var w = await frame(await cardPage(o.a.id)); ok(!q(w, '.sheet'), 'nothing in the way');
+  });
+  test('two cards: opening an OLD link after a newer one keeps the newer card and tells the student', async function () {
+    wipe(); var o = saveClass(two); var oldL = await cardPage(o.a.id); BC.skip(o.a.id, '2026-11-17'); var newL = await cardPage(o.a.id);
+    var w = await frame(newL); var kept = localStorage.getItem('bc_card');
+    ok(kept && newL.endsWith(kept), 'the new card is remembered');
+    w = await frame(oldL);
+    eq(localStorage.getItem('bc_card'), kept, 'the newer card is still the one kept');
+    ok(/older card/i.test(txt(w, '.banner')), 'she is told: ' + txt(w, '#app')); eq(q(w, '[data-iso="2026-11-17"]').className.indexOf('skipped') >= 0, true, 'the newer card is the one drawn');
+  });
+  test('two cards: opening the newer link after an older one replaces it', async function () {
+    wipe(); var o = saveClass(two); var oldL = await cardPage(o.a.id); BC.skip(o.a.id, '2026-11-17'); var newL = await cardPage(o.a.id);
+    await frame(oldL); var w = await frame(newL); ok(newL.endsWith(localStorage.getItem('bc_card'))); ok(q(w, '[data-iso="2026-11-17"]').className.indexOf('skipped') >= 0);
+  });
+  test('two cards: reopening the bare address shows the newest card', async function () {
+    wipe(); var o = saveClass(two); var oldL = await cardPage(o.a.id); BC.skip(o.a.id, '2026-11-17'); var newL = await cardPage(o.a.id);
+    await frame(newL); await frame(oldL); var kept = localStorage.getItem('bc_card'); var w = await frame('../student.html');
+    ok(q(w, '[data-iso="2026-11-17"]').className.indexOf('skipped') >= 0, 'bare address = newest card; keptIsNew=' + newL.endsWith(kept));
+  });
+  test('card: a cut-short link says so instead of showing nothing', async function () {
+    wipe(); var o = saveClass(two); var l = await cardPage(o.a.id); var w = await frame(l.slice(0, 40)); ok(/did not open|Không mở được/.test(txt(w, '#app')), txt(w, '#app'));
+  });
+  test('card: tapping a day never changes anything; it can only write a message', async function () {
+    wipe(); var o = saveClass(two); var w = await frame(await cardPage(o.a.id)); var before = JSON.stringify(w.BC.changes);
+    await click(w, '[data-iso="2026-11-17"]'); await click(w, '[data-ask]'); await sleep(150);
+    eq(JSON.stringify(w.BC.changes), before); ok(/John \(VM031\)/.test(txt(w, '.msgbox')), txt(w, '.msgbox'));
+  });
+
+  /* ================= every screen: big fingers ================= */
+  function sizes(w) {
+    var bad = [], visible = function (e) { var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+    qa(w, 'button, select.inp, input.inp, textarea.inp').filter(visible).forEach(function (e) {
+      var h = e.getBoundingClientRect().height, name = (e.className || e.tagName) + ':' + (e.textContent || e.id || '').trim().slice(0, 14);
+      if (e.closest('.mock-panel, .mock-fab') || e.classList.contains('cd')) return;
+      var min = e.classList.contains('sm') || e.classList.contains('amt-edit') || e.closest('.seg') ? 39 : 47;
+      if (e.classList.contains('chip')) min = 43; if (e.classList.contains('themebtn') || e.closest('.sheet-h') || e.closest('.page-h')) min = 39;
+      if (e.classList.contains('switch')) min = 31; if (e.closest('.steppers, .stepper')) min = 39;
+      if (h < min) bad.push(name + ' ' + h.toFixed(0));
+    });
+    return bad;
+  }
+  test('big fingers: every button, chip, field and switch on the main screens is tall enough', async function () {
+    wipe(); saveClass(two); var w = await frame('../admin.html'), bad = [];
+    for (var tab of ['sessions', 'students', 'payments', 'remind', 'more']) { await click(w, '[data-tab="' + tab + '"]'); bad = bad.concat(sizes(w).map(function (x) { return tab + ' ' + x; })); }
+    for (var sub of ['data', 'settings', 'timetable', 'scores', 'breaks']) { await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="' + sub + '"]'); bad = bad.concat(sizes(w).map(function (x) { return sub + ' ' + x; })); }
+    await click(w, '[data-tab="students"]'); await click(w, '[data-a="addstu"]'); await sleep(250); bad = bad.concat(sizes(w).map(function (x) { return 'add ' + x; }));
+    eq(bad, []);
+  });
+  test('big fingers: the wizard and the student card too', async function () {
+    wipe(); var w = await frame('../admin.html'), bad = []; await click(w, '[data-wz="new"]'); bad = bad.concat(sizes(w).map(function (x) { return 'wizard1 ' + x; }));
+    await click(w, '[data-wz="next"]'); await type(w, '#wz-names', wizText); bad = bad.concat(sizes(w).map(function (x) { return 'wizard2 ' + x; }));
+    await click(w, '[data-wz="next"]'); bad = bad.concat(sizes(w).map(function (x) { return 'wizard3 ' + x; }));
+    var o = saveClass(two); var s = await frame(await cardPage(o.a.id)); bad = bad.concat(sizes(s).map(function (x) { return 'card ' + x; }));
+    eq(bad, []);
+  });
+  test('no screen scrolls sideways on a phone, or on a small phone', async function () {
+    wipe(); saveClass(two); var bad = [];
+    for (var wd of [375, 320]) {
+      var w = await frame('../admin.html', wd);
+      for (var tab of ['sessions', 'students', 'payments', 'remind', 'more']) { await click(w, '[data-tab="' + tab + '"]'); if (w.document.documentElement.scrollWidth > w.innerWidth + 1) bad.push(wd + ' ' + tab); }
+      var s = await frame(await cardPage(BC.students[0].id), wd); if (s.document.documentElement.scrollWidth > s.innerWidth + 1) bad.push(wd + ' card');
+    }
+    eq(bad, []);
+  });
+
+  (async function () {
+    for (var i = 0; i < tests.length; i++) {
+      var n = tests[i][0], line = document.createElement('div');
+      try { await tests[i][1](); res.passed++; line.className = 'ok'; line.textContent = 'ok    ' + n; res.results.push(['ok', n]); }
+      catch (e) { res.failed++; line.className = 'bad'; line.textContent = 'FAIL  ' + n + ' — ' + e.message; res.results.push(['FAIL', n, e.message]); }
+      document.getElementById('out').appendChild(line);
+    }
+    wipe(); document.getElementById('frames').replaceChildren();
+    var s = 'UI TESTS: ' + res.passed + ' passed' + (res.failed ? ', ' + res.failed + ' FAILED' : '');
+    document.getElementById('sum').textContent = s; document.title = s; window.__ui = res;
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="VM Badminton">
+  <rect width="128" height="128" rx="28" fill="#1e1e1e"/>
+  <g transform="rotate(-35 64 64)">
+    <path d="M46 78 L33 30 Q64 17 95 30 L82 78 Z" fill="#fff"/>
+    <path d="M52 78 L46 28 M64 78 L64 24 M76 78 L82 28" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M33 30 Q64 17 95 30" stroke="#1e1e1e" stroke-width="3" fill="none"/>
+    <path d="M45 78 Q64 88 83 78" stroke="#1e1e1e" stroke-width="3" fill="none"/>
+    <circle cx="64" cy="95" r="15" fill="#fff"/>
+  </g>
+</svg>
