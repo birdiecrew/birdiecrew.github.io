@@ -778,7 +778,7 @@
       '<div class="row">' + UI.logo(72) + '<div class="stack-s grow"><button class="btn" data-a="logopick">' + icon('plus', 'sm') + ' ' + t('Choose picture') + '</button>' +
       (hasLogo ? '<button class="btn ghost" data-a="logoreset">' + t('Use the default picture') + '</button>' : '') + '</div></div></div>';
     return subHead(t('Settings')) + pic + sections + qr +
-      '<details class="card"><summary class="bold">' + t('Messages') + '</summary><div class="stack" style="margin-top:12px">' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset') + '</button></div></details>' +
+      '<details class="card"><summary class="bold"><span class="grow">' + t('Messages') + '</span><span class="chev">' + icon('chevR') + '</span></summary><div class="stack" style="margin-top:12px">' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset') + '</button></div></details>' +
       '<button class="btn danger block" style="margin-top:14px" data-a="setresetall">' + t('Reset all') + '</button>';
   }
 
