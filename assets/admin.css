@@ -130,6 +130,8 @@ button.amt-edit { text-decoration: none; }
 .top .row.between { min-height: 44px; }
 details.card > summary { cursor: pointer; min-height: var(--tap); display: flex; align-items: center; list-style: none; }
 details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary .chev { display: inline-flex; color: var(--muted, #777); transition: transform .15s; }
+details.card[open] > summary .chev { transform: rotate(90deg); }
 .menu .li + .li { margin-top: 8px; }
 
 /* on a laptop the same single column, with the icon bar moved to the top */

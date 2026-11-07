@@ -59,8 +59,8 @@
     var rd = remindData(), nRemind = rd.soft.length + rd.late.length, bk = BC.backup();
     var unpaid = payRows(ymNow()).filter(function (r) { return !r.rec.paid; }).length;
     var tabs = [['sessions', 'cal2', 'Sessions', 0], ['students', 'users', 'Students', 0], ['payments', 'wallet', 'Payments', unpaid], ['remind', 'bell', 'Remind', nRemind], ['more', 'more', 'More', 0]];
-    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = isSample ? t('Sample') : t('Save');
-    var chip = '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : (isSample ? 'info' : 'check')) + '</button>';
+    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = t('Save');
+    var chip = isSample ? '' : '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : 'check') + '</button>';
     var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
     var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + '</div></div>' : '';
     return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + pretend + sample +
@@ -778,7 +778,7 @@
       '<div class="row">' + UI.logo(72) + '<div class="stack-s grow"><button class="btn" data-a="logopick">' + icon('plus', 'sm') + ' ' + t('Choose picture') + '</button>' +
       (hasLogo ? '<button class="btn ghost" data-a="logoreset">' + t('Use the default picture') + '</button>' : '') + '</div></div></div>';
     return subHead(t('Settings')) + pic + sections + qr +
-      '<details class="card"><summary class="bold">' + t('Messages') + '</summary><div class="stack" style="margin-top:12px">' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset') + '</button></div></details>' +
+      '<details class="card"><summary class="bold"><span class="grow">' + t('Messages') + '</span><span class="chev">' + icon('chevR') + '</span></summary><div class="stack" style="margin-top:12px">' + msgs + '<button class="btn" data-a="msgreset">' + t('Reset') + '</button></div></details>' +
       '<button class="btn danger block" style="margin-top:14px" data-a="setresetall">' + t('Reset all') + '</button>';
   }
 

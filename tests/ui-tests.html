@@ -246,7 +246,7 @@
   });
   test('a sample class opens with a banner, and no save nag or card nag', async function () {
     wipe(); var w = await frame(ADMIN); await click(w, '[data-wz="sample"]'); await sleep(200);
-    ok(q(w, '.sample-bar')); eq(q(w, '.dchip').getAttribute('aria-label'), 'Sample'); ok(!/cards to send/.test(txt(w, '#view')), 'no card nag in the sample');
+    ok(q(w, '.sample-bar')); ok(!q(w, '.dchip'), 'no save icon on a sample class: nothing to save'); ok(!/cards to send/.test(txt(w, '#view')), 'no card nag in the sample');
   });
   test('payments: no instruction line, no code on the rows, a late tag only where it is late', async function () {
     wipe(); saveClass(function () { var o = two(); BC.setPaid(o.a.id, '2026-11', false); BC.today = '2026-11-09'; return o; });
@@ -392,6 +392,7 @@
   });
   test('Settings lets her reword the reply message too', async function () {
     wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    ok(q(w, 'details.card > summary .chev svg'), 'the Messages panel shows an arrow, so it looks expandable');
     ok(qa(w, 'details textarea').some(function (t) { return t.getAttribute('data-k') === 'en.reply'; }), 'reply text is editable');
   });
   test('the sample class works from the real page and leaves the real date alone when she starts her own', async function () {
