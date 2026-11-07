@@ -40,15 +40,15 @@
     await sleep(250); return f.contentWindow;
   }
   /* wipe everything, then choose the language the test reads in (default: English; pass 'vi' for the real default) */
-  function wipe(lang) { try { localStorage.clear(); if (lang !== 'vi') { localStorage.setItem('bc_admin_lang', 'en'); localStorage.setItem('bc_lang', 'en'); } } catch (e) { /* ignore */ } }
+  function wipe(lang) { BC.otherTab = false; try { localStorage.clear(); if (lang !== 'vi') { localStorage.setItem('bc_admin_lang', 'en'); localStorage.setItem('bc_lang', 'en'); } } catch (e) { /* ignore */ } }
   /* a saved class in the browser, so the admin page opens straight into it */
   function saveClass(build) {
-    BC.blank(); BC.today = '2026-11-05'; var out = build() || {}; BC.meta = { sample: false, setup: true };
+    BC.otherTab = false; BC.blank(); BC.today = '2026-11-05'; var out = build() || {}; BC.meta = { sample: false, setup: true };
     BC.autosave(); BC.markBackedUp(); return out;
   }
   function two() { var a = BC.addStudent({ name: 'John', type: 'fixed', days: [2, 4], start: '2026-09-01' }), b = BC.addStudent({ name: 'Jane', type: 'fixed', days: [2], start: '2026-09-01' }); [a, b].forEach(function (s) { BC.setPaid(s.id, '2026-11', true); }); return { a: a, b: b }; }
   /* the pages run on a fixed day, so the tests do not depend on the real date */
-  var ADMIN = '../admin/?today=2026-11-05', CARD = '../?today=2026-11-05';
+  var ADMIN = '../admin/?today=2026-11-05&save=1', CARD = '../?today=2026-11-05';
   var wizText = 'Lan\nMinh\nHung\nThao\nQuang';
   var pageOpen = function (w) { return !!q(w, '.sheet.page'); };
 
@@ -357,6 +357,247 @@
   test('pretend date: ?today= shows which day the page is pretending', async function () {
     wipe(); saveClass(two); var w = await frame(ADMIN); ok(/Pretend date/.test(txt(w, '.top + .banner')) && /2026-11-05/.test(txt(w, '.top + .banner')), txt(w, '.top + .banner'));
   });
+  test('pretend date: nothing she tries reaches the real class, and Save file refuses', async function () {
+    wipe(); saveClass(two); var before = localStorage.getItem('bc_data'), hist = localStorage.getItem('bc_hist');
+    var w = await frame('../admin/?today=2026-12-01');
+    ok(/Pretend date/.test(txt(w, '.top + .banner')) && /Nothing is saved/.test(txt(w, '.top + .banner')), txt(w, '.top + .banner'));
+    w.BC.setPaid(w.BC.students[0].id, '2026-11', true); w.BC.students[0].name = 'Changed'; w.BC.autosave(); await sleep(200);
+    eq(localStorage.getItem('bc_data'), before, 'the working copy is untouched'); eq(localStorage.getItem('bc_hist'), hist, 'so are the earlier copies');
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="data"]'); await click(w, '[data-a="savefile"]'); await sleep(200);
+    ok(/Not while pretending/.test(txt(w, 'body')), 'no file is saved while pretending');
+    var w2 = await frame('../admin/?today=2026-12-01'); ok(!/Changed/.test(txt(w2, 'body')), 'a reload forgets it all');
+    var w3 = await frame('../admin/'); await click(w3, '[data-tab="students"]'); ok(/John/.test(txt(w3, '#view')) && !/Changed/.test(txt(w3, '#view')), 'the real class is as it was');
+  });
+  test('two tabs: when another tab changes the class, this one stops writing, says so, and Reload brings the new state', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN);
+    BC.otherTab = false; BC.students[0].name = 'FromTab2'; BC.autosave(); var theirs = localStorage.getItem('bc_data');   /* the other tab writes */
+    await sleep(400); ok(/Changed in another tab/.test(txt(w, '.top + .banner, .top ~ .banner')) || /Changed in another tab/.test(txt(w, '#app')), 'a banner tells her: ' + txt(w, '#app').slice(0, 120));
+    w.BC.students[0].name = 'FromTab1'; eq(w.BC.autosave(), false, 'this tab will not write over it'); eq(localStorage.getItem('bc_data'), theirs, 'the other tab\'s data is untouched');
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="data"]'); await click(w, '[data-a="savefile"]'); await sleep(150);
+    ok(/Reload this page first/.test(txt(w, 'body')), 'a stale tab does not save a file either');
+    var w2 = await frame(ADMIN); await click(w2, '[data-tab="students"]'); ok(/FromTab2/.test(txt(w2, '#view')), 'a fresh tab shows the newer data'); ok(!/Changed in another tab/.test(txt(w2, '#app')), 'and no banner');
+  });
+  test('left open past midnight: both pages take the new date when she comes back, and a pretend or sample day stays put', async function () {
+    wipe(); saveClass(two); BC.today = '2026-11-05';
+    var w = await frame('../admin/'); var real = w.BC.realToday(); eq(w.BC.today, real, 'a normal page starts on the real day');
+    w.BC.today = '2000-01-01'; w.document.dispatchEvent(new w.Event('visibilitychange')); await sleep(250);
+    eq(w.BC.today, real, 'the coach page took the real date back'); ok(!/2000/.test(txt(w, '#app')), 'and drew it');
+    var p = await frame(ADMIN); p.BC.today = '2000-01-01'; p.dispatchEvent(new p.Event('focus')); await sleep(200); eq(p.BC.today, '2000-01-01', 'a pretend day is left alone');
+    var o = saveClass(two); var link = await BC.cardLink(o.a.id, '../'); var c = await frame('../' + link.slice(link.indexOf('#')));
+    var creal = c.BC.realToday(); c.BC.today = '2000-01-01'; c.document.dispatchEvent(new c.Event('visibilitychange')); await sleep(250); eq(c.BC.today, creal, 'the card page took the real date back');
+  });
+  test('hostile text: names, notes, titles and messages full of HTML show as plain text on every screen and never become elements', async function () {
+    var EVIL = '<img src=x onerror=window.__xss=1>', EVIL2 = '"><script>window.__xss=2<\/script>', EVIL3 = '\'+alert(3)+\'';
+    wipe(); var o = saveClass(function () {
+      var a = BC.addStudent({ name: EVIL, type: 'fixed', days: [2, 4], start: '2026-09-01' }), b = BC.addStudent({ name: EVIL2, type: 'fixed', days: [2], start: '2026-09-01' }); BC.addStudent({ name: EVIL3, type: 'flexible', days: [], start: '2026-09-01' });
+      BC.cancelSession('2026-11-24', EVIL); BC.addBreak(a.id, '2026-12-01', '2026-12-20'); BC.breaks[0].note = EVIL2;
+      BC.config.page_title = EVIL; BC.config.coach_zalo = '0900000000'; BC.messages.en.soft = EVIL + ' {name}'; BC.videos.smash = { title: EVIL, len: EVIL2, url: 'https://example.com/?a=' + encodeURIComponent(EVIL) };
+      BC.scores[a.id] = [{ date: '2026-10-28', v: { smash: 5, net: 5, footwork: 5, defense: 5, serve: 5, stamina: 5 } }]; BC.markCardSent(a.id); return { a: a, b: b };
+    });
+    var bad = function (w, where) { var d = w.document; ok(!d.querySelector('img[src="x"]') && !d.querySelector('script:not([src])') && !w.__xss && !d.querySelector('[onerror]'), 'no injected element or code on ' + where); };
+    var w = await frame(ADMIN); bad(w, 'sessions'); ok(/<img src=x/.test(txt(w, '.top')), 'the class name shows as text');
+    for (var tab of ['sessions', 'students', 'payments', 'remind', 'more']) { await click(w, '[data-tab="' + tab + '"]'); await sleep(80); bad(w, tab); }
+    for (var sub of ['data', 'scores', 'breaks', 'timetable', 'settings']) { await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="' + sub + '"]'); await sleep(120); bad(w, 'more/' + sub); var dts = qa(w, 'details'); dts.forEach(function (d) { d.open = true; }); bad(w, 'more/' + sub + ' open'); }
+    await click(w, '[data-tab="students"]'); var row = qa(w, '[data-a="stu"]').filter(function (b) { return /<img src=x/.test(b.textContent); })[0]; ok(row, 'the student is listed with the name as text'); await click(w, row); await sleep(150); bad(w, 'student page'); ok(/<img src=x/.test(txt(w, '.sheet')), 'the name shows as text');
+    await click(w, '#st-card'); await sleep(300); bad(w, 'send card');
+    var link = await BC.cardLink(o.a.id, '../'); var c = await frame('../' + link.slice(link.indexOf('#'))); bad(c, 'card'); ok(/<img src=x/.test(txt(c, '#app')), 'the card shows the name as text');
+    for (var act of ['skills', 'fees', 'rules']) { var r = q(c, '[data-act="' + act + '"]'); if (r) { await click(c, r); await sleep(200); bad(c, 'card ' + act); await click(c, '[data-act="back"], .back, [data-close]'); } }
+  });
+  test('a student page: the divider under the code row has clear space from the copy button', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-tab="students"]'); await click(w, qa(w, '[data-a="stu"]')[0]); await sleep(200);
+    var btn = q(w, '.sheet [data-copy]').getBoundingClientRect(), rule = q(w, '.sheet .rule').getBoundingClientRect();
+    ok(rule.top - btn.bottom >= 8, 'divider is ' + Math.round(rule.top - btn.bottom) + 'px below the copy button');
+  });
+  test('a session opened: the divider under Add student has clear space above and below', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-a="toggle"]'); await sleep(200);
+    var btn = q(w, '[data-a="addtoses"]').getBoundingClientRect(), rule = q(w, '#view .rule').getBoundingClientRect(), next = q(w, '#view .rule + *').getBoundingClientRect();
+    ok(rule.top - btn.bottom >= 8, 'divider is ' + Math.round(rule.top - btn.bottom) + 'px below the button'); ok(next.top - rule.bottom >= 8, 'and ' + Math.round(next.top - rule.bottom) + 'px above the next row');
+  });
+  /* ================= coach screens, used the way she uses them ================= */
+  function threeStudents() {
+    var a = BC.addStudent({ name: 'John', type: 'fixed', days: [2, 4], start: '2026-09-01' }), b = BC.addStudent({ name: 'Jane', type: 'fixed', days: [2], start: '2026-09-01' }), c = BC.addStudent({ name: 'Fleur', type: 'flexible', days: [], start: '2026-09-01' });
+    [a, b, c].forEach(function (x) { BC.setPaid(x.id, '2026-09', true); BC.setPaid(x.id, '2026-10', true); }); return { a: a, b: b, c: c };
+  }
+  function setv(w, sel, v, ev) { var e = q(w, sel); e.value = v; e.dispatchEvent(new w.Event(ev || 'input', { bubbles: true })); }
+  async function openCal(w, name) {
+    await click(w, '[data-tab="students"]'); var row = qa(w, '[data-a="stu"]').filter(function (b) { return b.textContent.indexOf(name) >= 0; })[0]; await click(w, row); await click(w, '#st-cal'); await sleep(250);
+  }
+  async function closeTop(w) { var xs = qa(w, '.sheet [data-close]'); await click(w, xs[xs.length - 1]); await sleep(200); }
+  async function dayAct(w, iso) { await click(w, '[data-d="' + iso + '"]'); await sleep(150); await click(w, '#day-go'); await sleep(250); }
+
+  test('calendar: skip, undo the skip, add a make-up with the credit, cancel it', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await openCal(w, 'John');
+    await dayAct(w, '2026-11-17'); ok(w.BC.skipRow(o.a.id, '2026-11-17'), 'the skip is recorded'); ok(/Skipped/.test(txt(w, '.sheet')), 'she is told'); await closeTop(w);
+    await click(w, '[data-d="2026-11-17"]'); await sleep(150); ok(/Undo skip/.test(txt(w, '.sheet #day-go')), 'the same day now offers Undo'); await click(w, '#day-go'); await sleep(250);
+    ok(!w.BC.skipRow(o.a.id, '2026-11-17'), 'the skip is gone'); await closeTop(w);
+    await dayAct(w, '2026-11-17'); await closeTop(w);
+    await dayAct(w, '2026-11-21'); eq(w.BC.rows(o.a.id, 'makeup').length, 1, 'a make-up was booked'); eq(w.BC.rows(o.a.id, 'makeup')[0].source, 'skip', 'with the skip credit'); await closeTop(w);
+    await click(w, '[data-d="2026-11-21"]'); await sleep(150); ok(/Cancel this make-up/.test(txt(w, '.sheet #day-go')), 'a make-up can be cancelled'); await click(w, '#day-go'); await sleep(250);
+    eq(w.BC.rows(o.a.id, 'makeup').length, 0, 'it is gone');
+  });
+  test('calendar: a make-up with no credit warns first, and Do it anyway books a courtesy make-up and says a rule was bent', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await openCal(w, 'John');
+    await click(w, '[data-d="2026-11-21"]'); await sleep(150); await click(w, '#day-go'); await sleep(250);
+    ok(/Heads-up/.test(txt(w, '#day-res')), 'a warning, not a booking: ' + txt(w, '.sheet').slice(0, 160)); eq(w.BC.rows(o.a.id, 'makeup').length, 0, 'nothing booked yet');
+    eq(txt(w, '#day-go'), 'Do it anyway'); await click(w, '#day-go'); await sleep(250);
+    eq(w.BC.rows(o.a.id, 'makeup').length, 1); eq(w.BC.rows(o.a.id, 'makeup')[0].source, 'courtesy'); ok(/rule bent/.test(txt(w, '.sheet')), 'she is told a rule was bent');
+    eq(w.BC.changeLog.length, 1, 'and it is written in the log');
+  });
+  test('calendar: a flexible student joins a session and leaves it again', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await openCal(w, 'Fleur');
+    await dayAct(w, '2026-11-21'); eq(w.BC.rows(o.c.id, 'join').length, 1, 'joined'); await closeTop(w);
+    await click(w, '[data-d="2026-11-21"]'); await sleep(150); ok(/Remove from this session/.test(txt(w, '.sheet #day-go'))); await click(w, '#day-go'); await sleep(250);
+    eq(w.BC.rows(o.c.id, 'join').length, 0, 'left again');
+  });
+  test('calendar: a day inside the notice window warns before a skip, and a day with no class offers nothing', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await openCal(w, 'John');
+    await click(w, '[data-d="2026-11-10"]'); await sleep(150); await click(w, '#day-go'); await sleep(250); ok(/Heads-up/.test(txt(w, '#day-res')), 'a skip 5 days ahead is warned'); eq(w.BC.rows(o.a.id, 'skip').length, 0);
+    await closeTop(w); var off = qa(w, '.cd.off'); ok(off.length > 0, 'Fridays are off'); eq(q(w, '[data-d="2026-11-06"]'), null, 'a Friday has no button');
+  });
+
+  test('breaks: plan one, see it in the list, remove it; a break starting too soon warns first; dates the wrong way round are refused', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN);
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="breaks"]'); await click(w, '[data-a="addbreak"]'); await sleep(200);
+    ok(q(w, '#bk-s') && q(w, '#bk-f') && q(w, '#bk-t'), 'the form'); await click(w, '#bk-go'); await sleep(250);
+    eq(w.BC.breaks.length, 1, 'saved'); eq(qa(w, '.li.brk').length, 1, 'listed'); ok(/Long break/.test(txt(w, '.li.brk')), 'a 14-day break is long');
+    await click(w, '[data-a="rmbreak"]'); await sleep(200); eq(w.BC.breaks.length, 0, 'removed'); ok(/No planned breaks/.test(txt(w, '#view')));
+    await click(w, '[data-a="addbreak"]'); await sleep(200);
+    setv(w, '#bk-f', '2026-11-08'); setv(w, '#bk-t', '2026-11-12'); await click(w, '#bk-go'); await sleep(200);
+    ok(/Heads-up/.test(txt(w, '#bk-res')), 'too soon: a warning'); eq(txt(w, '#bk-go'), 'Do it anyway'); eq(w.BC.breaks.length, 0);
+    await click(w, '#bk-go'); await sleep(250); eq(w.BC.breaks.length, 1, 'Do it anyway saves it'); eq(w.BC.changeLog.length, 1, 'and logs it');
+    await click(w, '[data-a="addbreak"]'); await sleep(200); setv(w, '#bk-f', '2026-12-20'); setv(w, '#bk-t', '2026-12-10'); await sleep(100);
+    ok(/before|end|order/i.test(txt(w, '#bk-prev')) || /bad/.test(q(w, '#bk-prev').innerHTML), 'the preview says the dates are the wrong way round'); await click(w, '#bk-go'); await sleep(200); eq(w.BC.breaks.length, 1, 'nothing saved');
+  });
+
+  test('payments: Paid, Undo, change an amount, reset it, and move between months', async function () {
+    wipe(); var o = saveClass(function () { var x = threeStudents(); BC.payRec(x.a.id, '2026-11').paid = false; BC.payRec(x.a.id, '2026-11').paidDate = null; return x; }); var w = await frame(ADMIN);
+    await click(w, '[data-tab="payments"]'); var id = o.a.id;
+    ok(!w.BC.payRec(id, '2026-11').paid, 'John starts unpaid'); await click(w, '[data-a="paid"][data-x="' + id + '"]'); ok(w.BC.payRec(id, '2026-11').paid, 'Paid'); eq(w.BC.payRec(id, '2026-11').amountPaid, 1300000);
+    await click(w, '[data-a="undopaid"][data-x="' + id + '"]'); ok(!w.BC.payRec(id, '2026-11').paid, 'Undo');
+    await click(w, '[data-a="editamt"][data-x="' + id + '"]'); await sleep(150); eq(q(w, '#amt').value, '1300000'); q(w, '#amt').value = '700000'; await click(w, '#amt-save'); await sleep(150);
+    eq(w.BC.payRec(id, '2026-11').override, 700000, 'amount changed'); ok(/edited/.test(txt(w, '#view')), 'and marked edited'); eq(w.BC.amountDue(w.BC.student(id), '2026-11'), 700000);
+    await click(w, '[data-a="editamt"][data-x="' + id + '"]'); await sleep(150); await click(w, '#amt-reset'); await sleep(150); eq(w.BC.payRec(id, '2026-11').override, null, 'reset');
+    ok(q(w, '[data-a="pm"][data-x="1"]').disabled, 'no month after this one'); await click(w, '[data-a="pm"][data-x="-1"]'); ok(/October|Oct|10/.test(txt(w, '#view')), 'October');
+    await click(w, '[data-a="pm"][data-x="-1"]'); ok(q(w, '[data-a="pm"][data-x="-1"]').disabled, 'no month before the first student started');
+  });
+  test('payments: a changed amount on a paid month changes what was paid, and not a negative amount', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="payments"]'); var id = o.a.id;
+    await click(w, '[data-a="paid"][data-x="' + id + '"]'); await click(w, '[data-a="editamt"][data-x="' + id + '"]'); await sleep(150); q(w, '#amt').value = '-5'; await click(w, '#amt-save'); await sleep(100);
+    eq(w.BC.payRec(id, '2026-11').override, null, 'a negative amount is ignored'); q(w, '#amt').value = '900000'; await click(w, '#amt-save'); await sleep(150);
+    eq(w.BC.payRec(id, '2026-11').amountPaid, 900000, 'what was paid follows');
+  });
+
+  test('remind: a copy message per student, previewed first, and marked once copied', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="remind"]');
+    var btns = qa(w, '[data-a="prevmsg"]'); ok(btns.length >= 2, 'John and Jane are due on the 5th: ' + btns.length); await click(w, btns[0]); await sleep(200);
+    ok(/Hi /.test(txt(w, '.sheet')) || q(w, '#pv-copy'), 'a preview'); ok(q(w, '#pv-copy'), 'with a copy button'); await click(w, '#pv-copy'); await sleep(300);
+    ok(/copied/.test(txt(w, '#view')), 'the row says copied');
+  });
+
+  test('students: search narrows the list, a filter chip appears only when something is in it, pause and resume', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="students"]');
+    eq(qa(w, '[data-a="stu"]').length, 3); setv(w, '#q', 'jan'); await sleep(200); eq(qa(w, '[data-a="stu"]').length, 1, 'search'); ok(/Jane/.test(txt(w, '#view'))); setv(w, '#q', ''); await sleep(150);
+    ok(!qa(w, '[data-a="filter"]').some(function (b) { return /Paused/i.test(b.textContent); }), 'no Paused chip while nobody is paused');
+    await click(w, qa(w, '[data-a="stu"]').filter(function (b) { return /Jane/.test(b.textContent); })[0]); await sleep(150); await click(w, '#st-pause'); await sleep(200);
+    eq(w.BC.student(o.b.id).active, false, 'paused'); ok(qa(w, '[data-a="filter"]').some(function (b) { return /Paused/i.test(b.textContent); }), 'now there is a Paused chip');
+    var chip = qa(w, '[data-a="filter"]').filter(function (b) { return /Paused/i.test(b.textContent); })[0]; await click(w, chip); eq(qa(w, '[data-a="stu"]').length, 1, 'filtered to the paused one');
+    await click(w, '[data-a="stu"]'); await sleep(150); await click(w, '#st-pause'); await sleep(200); eq(w.BC.student(o.b.id).active, true, 'resumed');
+  });
+
+  test('cancel a session: pick it, give a reason, copy the announcement, confirm; the affected students get a free make-up and Remind lists the announcement', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN);
+    await click(w, '[data-a="toggle"]'); await sleep(150); var btn = q(w, '[data-a="cancelses"]'); var iso = btn.getAttribute('data-x'); await click(w, btn); await sleep(200);
+    ok(/Cancel a session/.test(txt(w, '#view')), 'the page'); setv(w, '#cx-note', 'Mưa lớn'); await click(w, '[data-a="copycancel"]'); await sleep(200);
+    await click(w, '[data-a="docancel"]'); await sleep(200); ok(q(w, '.dialog'), 'asks first'); eq(!!w.BC.overrides[iso] && !!w.BC.overrides[iso].cancelled, false, 'not cancelled while asking');
+    await click(w, '.dialog [data-v="1"]'); await sleep(250); ok(w.BC.overrides[iso].cancelled, 'cancelled'); eq(w.BC.overrides[iso].note, 'Mưa lớn');
+    ok(w.BC.rows(o.a.id, 'cancel_credit').length === 1 || w.BC.rows(o.b.id, 'cancel_credit').length === 1, 'someone got the free make-up');
+    await click(w, '[data-tab="remind"]'); ok(/Announcements|Thông báo/.test(txt(w, '#view')) && /Mưa lớn/.test(txt(w, '#view')), 'the announcement is listed');
+  });
+
+  test('scores: Save stays dimmed until all six are chosen, then saves a dated scoring and the old one is the comparison', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); BC.markCardSent(o.a.id); BC.autosave();
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="scores"]'); await sleep(150);
+    var sel = q(w, '[data-bind="scoreSid"]'); sel.value = String(o.a.id); sel.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(200);
+    ok(q(w, '[data-a="savescore"]').disabled, 'dimmed with nothing chosen');
+    var skills = w.BC.skills.map(function (k) { return k.id; });
+    for (var i = 0; i < skills.length; i++) { ok(q(w, '[data-a="savescore"]').disabled === true, 'still dimmed after ' + i); await click(w, '[data-a="score"][data-x="' + skills[i] + ':' + (3 + i) + '"]'); }
+    ok(!q(w, '[data-a="savescore"]').disabled, 'ready'); await click(w, '[data-a="savescore"]'); await sleep(250);
+    var sc = w.BC.scores[o.a.id]; eq(sc.length, 1); eq(sc[0].date, '2026-11-05'); eq(sc[0].v[skills[0]], 3); eq(sc[0].v[skills[5]], 8);
+  });
+  test('videos: a link and a title per skill are kept, and only a web link reaches the card', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN);
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="scores"]'); await click(w, '[data-a="sub"][data-x="videos"]'); await sleep(150);
+    setv(w, '[data-k="smash:title"]', 'Đập cầu cơ bản', 'change'); await sleep(150); setv(w, '[data-k="smash:url"]', 'https://youtu.be/abc', 'change'); await sleep(150);
+    eq(w.BC.videos.smash.title, 'Đập cầu cơ bản'); eq(w.BC.videos.smash.url, 'https://youtu.be/abc'); ok(/link set|đã có/i.test(txt(w, '#view')) || qa(w, '.tag.ok').length >= 1, 'marked as set');
+    eq(Object.keys(w.BC.cardOf(o.a.id).videos), ['smash']);
+    setv(w, '[data-k="smash:url"]', 'javascript:alert(1)', 'change'); await sleep(150); eq(Object.keys(w.BC.cardOf(o.a.id).videos), [], 'a javascript: link never reaches a card');
+  });
+
+  test('settings: a per-setting switch and a message reset ask nothing dangerous, and the message reset asks first', async function () {
+    wipe(); saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    var sw = qa(w, '[data-a="setsw"]')[0]; var key = sw.getAttribute('data-x'), was = w.BC.config[key]; await click(w, sw); eq(w.BC.config[key], !was, 'a switch flips'); await click(w, qa(w, '[data-a="setsw"]')[0]); eq(w.BC.config[key], was, 'and flips back');
+    w.BC.messages.en.soft = 'My own words {name}'; qa(w, 'details')[0].open = true; await click(w, '[data-a="msgreset"]'); await sleep(150); ok(q(w, '.dialog'), 'asks first');
+    await click(w, '.dialog [data-v="0"]'); await sleep(100); eq(w.BC.messages.en.soft, 'My own words {name}', 'Keep it keeps her words');
+    await click(w, '[data-a="msgreset"]'); await sleep(100); await click(w, '.dialog [data-v="1"]'); await sleep(150); ok(w.BC.messages.en.soft !== 'My own words {name}', 'confirming restores the default');
+  });
+  test('my data: Export report and Support copy give a file, and an earlier copy can be restored after asking', async function () {
+    wipe(); var o = saveClass(threeStudents); var w = await frame(ADMIN); var given = [];
+    w.BC.giveFile = function (name, text, mime) { given.push({ name: name, text: text, mime: mime }); return Promise.resolve(true); };
+    await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="data"]'); await click(w, '[data-a="report"]'); await sleep(150); await click(w, '[data-a="support"]'); await sleep(150);
+    eq(given.length, 2); ok(/\.csv$/.test(given[0].name) && /John/.test(given[0].text), 'the report is a CSV with names'); ok(/support/.test(given[1].name) && !/John/.test(given[1].text), 'the support copy has no names');
+    var orig = JSON.parse(localStorage.getItem('bc_data')); localStorage.setItem('bc_hist', JSON.stringify([{ t: Date.now() - 7200000, sum: orig.sum, txt: JSON.stringify(orig) }]));   /* a copy from two hours ago */
+    w.BC.students[0].name = 'Renamed'; w.BC.autosave(); await click(w, '[data-tab="sessions"]'); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="data"]'); await sleep(150);
+    var rest = q(w, '[data-a="restorehist"]'); ok(rest, 'an earlier copy is offered'); await click(w, rest); await sleep(150); ok(q(w, '.dialog'), 'it asks first'); await click(w, '.dialog [data-v="0"]'); await sleep(100);
+    eq(w.BC.students[0].name, 'Renamed', 'Cancel changes nothing'); await click(w, '[data-a="restorehist"]'); await sleep(100); await click(w, '.dialog [data-v="1"]'); await sleep(300);
+    ok(w.BC.students.some(function (s) { return s.name === 'John'; }) && !w.BC.students.some(function (s) { return s.name === 'Renamed'; }), 'the copy from two hours ago is back');
+  });
+
+  test('a link a chat app has decorated still opens: a full stop, a bracket, a line break or spaces after it', async function () {
+    wipe(); var o = saveClass(two); var link = await BC.cardLink(o.a.id, '../'); var hash = link.slice(link.indexOf('#'));
+    for (var tail of ['.', ')', ',', '%0A', '%20', '.)', '!!']) {
+      wipe(); saveClass(two); var c = await frame('../' + hash + tail); ok(q(c, '.cal-grid') && /John/.test(txt(c, '#app')), 'opens with "' + tail + '" after it: ' + txt(c, '#app').slice(0, 80));
+    }
+  });
+  test('asking with no Zalo number set: the message is copied and shown for her to send, nothing opens, and no prototype text', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.config.coach_zalo = ''; return x; }); var link = await BC.cardLink(o.a.id, '../'); var c = await frame('../' + link.slice(link.indexOf('#'))); var opened = []; c.open = function (u) { opened.push(u); };
+    await click(c, '[data-iso="2026-11-17"]'); await sleep(200); var ask = q(c, '[data-ask]'); ok(ask, 'a day with an ask'); await click(c, ask); await sleep(200);
+    eq(opened, [], 'nothing opens'); ok(q(c, '.msgbox') && /John/.test(txt(c, '.msgbox')), 'the message is shown'); ok(!/ockup|Bản mẫu/.test(txt(c, '#app')), 'no prototype wording: ' + txt(c, '.sheet, #app').slice(-160));
+  });
+  test('asking with a Zalo number set opens that chat and says it was copied', async function () {
+    wipe(); var o = saveClass(function () { var x = two(); BC.config.coach_zalo = '0900123456'; return x; }); var link = await BC.cardLink(o.a.id, '../'); var c = await frame('../' + link.slice(link.indexOf('#'))); var opened = []; c.open = function (u) { opened.push(u); };
+    await click(c, '[data-iso="2026-11-17"]'); await sleep(200); await click(c, q(c, '[data-ask]')); await sleep(200); eq(opened, ['https://zalo.me/0900123456']);
+  });
+  test('card: the language button switches the whole card and the choice is remembered', async function () {
+    wipe(); var o = saveClass(two); var link = await BC.cardLink(o.a.id, '../'); var hash = link.slice(link.indexOf('#')); var c = await frame('../' + hash);
+    var before = txt(c, '#app'); await click(c, '.langbtn'); await sleep(250); var after = txt(c, '#app'); ok(before !== after, 'the text changed'); ok(/Skills|Fees|Rules/.test(after) !== /Kỹ năng|Học phí|Nội quy/.test(after), 'one language at a time');
+    var c2 = await frame('../' + hash); eq(txt(c2, '#app'), after, 'the choice is remembered on the next visit');
+  });
+  test('wizard: All paid and None mark everyone, Save gives the file with the class in it, and Finish opens a class that counts as saved', async function () {
+    wipe(); var w = await frame(ADMIN); var given = []; w.BC.giveFile = function (n, text) { given.push(text); return Promise.resolve(true); };
+    await click(w, '[data-wz="new"]'); await click(w, '[data-wz="next"]'); await type(w, '#wz-names', wizText); await click(w, '[data-wz="next"]'); await click(w, '[data-wz="allday"][data-d="2"]'); await click(w, '[data-wz="next"]');
+    var pressed = function () { return qa(w, '[data-wz="paid"]').filter(function (b) { return b.getAttribute('aria-checked') === 'true'; }).length; };
+    var total = qa(w, '[data-wz="paid"]').length; ok(total >= 2); await click(w, '[data-wz="allpaid"][data-v="1"]'); eq(pressed(), total, 'All paid'); await click(w, '[data-wz="allpaid"][data-v="0"]'); eq(pressed(), 0, 'None');
+    await click(w, '[data-wz="allpaid"][data-v="1"]'); await click(w, '[data-wz="next"]'); ok(q(w, '[data-wz="finish"]').disabled, 'Finish waits for the file');
+    await click(w, '[data-wz="save"]'); await sleep(250); eq(given.length, 1, 'a file was given'); eq(w.BC.parseFile(given[0]).data.students.length, 5, 'with the five students in it'); ok(!q(w, '[data-wz="finish"]').disabled, 'Finish is ready');
+    await click(w, '[data-wz="finish"]'); await sleep(200); ok(!q(w, '.dchip').classList.contains('primary'), 'the class opens as saved'); ok(w.BC.students.every(function (x) { return w.BC.payRec(x.id, w.BC.ym(w.BC.today)).paid; }), 'everyone is marked paid this month');
+  });
+  test('a full class (60 students): the add page says so and Save stays dimmed', async function () {
+    wipe(); saveClass(function () { for (var i = 0; i < 60; i++) BC.addStudent({ name: 'S' + i, type: 'fixed', days: [1 + (i % 4)], start: '2026-09-01' }); }); var w = await frame(ADMIN);
+    await click(w, '[data-tab="students"]'); var add = q(w, '[data-a="addstu"]'); ok(add.disabled, 'the Add button is dimmed'); ok(/Class is full/.test(add.textContent), 'and says why: ' + add.textContent.trim());
+  });
+  test('messages: an emptied message comes back as the default instead of being sent blank; text with braces and dollar signs is kept as typed', async function () {
+    wipe(); saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); qa(w, 'details')[0].open = true; await sleep(100);
+    var area = q(w, '[data-k="en.soft"]'); area.value = '   '; area.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(150);
+    ok(w.BC.messages.en.soft.trim().length > 10, 'the default is back'); ok(area.value.trim().length > 10, 'and shown');
+    area.value = 'Hi {name} $& $1 {unknown} {amount}'; area.dispatchEvent(new w.Event('change', { bubbles: true })); await sleep(100); eq(w.BC.messages.en.soft, 'Hi {name} $& $1 {unknown} {amount}');
+  });
+  test('Settings: a QR picture of the right kind is kept, and a picture over 2 MB is refused', async function () {
+    wipe(); saveClass(threeStudents); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    var png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='), function (c) { return c.charCodeAt(0); });
+    var put = function (file) { var dt = new w.DataTransfer(); dt.items.add(file); var inp = q(w, '#qr-file'); inp.files = dt.files; inp.dispatchEvent(new w.Event('change', { bubbles: true })); };
+    put(new w.File([new Uint8Array(2.5e6)], 'big.png', { type: 'image/png' })); await sleep(300); eq(w.BC.qrImage || '', '', 'too big: refused');
+    put(new w.File([png], 'qr.png', { type: 'image/png' })); await sleep(400); ok(/^data:image\/png/.test(w.BC.qrImage), 'a small picture is kept');
+  });
   test('the card page with no card says what to do, and has no demo student', async function () {
     wipe(); var w = await frame(CARD); ok(/No card yet/.test(txt(w, '#app')), txt(w, '#app')); ok(!q(w, '.cal-grid') && !q(w, '.hdr'), 'nothing to look at yet');
     ok(q(w, '.langbtn'), 'the language button is there');
@@ -427,6 +668,21 @@
     await click(w, '[data-wz="next"]'); bad = bad.concat(sizes(w).map(function (x) { return 'wizard3 ' + x; }));
     var o = saveClass(two); var s = await frame(await cardPage(o.a.id)); bad = bad.concat(sizes(s).map(function (x) { return 'card ' + x; }));
     eq(bad, []);
+  });
+  test('breaks: each row reads cleanly on a phone, with the dates on one line and the sample notes in Vietnamese', async function () {
+    wipe('vi'); BC.blank(); BC.today = '2026-11-05'; BC.seed(); BC.autosave(); BC.markBackedUp();
+    for (var wd of [375, 320]) {
+      var w = await frame(ADMIN, wd); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="breaks"]'); await sleep(150);
+      var rows = qa(w, '.li.brk'); ok(rows.length >= 2, 'the sample has breaks');
+      rows.forEach(function (r) {
+        var dates = r.querySelector('.grow .small'), range = dates.querySelector('.nw'), fs = parseFloat(w.getComputedStyle(dates).fontSize);
+        ok(range.getBoundingClientRect().height < fs * 2, wd + 'px: the date range stays on one line: ' + range.textContent + ' (' + Math.round(range.getBoundingClientRect().height) + 'px)');
+        ok(dates.getBoundingClientRect().height < fs * 3.4, wd + 'px: the whole line is at most two lines, whatever font the phone has (' + Math.round(dates.getBoundingClientRect().height) + 'px)');
+        var note = r.querySelectorAll('.grow .small')[1]; ok(!note || note.getBoundingClientRect().top >= dates.getBoundingClientRect().bottom - 1, 'the note sits under the dates, not run into them');
+        ok(!/Exams|Family trip/.test(r.textContent), 'no English in the Vietnamese screen');
+      });
+      ok(w.document.documentElement.scrollWidth <= w.innerWidth + 1, wd + 'px: no sideways scroll');
+    }
   });
   test('no screen scrolls sideways on a phone, or on a small phone', async function () {
     wipe(); saveClass(two); var bad = [];

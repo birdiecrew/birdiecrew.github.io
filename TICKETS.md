@@ -29,12 +29,12 @@ Size is the work still left: **XS** under an hour, **S** half a day, **M** about
 | **F** Coach page: first run and frame | 0 | 9 | 0 | 0 | 0 | 9 |
 | **G** Coach page: daily jobs | 1 | 16 | 0 | 0 | 0 | 17 |
 | **H** Cards for students | 0 | 12 | 0 | 0 | 0 | 12 |
-| **J** Quality | 1 | 0 | 0 | 6 | 0 | 7 |
+| **J** Quality | 2 | 0 | 1 | 4 | 0 | 7 |
 | **K** Hand-over | 0 | 0 | 0 | 5 | 0 | 5 |
 | **L** Later (not version 1) | 0 | 0 | 0 | 0 | 7 | 7 |
-| **All** | **25** | **58** | **0** | **23** | **8** | **114** |
+| **All** | **26** | **58** | **1** | **21** | **8** | **114** |
 
-Counting only the product (not epic P) and leaving out the parked tickets: **76 of 99 are built and tested (18 done, 58 built and waiting for a real phone check).** What is left is mostly people and phones: A1, B1 to B8, J2 to J6 and the hand-over. The "Built" tickets become Done after the phone checks in epic B and J4.
+Counting only the product (not epic P) and leaving out the parked tickets: **77 of 99 are built and tested (19 done, 58 built and waiting for a real phone check).** What is left is mostly people and phones: A1, B1 to B8, J2 to J6 and the hand-over. The "Built" tickets become Done after the phone checks in epic B and J4.
 
 ## Suggested order
 
@@ -204,10 +204,10 @@ Checks that the prototype tests cannot give.
 | ID | Ticket | Size | Needs | Status | Done when |
 |---|---|---|---|---|---|
 | J1 | Run the screen tests in CI with a headless browser | M | D16 | **Done** | Same screen tests pass on every push (`tests/run-screens.js`) |
-| J2 | Accessibility pass: contrast in both themes, focus order, names for icon-only controls | M | C2 | **To do** | No contrast or label failures on the main screens |
+| J2 | Accessibility pass: contrast in both themes, focus order, names for icon-only controls | M | C2 | **In progress** | Contrast checked by `tests/access.test.js` in both themes (dark muted text fixed); names for icon-only controls tested; focus order and a screen reader still to check by hand |
 | J3 | Look at dark mode and the laptop layout with screenshots | S | C2 | **To do** | Both reviewed on every main screen |
 | J4 | Walk the whole app on an iPhone, an Android phone and in the Zalo browser | M | C5 | **To do** | A written list of anything that differs |
-| J5 | Load check: 60 students and a year of changes; file size and speed | S | E2 | **To do** | File under 200 KB; every screen under a second |
+| J5 | Load check: 60 students and a year of changes; file size and speed | S | E2 | **Done** | `tests/load.test.js`: 138 KB file, saving and opening in milliseconds, busiest card link under 1,000 characters |
 | J6 | Vietnamese wording read by a native speaker (the coach) | S | H12 | **To do** | Her corrections are applied |
 | J7 | Check the five diagrams in the plan render on GitHub | XS | P7 | **To do** | All render |
 

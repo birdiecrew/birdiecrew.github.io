@@ -93,16 +93,21 @@
   };
 
   /* ---------- a fresh, empty class with the usual rules ---------- */
-  BC.defaults = function () {
-    BC.nextId = 1;
-    BC.meta = { sample: false, setup: false };
-    BC.config = {
+  /* the settings a new class starts with (a fresh object; nothing else changes) */
+  BC.defaultConfig = function () {
+    return {
       advance_days: 7, flex_notice_days: 7, pay_by_day: 5, first_bill_days: 3,
       max_makeups_per_month: 3, long_break_days: 14,
       seats_per_court: 4, venue_courts: 4, proration: true, credit_carry: true,
       cancel_credit_months: 1, page_title: 'VM Badminton', timezone: 'Asia/Ho_Chi_Minh',
       coach_zalo: '', currency: 'VND', fee_1day: 800000, fee_2days: 1300000, default_lang: 'vi'
     };
+  };
+  /* starts a new, empty class: resets everything the app holds in memory */
+  BC.defaults = function () {
+    BC.nextId = 1;
+    BC.meta = { sample: false, setup: false };
+    BC.config = BC.defaultConfig();
     BC.messages = BC.defaultMessages();
     BC.ttHistory = [];   /* older timetables: [{ until: iso, tt }], each valid for dates before `until` */
     BC.timetable = {
@@ -126,12 +131,17 @@
   };
   /* pages call this once. Adding ?today=2026-12-01 to the address pretends it is that day (for trying things out). */
   BC.initToday = function () {
-    BC.today = BC.realToday(); BC.pretend = false;
+    BC.today = BC.realToday(); BC.pretend = false; BC.pretendSave = false;
     try {
       var m = /[?&]today=(\d{4}-\d{2}-\d{2})(?:&|#|$)/.exec(window.location.search + '&');
       if (m && BC.iso(BC.toDate(m[1])) === m[1]) { BC.today = m[1]; BC.pretend = true; }   /* a real calendar day only */
+      BC.pretendSave = BC.pretend && /[?&]save=1(?:&|#|$)/.test(window.location.search + '&');   /* for the tests only: lets a pretend day write */
     } catch (e) { /* not in a browser */ }
   };
+  /* While pretending to be another day, nothing is written to the phone: what she tries must never reach her real class or her file. */
+  BC.noWrite = function () { return (!!BC.pretend && !BC.pretendSave) || !!BC.otherTab; };
+  /* why nothing is written: 'tab' (another tab changed the class, reload first), 'pretend', or '' */
+  BC.noWriteWhy = function () { return BC.otherTab ? 'tab' : ((BC.pretend && !BC.pretendSave) ? 'pretend' : ''); };
 
   /* ---------- lookups ---------- */
   BC.student = function (id) { return BC.students.filter(function (s) { return s.id === id; })[0]; };
@@ -162,8 +172,25 @@
   BC.inAnyBreak = function (sid, iso) {
     return BC.breaks.some(function (b) { return b.student === sid && iso >= b.from && iso <= b.to; });
   };
+  /* A student's days can change. The old days stay true for the dates before the change (s.dayHist: [{until, type, days}], like the class timetable's history). */
+  BC.planOn = function (s, iso) {
+    var h = s.dayHist || [], i;
+    for (i = 0; i < h.length; i++) if (iso < h[i].until) return h[i];
+    return s;
+  };
+  BC.setPlan = function (s, type, days) {
+    var nd = type === 'fixed' ? days.slice().sort() : [], same = s.type === type && s.days.length === nd.length && s.days.every(function (d, i) { return d === nd[i]; });
+    if (same) return false;
+    if (s.start < BC.today) {   /* nothing to remember before the student started */
+      var h = s.dayHist = s.dayHist || [], last = h[h.length - 1];
+      if (!last || last.until !== BC.today) h.push({ until: BC.today, type: s.type, days: s.days.slice() });
+    }
+    s.type = type; s.days = nd;
+    return true;
+  };
   BC.isRegular = function (s, iso) {
-    return s.active && s.type === 'fixed' && s.days.indexOf(BC.dow(iso)) >= 0 && iso >= s.start && BC.classDay(iso);
+    var p = BC.planOn(s, iso);
+    return s.active && p.type === 'fixed' && p.days.indexOf(BC.dow(iso)) >= 0 && iso >= s.start && BC.classDay(iso);
   };
 
   /* ---------- sessions ---------- */
@@ -260,20 +287,21 @@
     return BC.today > BC.dueDate(s, ym);
   };
   BC.lessonDates = function (s, ym) {
-    return BC.monthDays(ym).filter(function (d) { return BC.classDay(d) && (s.type === 'fixed' ? s.days.indexOf(BC.dow(d)) >= 0 : true); });
+    return BC.monthDays(ym).filter(function (d) { var p = BC.planOn(s, d); return BC.classDay(d) && (p.type === 'fixed' ? p.days.indexOf(BC.dow(d)) >= 0 : true); });
   };
   BC.billedDates = function (s, ym) {
     return BC.lessonDates(s, ym).filter(function (d) { return d >= s.start && !BC.inLongBreak(s.id, d); });
   };
   /* The usual fee depends on days per week: 1 day = fee_1day, 2 or more = fee_2days. Flexible students use fee_1day unless the coach sets their own. */
-  BC.baseFee = function (s) {
+  BC.baseFee = function (s, ym) {
     if (s.fee) return s.fee;
-    return s.type === 'fixed' && s.days.length >= 2 ? BC.config.fee_2days : BC.config.fee_1day;
+    var p = ym ? BC.planOn(s, BC.monthDays(ym).slice(-1)[0]) : s;   /* a month is billed at the fee for the days the student has at the end of it */
+    return p.type === 'fixed' && p.days.length >= 2 ? BC.config.fee_2days : BC.config.fee_1day;
   };
   /* Part-month bills are always rounded to the nearest 1,000 dong. A fixed rule, not a setting. */
   var ROUND = 1000;
   BC.calcAmount = function (s, ym) {
-    var fee = BC.baseFee(s);
+    var fee = BC.baseFee(s, ym);
     if (!BC.config.proration) return fee;
     var full = BC.lessonDates(s, ym).length;
     if (!full) return fee;

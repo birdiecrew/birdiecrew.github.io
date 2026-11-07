@@ -14,12 +14,12 @@
       '2026-11-24': { cancelled: true, cancelledOn: '2026-11-02', note: 'Sân đóng cửa vì có sự kiện' }
     };
     BC.videos = {
-      smash: { title: 'Smash: power from the legs, not the arm', len: '8:12', url: 'https://www.youtube.com/results?search_query=badminton+smash' },
-      net: { title: 'Net shots: tumbling and tight lifts', len: '6:40', url: 'https://www.youtube.com/results?search_query=badminton+net' },
-      footwork: { title: 'Footwork: split step and the first move', len: '9:05', url: 'https://www.youtube.com/results?search_query=badminton+footwork' },
-      defense: { title: 'Defense: reading the smash, blocking low', len: '7:30', url: 'https://www.youtube.com/results?search_query=badminton+defense' },
-      serve: { title: 'Serve: short serve rules and routine', len: '5:48', url: '' },
-      stamina: { title: 'Stamina: 15-minute court conditioning', len: '12:20', url: 'https://www.youtube.com/results?search_query=badminton+stamina' }
+      smash: { title: 'Đập cầu: lấy lực từ chân, không phải từ tay', len: '8:12', url: 'https://www.youtube.com/results?search_query=badminton+smash' },
+      net: { title: 'Chơi lưới: lắc cầu và bổng sát lưới', len: '6:40', url: 'https://www.youtube.com/results?search_query=badminton+net' },
+      footwork: { title: 'Di chuyển: bước đệm và bước đầu tiên', len: '9:05', url: 'https://www.youtube.com/results?search_query=badminton+footwork' },
+      defense: { title: 'Phòng thủ: đọc cú đập, chắn thấp', len: '7:30', url: 'https://www.youtube.com/results?search_query=badminton+defense' },
+      serve: { title: 'Giao cầu: luật giao ngắn và thói quen', len: '5:48', url: '' },
+      stamina: { title: 'Thể lực: 15 phút tập trên sân', len: '12:20', url: 'https://www.youtube.com/results?search_query=badminton+stamina' }
     };
 
     var T = [2, 4], MW = [1, 3], SS = [6, 0], WS = [3, 6], MT = [1, 4], TS = [2, 0];
@@ -72,8 +72,8 @@
     join('Giang', '2026-11-10'); join('Giang', '2026-11-12'); join('Giang', '2026-11-15');
 
     // A long break (Quang) and a short break (Mai)
-    BC.breaks.push({ id: BC.nextId++, student: by('Quang').id, from: '2026-11-17', to: '2026-11-30', notified: '2026-11-02', reduction: null, note: 'Family trip' });
-    var mb = { id: BC.nextId++, student: by('Mai').id, from: '2026-11-09', to: '2026-11-18', notified: '2026-10-28', reduction: null, note: 'Exams' };
+    BC.breaks.push({ id: BC.nextId++, student: by('Quang').id, from: '2026-11-17', to: '2026-11-30', notified: '2026-11-02', reduction: null, note: 'Đi du lịch cùng gia đình' });
+    var mb = { id: BC.nextId++, student: by('Mai').id, from: '2026-11-09', to: '2026-11-18', notified: '2026-10-28', reduction: null, note: 'Thi học kỳ' };
     BC.breaks.push(mb);
     ['2026-11-10', '2026-11-12', '2026-11-17'].forEach(function (d) { BC.addSkipRow(mb.student, d, '2026-10-28', mb.id); });
 

@@ -27,6 +27,22 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/run-screens.js
 
+  screens-other-browsers:
+    name: Screens in ${{ matrix.browser }}
+    runs-on: ubuntu-22.04   # the Playwright version used here installs WebKit's system packages reliably on 22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-audit --no-fund playwright@1.48.2
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: PW_BROWSER=${{ matrix.browser }} node tests/run-screens.js
+
   site-files:
     name: Every file the pages need is there
     runs-on: ubuntu-latest

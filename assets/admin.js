@@ -59,11 +59,13 @@
     var rd = remindData(), nRemind = rd.soft.length + rd.late.length, bk = BC.backup();
     var unpaid = payRows(ymNow()).filter(function (r) { return !r.rec.paid; }).length;
     var tabs = [['sessions', 'cal2', 'Sessions', 0], ['students', 'users', 'Students', 0], ['payments', 'wallet', 'Payments', unpaid], ['remind', 'bell', 'Remind', nRemind], ['more', 'more', 'More', 0]];
-    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = t('Save');
+    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old || BC.saveFailed) && !isSample, lbl = t('Save');
     var chip = isSample ? '' : '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : 'check') + '</button>';
     var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
-    var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + '</div></div>' : '';
-    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + pretend + sample +
+    var full = BC.saveFailed ? '<div class="banner bad" style="margin-bottom:12px">' + icon('info') + '<div class="grow"><b>' + t('Could not save on this phone') + '</b>' + UI.SEP + t('Save a file now.') + '</div></div>' : '';
+    var other = BC.otherTab ? '<div class="banner warn" style="margin-bottom:12px">' + icon('info') + '<div class="grow"><b>' + t('Changed in another tab') + '</b></div><button class="btn sm" data-a="reloadpage">' + t('Reload') + '</button></div>' : '';
+    var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + (BC.noWrite() ? UI.SEP + t('Nothing is saved') : '') + '</div></div>' : '';
+    return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + full + other + pretend + sample +
       '<div id="view">' + view() + '</div>' +
       '<nav class="nav" aria-label="Main"><div class="nav-in">' + tabs.map(function (x) {
         return '<button data-tab="' + x[0] + '" aria-label="' + t(x[2]) + '" title="' + t(x[2]) + '" ' + ((!S.sub && S.tab === x[0]) || (S.sub && x[0] === 'more') ? 'aria-current="page"' : '') + '>' + icon(x[1]) + (x[3] ? '<span class="badge ' + (x[0] === 'payments' ? 'warn' : '') + '">' + x[3] + '</span>' : '') + '</button>';
@@ -110,7 +112,7 @@
       if (ses.onBreak.length) body += '<h3>' + t('On a long break ({n})', { n: ses.onBreak.length }) + '</h3><div class="names">' + names(ses.onBreak, 'sk') + '</div>';
       if (!ses.cancelled) {
         body += '<button class="btn sm" data-a="addtoses" data-x="' + ses.iso + '" style="margin-top:8px">' + icon('plus', 'sm') + ' ' + t('Add a student') + '</button>' +
-          '<hr class="sep"><div class="ctl"><div><b>' + t('Extra seats') + '</b><div class="muted small">' + t('0 to 2 on top of {n}', { n: ses.courts * cfg.seats_per_court }) + '</div></div>' + stepper('extra:' + ses.iso, ses.extra, 0, 2) + '</div>' +
+          '<hr class="rule"><div class="ctl"><div><b>' + t('Extra seats') + '</b><div class="muted small">' + t('0 to 2 on top of {n}', { n: ses.courts * cfg.seats_per_court }) + '</div></div>' + stepper('extra:' + ses.iso, ses.extra, 0, 2) + '</div>' +
           '<div class="ctl"><div><b>' + t('Courts available') + '</b><div class="muted small">' + t('The venue has {n}', { n: cfg.venue_courts }) + '</div></div>' + stepper('courts:' + ses.iso, ses.courts, 1, cfg.venue_courts) + '</div>' +
           '<button class="btn danger sm" data-a="cancelses" data-x="' + ses.iso + '">' + icon('ban', 'sm') + ' ' + t('Cancel this session') + '</button>';
       } else body += '<p class="muted small">' + h(ses.ov.note || '') + '</p>';
@@ -500,7 +502,7 @@
       el.innerHTML = UI.pageHead(h(st.name), (st.active ? '' : t('Paused')), t('Back')) +
         '<div class="stack"><button class="btn primary block" id="st-cal">' + icon('cal2', 'sm') + ' ' + t('Lessons') + '</button>' +
         '<button class="btn block" id="st-card">' + icon('chat', 'sm') + ' ' + t('Send card') + '</button>' +
-        '<div class="row between"><span class="row"><b class="code" style="font-family:ui-monospace,monospace;font-size:1.1rem">' + h(st.code) + '</b><button class="btn sm icon" data-copy="' + h(st.code) + '" aria-label="' + t('Copy') + '">' + icon('copy', 'sm') + '</button></span>' + status + '</div><hr class="sep">' +
+        '<div class="row between"><span class="row"><b class="code" style="font-family:ui-monospace,monospace;font-size:1.1rem">' + h(st.code) + '</b><button class="btn sm icon" data-copy="' + h(st.code) + '" aria-label="' + t('Copy') + '">' + icon('copy', 'sm') + '</button></span>' + status + '</div><hr class="rule">' +
         studentFormHtml(ed) + reasonLine(studentReason(ed, id)) +
         '<button class="btn primary block" id="st-save"' + (studentReason(ed, id) ? ' disabled' : '') + '>' + t('Save') + '</button>' +
         '<button class="btn block" id="st-pause">' + icon(st.active ? 'pause' : 'refresh', 'sm') + ' ' + (st.active ? t('Pause student') : t('Resume student')) + '</button></div>';
@@ -514,9 +516,15 @@
       if (e.target.closest('#st-card')) { openSendCard(id); return; }
       if (e.target.closest('#st-save')) {
         if (studentReason(ed, id)) return;
-        var st = BC.student(id);
-        st.name = ed.name.trim(); st.type = ed.type; st.days = ed.type === 'fixed' ? ed.days.slice() : []; st.start = ed.start; st.fee = ed.fee;
-        UI.sheet.close(); render();
+        var st = BC.student(id), apply = function () {
+          BC.setPlan(st, ed.type, ed.days);
+          st.name = ed.name.trim(); st.start = ed.start; st.fee = ed.fee;
+          UI.sheet.close(); render();
+        };
+        var nd = ed.type === 'fixed' ? ed.days.slice().sort() : [];
+        if (st.start < BC.today && (st.type !== ed.type || st.days.slice().sort().join() !== nd.join())) {   /* the past keeps the old days, so say so first */
+          UI.confirm({ title: t('Change the days?'), body: t('The new days start today. Past lessons, bills and credits stay as they were.'), ok: t('Change from today'), cancel: t('Cancel') }).then(function (yes) { if (yes) apply(); });
+        } else apply();
       } else if (e.target.closest('#st-pause')) {
         var s2 = BC.student(id); s2.active = !s2.active; UI.sheet.close(); render();
       }
@@ -680,10 +688,12 @@
     var list = BC.breaks.slice().sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var rows = list.map(function (b) {
       var s = BC.student(b.student), long = BC.isLong(b), red = breakReduction(b);
-      return '<div class="li"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b><span class="small muted">' + dt(b.from) + ' – ' + dt(b.to) + UI.SEP + t('{n} days', { n: BC.breakLen(b) }) + '</span>' + (b.note ? '<span class="small muted">' + h(b.note) + '</span>' : '') + '</div>' +
-        '<div class="right"><span class="tag ' + (long ? 'info' : '') + '">' + (long ? t('Long break') : t('Short break')) + '</span><div class="bold" style="margin-top:4px">' + (long ? '−' + money(red) : t('No fee change')) + '</div></div>' +
+      return '<div class="li brk"><div class="avatar">' + ava(s) + '</div><div class="grow"><b>' + h(s.name) + '</b>' +
+        '<span class="small muted"><span class="nw">' + dt(b.from) + ' – ' + dt(b.to) + '</span>' + UI.SEP + '<span class="nw">' + t('{n} days', { n: BC.breakLen(b) }) + '</span></span>' +
+        (b.note ? '<span class="small muted">' + h(b.note) + '</span>' : '') +
+        '<div class="meta"><span class="tag ' + (long ? 'info' : '') + '">' + (long ? t('Long break') : t('Short break')) + '</span><b>' + (long ? '−' + money(red) : t('No fee change')) + '</b><span class="acts">' +
         (long ? '<button class="btn icon sm" data-a="adjbreak" data-x="' + b.student + '|' + BC.ym(b.from) + '" aria-label="' + t('Change amount') + '">' + icon('pencil', 'sm') + '</button>' : '') +
-        '<button class="btn icon sm" data-a="rmbreak" data-x="' + b.student + '|' + b.id + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button></div>';
+        '<button class="btn icon sm" data-a="rmbreak" data-x="' + b.student + '|' + b.id + '" aria-label="' + t('Remove') + '">' + icon('trash', 'sm') + '</button></span></div></div></div>';
     }).join('');
     return subHead(t('Breaks')) + '<button class="btn primary" style="margin-bottom:14px" data-a="addbreak">' + icon('plus', 'sm') + ' ' + t('Plan a break') + '</button>' + (rows || '<div class="empty">' + t('No planned breaks.') + '</div>');
   }
@@ -827,6 +837,7 @@
           break;
         }
         case 'toggle': S.open[x] = !S.open[x]; render(); break;
+        case 'reloadpage': window.location.reload(); break;
         case 'step': stepAction(x, Number(y)); break;
         case 'cancelses': S.cancelIso = x; S.sub = 'cancel'; S.tab = 'more'; render(); window.scrollTo(0, 0); break;
         case 'filter': S.filter = x; render(); break;
@@ -842,7 +853,8 @@
         case 'sub': S.sub = x; render(); window.scrollTo(0, 0); break;
         case 'back': S.sub = null; S.tab = 'more'; render(); window.scrollTo(0, 0); break;
         case 'gotodata': S.tab = 'more'; S.sub = 'data'; render(); window.scrollTo(0, 0); break;
-        case 'savefile': BC.giveFile(BC.fileName(), BC.fileText(), 'application/json').then(function (done) { if (done) { BC.markBackedUp(); render(); toast(t('File saved.')); } }); break;
+        case 'savefile': if (BC.noWrite()) { toast(BC.otherTab ? t('Reload this page first.') : t('Not while pretending a date.'), 'bad'); break; }
+          BC.giveFile(BC.fileName(), BC.fileText(), 'application/json').then(function (done) { if (done) { BC.markBackedUp(); render(); toast(t('File saved.')); } }); break;
         case 'openfile': {
           var openIt = function () { SU.pickFile(function (r) { if (r.ok) SU.adopt(r); else toast(t(SU.errText(r.reason)), 'bad'); }); };
           if (BC.backup().dirty) UI.confirm({ title: t('Open another file?'), body: t('This replaces what is on this phone now. Changes that are not in a file will be lost.'), ok: t('Choose a file'), cancel: t('Keep mine'), danger: true }).then(function (yes) { if (yes) openIt(); });
@@ -951,7 +963,11 @@
       }
       cfg[k] = v; if (k === 'page_title' || k === 'coach_zalo' || k === 'fee_1day' || k === 'fee_2days') render(); else toast(t('Saved'));
     }
-    else if (b === 'msg') { var m = k.split('.'); BC.messages[m[0]][m[1]] = el.value; toast(t('Saved')); }
+    else if (b === 'msg') {
+      var m = k.split('.');
+      if (!el.value.trim()) { BC.messages[m[0]][m[1]] = BC.defaultMessages()[m[0]][m[1]]; el.value = BC.messages[m[0]][m[1]]; toast(t('A message cannot be empty. The default is back.'), 'bad'); return; }   /* a blank message would be copied and sent blank */
+      BC.messages[m[0]][m[1]] = el.value; toast(t('Saved'));
+    }
   });
 
   /* start: use the working copy in this browser if there is one */
@@ -964,5 +980,14 @@
     if (!boot.ok && boot.reason !== 'none') SU.setErr('The copy saved on this phone could not be read. Open your file instead.');
   }
   render();
+  /* A page left open past midnight (or on the Home Screen) must not keep yesterday's date. Checked whenever she comes back to it. */
+  function dayRolled() {
+    if (S.mode !== 'app' || BC.pretend || (BC.meta && BC.meta.sample)) return;
+    var d = BC.realToday(); if (d === BC.today) return;
+    var wasNow = S.payMonth === ymNow(); BC.today = d; if (wasNow) S.payMonth = ymNow(); render();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) dayRolled(); });
+  window.addEventListener('focus', dayRolled); window.addEventListener('pageshow', dayRolled);
+  BC.onOtherTab = function () { if (S.mode === 'app') render(); };
   BC.persist().then(function (kept) { if (kept === false && S.mode === 'app') render(); });
 })();

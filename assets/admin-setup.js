@@ -221,6 +221,7 @@ window.Setup = (function () {
         case 'paid': { touch(); var key = BC.nameKey(W.list[i].name); W.paid[key] = !W.paid[key]; E.render(); break; }
         case 'allpaid': touch(); W.list.forEach(function (x) { W.paid[BC.nameKey(x.name)] = v === '1'; }); E.render(); break;
         case 'save':
+          if (BC.noWrite()) { E.toast(BC.otherTab ? t('Reload this page first.') : t('Not while pretending a date.'), 'bad'); break; }
           apply();
           BC.giveFile(BC.fileName(), BC.fileText(), 'application/json').then(function (done) { if (done) { BC.markBackedUp(); W.saved = true; E.render(); } });
           break;

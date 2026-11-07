@@ -181,7 +181,7 @@
       try { window.open('https://zalo.me/' + encodeURIComponent(cfg.coach_zalo), '_blank', 'noopener'); } catch (e) { /* ignore */ }
       area.innerHTML = '<div class="banner ok">' + icon('check') + '<div>' + t('copiedAsk') + '</div></div>';
     } else {
-      area.innerHTML = '<div class="msgbox">' + h(msg) + '</div><p class="muted small" style="margin-top:8px">' + t('zaloMock') + '</p>';
+      area.innerHTML = '<div class="msgbox">' + h(msg) + '</div><p class="muted small" style="margin-top:8px">' + t('noZalo') + '</p>';
     }
   }
   function askButton(kind) { return '<button class="btn primary block" data-ask="' + kind + '">' + icon('chat', 'sm') + ' ' + t('ask_' + kind) + '</button>'; }
@@ -285,7 +285,15 @@
     app.innerHTML = '<div style="padding:60px 0 0;text-align:center"><div style="margin:0 auto 12px;width:52px">' + UI.logo(52) + '</div><h1 style="font-size:1.2rem">' + t('badTitle') + '</h1><p class="muted" style="margin-top:8px">' + t('badBody') + '</p></div>';
   }
   function start() { render(); }
-  var m = /^#c=(.+)$/.exec(location.hash), saved = null;
+  /* a card left open past midnight must not keep yesterday's date */
+  function dayRolled() {
+    if (!S.card || BC.pretend) return;
+    var d = BC.realToday(); if (d === BC.today) return;
+    var wasNow = S.month === BC.ym(BC.today); BC.today = d; if (wasNow) S.month = BC.ym(d); render();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) dayRolled(); });
+  window.addEventListener('focus', dayRolled); window.addEventListener('pageshow', dayRolled);
+  var m = /^#c=([A-Za-z0-9_-]+)/.exec(location.hash), saved = null;   /* anything a chat app adds after the link (a full stop, a bracket, a line break) is ignored */
   try { saved = localStorage.getItem('bc_card'); } catch (e) { /* ignore */ }
   if (m) bootCard(m[1], true).then(function (ok) { if (ok) start(); else badLink(); });
   else if (saved) bootCard(saved, false).then(function (ok) { if (ok) start(); else noCard(); });

@@ -39,7 +39,7 @@
   };
   BC.load = function (d) {
     var c = JSON.parse(JSON.stringify(d));
-    BC.config = Object.assign({}, BC.config, c.config);
+    BC.config = Object.assign(BC.defaultConfig(), c.config);   /* a setting the file lacks gets the default, never a value left over from another class */
     BC.messages = { en: Object.assign({}, BC.defaultMessages().en, (c.messages || {}).en), vi: Object.assign({}, BC.defaultMessages().vi, (c.messages || {}).vi) };   /* an older file gets the newer texts */ BC.timetable = c.timetable; BC.ttHistory = c.ttHistory || []; BC.overrides = c.overrides;
     BC.videos = c.videos; BC.students = c.students; BC.changes = c.changes; BC.breaks = c.breaks; BC.payments = c.payments;
     BC.changeLog = c.changeLog || []; BC.scores = c.scores; BC.nextId = c.nextId; BC.meta = c.meta || { sample: false, setup: true };
@@ -57,15 +57,52 @@
     return 'birdie-crew-' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + (ext || '.json');
   };
   var isNum = function (x) { return typeof x === 'number' && isFinite(x); };
+  function isDay(x) { return typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && BC.iso(BC.toDate(x)) === x; }
+  function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+  function num(x, lo, hi) { return typeof x === 'number' && isFinite(x) && x >= lo && x <= hi; }
+  /* The checks are about what could crash a screen or make a bill meaningless: types, real dates, sane numbers. */
   function shapeOk(d) {
-    if (!d || typeof d !== 'object') return false;
-    var ok = d.config && typeof d.config === 'object' && d.timetable && d.overrides && d.videos && d.messages && d.payments && d.scores &&
+    if (!isObj(d)) return false;
+    var ok = isObj(d.config) && isObj(d.timetable) && isObj(d.overrides) && isObj(d.videos) && isObj(d.messages) && isObj(d.payments) && isObj(d.scores) &&
       Array.isArray(d.students) && Array.isArray(d.changes) && Array.isArray(d.breaks) && isNum(d.nextId);
-    if (!ok || d.students.length > 200) return false;
-    return d.students.every(function (s) {
-      return s && isNum(s.id) && typeof s.name === 'string' && (s.type === 'fixed' || s.type === 'flexible') && Array.isArray(s.days) &&
-        s.days.every(function (x) { return x >= 0 && x <= 6; }) && typeof s.start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.start);
-    });
+    if (!ok || d.students.length > 200 || d.changes.length > 50000 || d.breaks.length > 5000) return false;
+    var ids = {}, c = d.config, def = BC.defaultConfig(), i;
+    for (var k in def) {   /* a setting that is there must be the same kind of thing as its default, and a sane number */
+      if (c[k] === undefined) continue;
+      if (typeof c[k] !== typeof def[k]) return false;
+      if (typeof c[k] === 'number' && !num(c[k], 0, 1e9)) return false;
+      if (typeof c[k] === 'string' && c[k].length > 200) return false;
+    }
+    if (c.seats_per_court !== undefined && c.seats_per_court < 1 || c.venue_courts !== undefined && c.venue_courts < 1) return false;
+    for (i = 0; i < 7; i++) {
+      var t = d.timetable[i]; if (!isObj(t) || typeof t.on !== 'boolean' || !/^\d{2}:\d{2}$/.test(t.start) || !/^\d{2}:\d{2}$/.test(t.end)) return false;
+    }
+    if (d.ttHistory !== undefined && !(Array.isArray(d.ttHistory) && d.ttHistory.length <= 1000 && d.ttHistory.every(function (x) { return isObj(x) && isDay(x.until) && isObj(x.tt); }))) return false;
+    if (!d.students.every(function (s) {
+      if (!isObj(s) || !isNum(s.id) || ids[s.id]) return false; ids[s.id] = 1;
+      return typeof s.name === 'string' && s.name.length <= 100 && (s.type === 'fixed' || s.type === 'flexible') && Array.isArray(s.days) && s.days.length <= 7 &&
+        s.days.every(function (x) { return x === Math.floor(x) && x >= 0 && x <= 6; }) && isDay(s.start) && histOk(s.dayHist) &&
+        (s.fee === null || s.fee === undefined || num(s.fee, 0, 1e8)) && (s.active === undefined || typeof s.active === 'boolean') && (s.code === undefined || (typeof s.code === 'string' && s.code.length <= 20));
+    })) return false;
+    if (!d.changes.every(function (x) { return isObj(x) && isNum(x.student) && isDay(x.date) && typeof x.type === 'string'; })) return false;
+    if (!d.breaks.every(function (b) { return isObj(b) && isNum(b.student) && isDay(b.from) && isDay(b.to) && b.from <= b.to; })) return false;
+    for (var pk in d.payments) {
+      var p = d.payments[pk]; if (!/^\d+\|\d{4}-\d{2}$/.test(pk) || !isObj(p) || (p.paid !== undefined && typeof p.paid !== 'boolean')) return false;
+      if (p.amountPaid != null && !num(p.amountPaid, 0, 1e9) || p.override != null && !num(p.override, 0, 1e9) || p.creditIn != null && !num(p.creditIn, 0, 1e9)) return false;
+    }
+    for (var sk in d.scores) {
+      if (!Array.isArray(d.scores[sk]) || !d.scores[sk].every(function (x) { return isObj(x) && isDay(x.date) && isObj(x.v) && Object.keys(x.v).every(function (m) { return num(x.v[m], 0, 10); }); })) return false;
+    }
+    for (var ok2 in d.overrides) if (!isDay(ok2) || !isObj(d.overrides[ok2])) return false;
+    for (var vk in d.videos) if (!isObj(d.videos[vk]) || (d.videos[vk].title !== undefined && typeof d.videos[vk].title !== 'string')) return false;
+    for (var lang in d.messages) { if (!isObj(d.messages[lang]) || !Object.keys(d.messages[lang]).every(function (m) { return typeof d.messages[lang][m] === 'string'; })) return false; }
+    return true;
+  }
+  /* the days a student had before a change: absent, or a list of {until, type, days} */
+  function histOk(h) {
+    return h === undefined || (Array.isArray(h) && h.length <= 100 && h.every(function (x) {
+      return x && typeof x.until === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.until) && (x.type === 'fixed' || x.type === 'flexible') && Array.isArray(x.days) && x.days.every(function (d) { return d >= 0 && d <= 6; });
+    }));
   }
   /* reason: notJson | notOurs | newer | edited | broken */
   BC.parseFile = function (text) {
@@ -101,15 +138,20 @@
 
   /* ---------- the working copy in her browser, plus the last few earlier copies ---------- */
   BC.autosave = function () {
+    if (BC.noWrite()) return false;
     var txt = BC.fileText(), cur = JSON.parse(txt).sum, hist = [];
-    if (!set(K_DATA, txt)) return false;
+    if (!set(K_DATA, txt)) {
+      del(K_HIST);   /* the earlier copies come second: free their room for the working copy */
+      if (!set(K_DATA, txt)) { BC.saveFailed = true; return false; }
+    }
+    BC.saveFailed = false; window.__bcLastWrite = txt;
     try { hist = JSON.parse(get(K_HIST) || '[]'); } catch (e) { hist = []; }
     var last = hist[hist.length - 1], now = Date.now();
     if (!last || last.sum !== cur) {
       var entry = { t: now, sum: cur, txt: txt };
       if (last && now - last.t < 60000) hist[hist.length - 1] = entry; else hist.push(entry);
       while (hist.length > 5) hist.shift();
-      if (!set(K_HIST, JSON.stringify(hist))) { hist = hist.slice(-2); set(K_HIST, JSON.stringify(hist)); }
+      if (!set(K_HIST, JSON.stringify(hist))) { hist = hist.slice(-2); if (!set(K_HIST, JSON.stringify(hist))) del(K_HIST); }
     }
     return true;
   };
@@ -122,11 +164,18 @@
     if (r.ok) BC.load(r.data);
     return r;
   };
-  BC.wipeLocal = function () { del(K_DATA); del(K_HIST); del(K_BAK_AT); del(K_BAK_SUM); };
+  BC.wipeLocal = function () { if (BC.noWrite()) return; del(K_DATA); del(K_HIST); del(K_BAK_AT); del(K_BAK_SUM); };
+
+  /* Another tab of this page changed the saved class. This tab must not write over it with older data, so it stops writing until it is reloaded. */
+  try {
+    window.addEventListener('storage', function (e) {
+      if (e.key === K_DATA && (!e.storageArea || e.storageArea === window.localStorage) && e.newValue !== (window.__bcLastWrite || null)) { BC.otherTab = true; if (BC.onOtherTab) BC.onOtherTab(); }
+    });
+  } catch (e) { /* no window */ }
 
   /* ---------- backup bookkeeping ---------- */
   function sumNow() { return sum(JSON.stringify(BC.dump())); }
-  BC.markBackedUp = function (atMs) { set(K_BAK_AT, String(atMs || Date.now())); set(K_BAK_SUM, sumNow()); };
+  BC.markBackedUp = function (atMs) { if (BC.noWrite()) return; set(K_BAK_AT, String(atMs || Date.now())); set(K_BAK_SUM, sumNow()); };
   BC.backup = function () {
     var at = Number(get(K_BAK_AT)) || 0;
     return { at: at || null, dirty: !at || get(K_BAK_SUM) !== sumNow(), old: !!at && Date.now() - at > 7 * 864e5 };
@@ -198,7 +247,7 @@
     Object.keys(BC.videos).forEach(function (k) { if (/^https?:\/\//i.test(BC.videos[k].url || '')) vids[k] = BC.videos[k]; });   /* only web links go on a card */
     return {
       v: 1, asOf: BC.today, made: Date.now(), cfg: cfg, timetable: BC.timetable, ttHistory: (BC.ttHistory || []).filter(function (x) { return x.until > from; }), overrides: ov, videos: vids,
-      student: { id: s.id, name: s.name, type: s.type, days: s.days, start: s.start, fee: s.fee, active: s.active, code: s.code },
+      student: { id: s.id, name: s.name, type: s.type, days: s.days, dayHist: s.dayHist || [], start: s.start, fee: s.fee, active: s.active, code: s.code },
       changes: BC.changes.filter(function (c) { return c.student === sid && c.date >= from; }),
       breaks: BC.breaksOf(sid).filter(function (b) { return b.to >= from; }),
       scores: (BC.scores[sid] || []).slice(-2), pay: pay
@@ -215,7 +264,7 @@
     return card.student.id;
   };
   function validCard(c) {
-    return !!(c && c.v === 1 && c.student && isNum(c.student.id) && typeof c.student.name === 'string' && Array.isArray(c.student.days) && Array.isArray(c.changes) &&
+    return !!(c && c.v === 1 && c.student && isNum(c.student.id) && typeof c.student.name === 'string' && Array.isArray(c.student.days) && histOk(c.student.dayHist) && Array.isArray(c.changes) &&
       Array.isArray(c.breaks) && c.cfg && c.timetable && c.overrides && c.pay && typeof c.asOf === 'string');
   }
   function b64u(buf) {
@@ -232,6 +281,93 @@
   function pipe(bytes, stream) {
     return new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer();
   }
+  /* Raw DEFLATE decoder (RFC 1951), for phones whose browser cannot decompress by itself (older iPhones, some in-app browsers).
+     Small, slow and strict: it throws on anything that is not valid, and refuses to grow past 2 MB. */
+  var LBASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258],
+    LEXT = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0],
+    DBASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577],
+    DEXT = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13],
+    CORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15], MAXOUT = 2 * 1024 * 1024;
+  BC.inflateRaw = function (src) {
+    var pos = 0, cur = 0, have = 0, out = [], fixedL = null, fixedD = null;
+    function bits(n) {
+      var v = 0, i;
+      for (i = 0; i < n; i++) {
+        if (!have) { if (pos >= src.length) throw new Error('short'); cur = src[pos++]; have = 8; }
+        v |= (cur & 1) << i; cur >>= 1; have--;
+      }
+      return v;
+    }
+    function huff(lengths, n) {
+      var count = [], symbol = [], offs = [], i;
+      for (i = 0; i <= 15; i++) count[i] = 0;
+      for (i = 0; i < n; i++) count[lengths[i]]++;
+      offs[1] = 0; for (i = 1; i < 15; i++) offs[i + 1] = offs[i] + count[i];
+      for (i = 0; i < n; i++) if (lengths[i]) symbol[offs[lengths[i]]++] = i;
+      return { count: count, symbol: symbol };
+    }
+    function decode(h) {
+      var code = 0, first = 0, index = 0, len, c;
+      for (len = 1; len <= 15; len++) {
+        code |= bits(1); c = h.count[len];
+        if (code - c < first) return h.symbol[index + (code - first)];
+        index += c; first += c; first <<= 1; code <<= 1;
+      }
+      throw new Error('bad code');
+    }
+    function codes(hl, hd) {
+      for (;;) {
+        var sym = decode(hl), len, dist, i;
+        if (sym < 256) { out.push(sym); if (out.length > MAXOUT) throw new Error('big'); }
+        else if (sym === 256) return;
+        else {
+          sym -= 257; if (sym >= 29) throw new Error('bad length');
+          len = LBASE[sym] + bits(LEXT[sym]);
+          sym = decode(hd); if (sym >= 30) throw new Error('bad distance');
+          dist = DBASE[sym] + bits(DEXT[sym]);
+          if (dist > out.length) throw new Error('too far');
+          if (out.length + len > MAXOUT) throw new Error('big');
+          for (i = 0; i < len; i++) out.push(out[out.length - dist]);
+        }
+      }
+    }
+    var last, type, i, n;
+    do {
+      last = bits(1); type = bits(2);
+      if (type === 0) {
+        have = 0; if (pos + 4 > src.length) throw new Error('short');
+        n = src[pos] | (src[pos + 1] << 8);
+        if (((src[pos + 2] | (src[pos + 3] << 8)) ^ 0xffff) !== n) throw new Error('bad stored');
+        pos += 4; if (pos + n > src.length) throw new Error('short');
+        for (i = 0; i < n; i++) out.push(src[pos + i]); pos += n;
+        if (out.length > MAXOUT) throw new Error('big');
+      } else if (type === 1) {
+        if (!fixedL) {
+          var l = [];
+          for (i = 0; i < 144; i++) l[i] = 8; for (; i < 256; i++) l[i] = 9; for (; i < 280; i++) l[i] = 7; for (; i < 288; i++) l[i] = 8;
+          fixedL = huff(l, 288);
+          var d = []; for (i = 0; i < 30; i++) d[i] = 5; fixedD = huff(d, 30);
+        }
+        codes(fixedL, fixedD);
+      } else if (type === 2) {
+        var nlen = bits(5) + 257, ndist = bits(5) + 1, ncode = bits(4) + 4, lengths = [], hl, hd;
+        if (nlen > 286 || ndist > 30) throw new Error('bad counts');
+        for (i = 0; i < 19; i++) lengths[CORDER[i]] = i < ncode ? bits(3) : 0;
+        var hc = huff(lengths, 19); lengths = [];
+        for (i = 0; i < nlen + ndist;) {
+          var sym = decode(hc), rep, val = 0;
+          if (sym < 16) { lengths[i++] = sym; continue; }
+          if (sym === 16) { if (!i) throw new Error('bad repeat'); val = lengths[i - 1]; rep = 3 + bits(2); }
+          else if (sym === 17) rep = 3 + bits(3); else rep = 11 + bits(7);
+          if (i + rep > nlen + ndist) throw new Error('bad repeat');
+          while (rep--) lengths[i++] = val;
+        }
+        hl = huff(lengths.slice(0, nlen), nlen); hd = huff(lengths.slice(nlen), ndist);
+        codes(hl, hd);
+      } else throw new Error('bad block');
+    } while (!last);
+    return new Uint8Array(out);
+  };
   /* 'z' = compressed, 'p' = plain (older browsers) */
   BC.cardEncode = function (card) {
     var bytes = new TextEncoder().encode(JSON.stringify(card));
@@ -248,6 +384,7 @@
           resolve(validCard(c) ? c : null);
         };
         if (kind === 'z' && typeof DecompressionStream === 'function') pipe(bytes, new DecompressionStream('deflate-raw')).then(done, function () { resolve(null); });
+        else if (kind === 'z') done(BC.inflateRaw(bytes));   /* this browser cannot decompress by itself */
         else if (kind === 'p') done(bytes);
         else resolve(null);
       } catch (e) { resolve(null); }

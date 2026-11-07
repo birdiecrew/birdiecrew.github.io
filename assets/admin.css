@@ -34,6 +34,13 @@
 
 .li { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; width: 100%; text-align: left; }
 .li + .li { margin-top: 8px; }
+.li.brk { align-items: flex-start; }
+.li.brk .avatar { flex: none; }
+.li.brk .grow { min-width: 0; }
+.li.brk .small { display: block; overflow-wrap: anywhere; }
+.li.brk .nw { white-space: nowrap; }
+.li.brk .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; }
+.li.brk .acts { display: inline-flex; gap: 6px; margin-left: auto; }
 button.li:hover { background: var(--surface2); }
 .li .grow b { display: block; }
 .li.pay { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
