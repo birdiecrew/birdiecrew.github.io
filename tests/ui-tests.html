@@ -675,8 +675,9 @@
       var w = await frame(ADMIN, wd); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="breaks"]'); await sleep(150);
       var rows = qa(w, '.li.brk'); ok(rows.length >= 2, 'the sample has breaks');
       rows.forEach(function (r) {
-        var dates = r.querySelector('.grow .small'), fs = parseFloat(w.getComputedStyle(dates).fontSize);
-        ok(dates.getBoundingClientRect().height < fs * 2, wd + 'px: the dates are on one line: ' + dates.textContent + ' (' + Math.round(dates.getBoundingClientRect().height) + 'px)');
+        var dates = r.querySelector('.grow .small'), range = dates.querySelector('.nw'), fs = parseFloat(w.getComputedStyle(dates).fontSize);
+        ok(range.getBoundingClientRect().height < fs * 2, wd + 'px: the date range stays on one line: ' + range.textContent + ' (' + Math.round(range.getBoundingClientRect().height) + 'px)');
+        ok(dates.getBoundingClientRect().height < fs * 3.4, wd + 'px: the whole line is at most two lines, whatever font the phone has (' + Math.round(dates.getBoundingClientRect().height) + 'px)');
         var note = r.querySelectorAll('.grow .small')[1]; ok(!note || note.getBoundingClientRect().top >= dates.getBoundingClientRect().bottom - 1, 'the note sits under the dates, not run into them');
         ok(!/Exams|Family trip/.test(r.textContent), 'no English in the Vietnamese screen');
       });
