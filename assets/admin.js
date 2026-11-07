@@ -59,8 +59,8 @@
     var rd = remindData(), nRemind = rd.soft.length + rd.late.length, bk = BC.backup();
     var unpaid = payRows(ymNow()).filter(function (r) { return !r.rec.paid; }).length;
     var tabs = [['sessions', 'cal2', 'Sessions', 0], ['students', 'users', 'Students', 0], ['payments', 'wallet', 'Payments', unpaid], ['remind', 'bell', 'Remind', nRemind], ['more', 'more', 'More', 0]];
-    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = isSample ? t('Sample') : t('Save');
-    var chip = '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : (isSample ? 'info' : 'check')) + '</button>';
+    var isSample = !!(BC.meta && BC.meta.sample), nag = (bk.dirty || bk.old) && !isSample, lbl = t('Save');
+    var chip = isSample ? '' : '<button class="btn sm icon dchip' + (nag ? ' primary' : '') + '" data-a="gotodata" aria-label="' + lbl + '" title="' + lbl + '">' + icon(nag ? 'save' : 'check') + '</button>';
     var sample = isSample ? '<div class="banner sample-bar" style="margin-bottom:12px"><b>' + t('Sample class') + '</b><button class="btn sm" data-a="clearsample">' + t('Start my own class') + '</button></div>' : '';
     var pretend = BC.pretend ? '<div class="banner" style="margin-bottom:12px">' + icon('clock') + '<div><b>' + t('Pretend date') + '</b> ' + BC.today + '</div></div>' : '';
     return '<header class="top"><div class="row between"><div class="row">' + UI.logo(36) + '<h1>' + h(cfg.page_title) + '</h1></div>' + chip + '</div></header>' + pretend + sample +

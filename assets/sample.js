@@ -11,7 +11,7 @@
     BC.overrides = {
       '2026-11-12': { extra: 1 },
       '2026-11-14': { courts: 3 },
-      '2026-11-24': { cancelled: true, cancelledOn: '2026-11-02', note: 'Venue closed for an event' }
+      '2026-11-24': { cancelled: true, cancelledOn: '2026-11-02', note: 'Sân đóng cửa vì có sự kiện' }
     };
     BC.videos = {
       smash: { title: 'Smash: power from the legs, not the arm', len: '8:12', url: 'https://www.youtube.com/results?search_query=badminton+smash' },
