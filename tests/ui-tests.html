@@ -380,6 +380,16 @@
     wipe(); saveClass(two); localStorage.setItem('bc_backup_at', String(Date.now() - 8 * 864e5));
     var w = await frame(ADMIN); ok(q(w, '.dchip').classList.contains('primary'), 'icon asks for a save'); await click(w, '.dchip'); ok(/Saved/.test(txt(w, '#view')) && !/Back up/.test(txt(w, '#view')), txt(w, '#view'));
   });
+  test('Reset all asks first, and Keep it changes nothing', async function () {
+    wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
+    w.BC.config.fee_1day = 700000;
+    await click(w, '[data-a="setresetall"]'); await sleep(150);
+    ok(q(w, '.dialog') && /Reset all settings/.test(txt(w, '.dialog')), 'a question appears: ' + txt(w, 'body').slice(-200));
+    eq(w.BC.config.fee_1day, 700000, 'nothing changed while asking');
+    await click(w, '.dialog [data-v="0"]'); await sleep(150); eq(w.BC.config.fee_1day, 700000, 'Keep it leaves the settings alone');
+    await click(w, '[data-a="setresetall"]'); await sleep(150); await click(w, '.dialog [data-v="1"]'); await sleep(200);
+    eq(w.BC.config.fee_1day, 800000, 'confirming resets');
+  });
   test('Settings lets her reword the reply message too', async function () {
     wipe(); saveClass(two); var w = await frame(ADMIN); await click(w, '[data-tab="more"]'); await click(w, '[data-a="sub"][data-x="settings"]'); await sleep(150);
     ok(qa(w, 'details textarea').some(function (t) { return t.getAttribute('data-k') === 'en.reply'; }), 'reply text is editable');
