@@ -27,7 +27,7 @@ test('the link is short enough for a chat message even for a busy student', asyn
   for (const d of ['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-17']) BC.skip(a.id, d);
   BC.makeup(a.id, '2026-11-14'); BC.addBreak(a.id, '2026-11-24', '2026-11-30', force);
   BC.scores[a.id] = [{ date: '2026-08-29', v: { smash: 5, net: 4, footwork: 3, defense: 5, serve: 6, stamina: 4 } }, { date: '2026-10-28', v: { smash: 6, net: 5, footwork: 4, defense: 6, serve: 7, stamina: 5 } }];
-  const link = await BC.cardLink(a.id, 'https://birdiecrew.github.io/s.html');
+  const link = await BC.cardLink(a.id, 'https://birdiecrew.github.io/');
   assert(link.length < 4000, 'link is ' + link.length);
 });
 test('a cut-short or damaged link opens nothing', async () => {

@@ -23,18 +23,18 @@ Size is the work still left: **XS** under an hour, **S** half a day, **M** about
 | **P** Plan and prototype | 7 | 0 | 0 | 0 | 0 | 7 |
 | **A** Agree it with the coach | 4 | 0 | 0 | 1 | 0 | 5 |
 | **B** Prove the risky parts on a real phone | 1 | 0 | 0 | 9 | 0 | 10 |
-| **C** The real site (foundation) | 5 | 1 | 1 | 2 | 0 | 9 |
-| **D** Rules engine | 0 | 15 | 1 | 0 | 0 | 16 |
+| **C** The real site (foundation) | 6 | 1 | 0 | 2 | 0 | 9 |
+| **D** Rules engine | 1 | 15 | 0 | 0 | 0 | 16 |
 | **E** Storage and the save file | 4 | 5 | 0 | 0 | 1 | 10 |
 | **F** Coach page: first run and frame | 0 | 9 | 0 | 0 | 0 | 9 |
 | **G** Coach page: daily jobs | 1 | 16 | 0 | 0 | 0 | 17 |
 | **H** Cards for students | 0 | 12 | 0 | 0 | 0 | 12 |
-| **J** Quality | 0 | 0 | 1 | 6 | 0 | 7 |
+| **J** Quality | 1 | 0 | 0 | 6 | 0 | 7 |
 | **K** Hand-over | 0 | 0 | 0 | 5 | 0 | 5 |
 | **L** Later (not version 1) | 0 | 0 | 0 | 0 | 7 | 7 |
-| **All** | **22** | **58** | **3** | **23** | **8** | **114** |
+| **All** | **25** | **58** | **0** | **23** | **8** | **114** |
 
-Counting only the product (not epic P) and leaving out the parked tickets: **73 of 99 are built and tested (15 done, 58 built and waiting for a real phone check).** What is left is mostly people and phones: A1, B1 to B8, J2 to J6 and the hand-over. The "Built" tickets become Done after the phone checks in epic B and J4.
+Counting only the product (not epic P) and leaving out the parked tickets: **76 of 99 are built and tested (18 done, 58 built and waiting for a real phone check).** What is left is mostly people and phones: A1, B1 to B8, J2 to J6 and the hand-over. The "Built" tickets become Done after the phone checks in epic B and J4.
 
 ## Suggested order
 
@@ -102,7 +102,7 @@ Turn the prototype into the two real pages. Done in the `site` branch.
 | C9 | No inline scripts: the theme is applied by a small file | XS | C5 | **Done** | `theme-boot.js`; the policy allows scripts only from the site itself |
 | C6 | Show the app version in My data | XS | C1 | **To do** | Version number visible and written into saved files |
 | C7 | Home Screen install: name, icon, theme colour for the coach page | S | C1 | **To do** | Installs on both phones and opens full screen |
-| C8 | Publish from `main` and check the build status | XS | C1 | **In progress** | Pages build is green after a merge |
+| C8 | Publish from `main` and check the build status | XS | C1 | **Done** | Pages build is green after a merge |
 
 ## D. Rules engine
 
@@ -125,7 +125,7 @@ Built and tested. The same code the prototype ran is now the shipped file, with 
 | D13 | Part-month bills and the credit on the next bill | S | D12 | **Built** | Every bill is a whole number of thousands |
 | D14 | Due dates, first bill, late from the 6th | S | D12 | **Built** | Money tests pass |
 | D15 | Timetable changes start today and never rewrite the past | M | P3 | **Built** | Timetable tests pass |
-| D16 | Run all tests on every push (GitHub Action) | S | C8 | **In progress** | A failing test turns the check red on the PR |
+| D16 | Run all tests on every push (GitHub Action) | S | C8 | **Done** | A failing test turns the check red on the PR |
 
 ## E. Storage and the save file
 
@@ -203,7 +203,7 @@ Checks that the prototype tests cannot give.
 
 | ID | Ticket | Size | Needs | Status | Done when |
 |---|---|---|---|---|---|
-| J1 | Run the screen tests in CI with a headless browser | M | D16 | **In progress** | Same screen tests pass on every push (`tests/run-screens.js`) |
+| J1 | Run the screen tests in CI with a headless browser | M | D16 | **Done** | Same screen tests pass on every push (`tests/run-screens.js`) |
 | J2 | Accessibility pass: contrast in both themes, focus order, names for icon-only controls | M | C2 | **To do** | No contrast or label failures on the main screens |
 | J3 | Look at dark mode and the laptop layout with screenshots | S | C2 | **To do** | Both reviewed on every main screen |
 | J4 | Walk the whole app on an iPhone, an Android phone and in the Zalo browser | M | C5 | **To do** | A written list of anything that differs |

@@ -284,6 +284,6 @@
     return BC.students.filter(function (s) { return s.active && BC.cardState(s.id) !== 'current'; });
   };
   BC.cardLink = function (sid, base) {
-    return BC.cardEncode(BC.cardOf(sid)).then(function (code) { return (base || 'https://birdiecrew.github.io/s.html') + '#c=' + code; });
+    return BC.cardEncode(BC.cardOf(sid)).then(function (code) { return (base || 'https://birdiecrew.github.io/') + '#c=' + code; });
   };
 })();
