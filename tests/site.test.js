@@ -24,6 +24,9 @@ for (const [page, dir] of Object.entries(PAGES)) {
   });
   test(page + ': no mockup wording', () => assert(!/mock/i.test(read(page))));
 }
+test('no prototype wording anywhere a person can read it: pages, scripts and texts', () => {
+  for (const f of fs.readdirSync(path.join(root, 'assets')).filter((x) => x.endsWith('.js'))) assert(!/mock(?:up)?\b/i.test(read('assets/' + f)), f + ' still says mock');
+});
 test('the coach page can be installed: a manifest whose icons exist, and a touch icon', () => {
   const m = JSON.parse(read('admin/manifest.webmanifest'));
   assert(m.display === 'standalone' && m.start_url && m.name && m.lang === 'vi');

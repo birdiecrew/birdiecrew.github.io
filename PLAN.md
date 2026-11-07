@@ -580,3 +580,14 @@ Working notes:
 - This repo pushes with its own SSH key, set in the local git config (not stored in the repo), so it does not use the key of any other GitHub account on the same computer.
 - `gh` may be signed in as another account. For this repo, run it with `GH_TOKEN="$(gh auth token --user birdiecrew)"`.
 - The mockup preview server (`.claude/serve.py`, port 8765) is local only and not committed.
+
+## Added after the first release (found by reviewing what the tests did not cover)
+- **A student's days change from today.** The old days are kept for every earlier date (`dayHist`, like the class timetable's history), so past lessons, bills and credits never change. A month is billed at the fee for the days the student has at its end. Save asks first ("Change from today").
+- **Pretend date is read-only.** With `?today=…` nothing is written to the phone and Save file refuses; the banner says so. (`&save=1` exists for the tests only.)
+- **Two tabs.** If another tab changes the saved class, this tab stops writing, says so, and offers Reload.
+- **A full phone.** The working copy gets room before the earlier copies; if even that fails the coach sees "Could not save on this phone. Save a file now."
+- **Cards open on older phones.** A built-in decompressor reads compressed links when the browser cannot. Characters a chat app adds after a link are ignored.
+- **Files are checked for sense, not only for the fingerprint** (real dates, sane numbers, known kinds). A refused file changes nothing. Settings a file lacks get the defaults, never values left over from another class.
+- **A page left open past midnight** takes the new date when she comes back to it.
+- **Texts:** an emptied message returns to its default; the sample class is in Vietnamese; no prototype wording is left (a test checks).
+- **Known limit:** no offline mode (no service worker). A page that is open keeps working; opening one with no network fails.

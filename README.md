@@ -20,7 +20,7 @@ Do this once on a computer and once on a phone.
 4. Open **More → My data**. **Save file** downloads a `.json` file. **Open file** loads it back. **Support copy** copies a short text with no names.
 5. Change something, and the save icon turns on. Save again and it goes quiet.
 6. **Start over** returns to the first-run wizard. Walk through it with your own test name: class days, fees, first student.
-7. Add `?today=2026-12-01` to the address to pretend it is another day. A banner says so.
+7. Add `?today=2026-12-01` to the address to pretend it is another day. A banner says so, and **nothing is saved** while you pretend: edits stay in memory, Save file refuses, and a reload forgets them. Your real class is safe.
 
 **Card page** (`/`)
 1. Opened with no link it says "No card yet".
@@ -36,16 +36,18 @@ Do this once on a computer and once on a phone.
 node tests/run-all.js
 ```
 
-Rules, money, cards, storage, texts and site files. About a minute.
+Rules, money, cards, storage, texts, a student's days history, the year end, file validation, the built-in decompressor, load, contrast and site files. A few minutes.
 
 ```bash
 npm install --no-save playwright && npx playwright install chromium
 node tests/run-screens.js
 ```
 
-Every screen and the security policy in a real browser. If Chrome is already installed, `PW_CHANNEL=chrome node tests/run-screens.js` skips the download. Or serve the folder (`python3 -m http.server`) and open `/tests/ui-tests.html` and `/tests/csp-check.html`.
+Every screen and the security policy in a real browser. If Chrome is already installed, `PW_CHANNEL=chrome node tests/run-screens.js` skips the download. `PW_BROWSER=webkit` (Safari's engine) or `PW_BROWSER=firefox` runs the same tests in those engines; CI does both. Or serve the folder (`python3 -m http.server`) and open `/tests/ui-tests.html` and `/tests/csp-check.html`.
 
-GitHub Actions runs all of this on every push (`.github/workflows/tests.yml`).
+GitHub Actions runs all of this on every push (`.github/workflows/tests.yml`): the node tests, the screens in Chromium, Firefox and WebKit, and the site files.
+
+`?today=…&save=1` is for the tests only: it lets a pretend day write. Do not use it on a real class.
 
 ## Folder map
 
@@ -65,4 +67,6 @@ A policy in each page blocks every network call (`connect-src 'none'`), inline s
 
 ## Known limits (need a real phone)
 
-Not provable from a computer: the share sheet for Save file on iPhone and Android, a card link inside the Zalo in-app browser, how long the working copy survives in a phone browser (tickets B1 to B8), and iPhone Safari with the security policy. The coach's answers to the open questions are recorded in the plan and confirmed in ticket A1.
+Not provable from a computer: the share sheet for Save file on iPhone and Android, a card link inside the Zalo in-app browser, how long the working copy survives in a phone browser (tickets B1 to B8), and iPhone Safari with the security policy (WebKit in CI is the closest check).
+
+The site has no offline mode yet: once a page is open it keeps working, but opening it with no network fails. The coach's answers to the open questions are recorded in the plan and confirmed in ticket A1.
