@@ -906,8 +906,14 @@
         case 'ovrm': delete BC.overrides[x]; render(); toast(t('Saved')); break;
         case 'setsw': cfg[x] = !cfg[x]; render(); toast(t('Saved')); break;
         case 'setreset': cfg[x] = DEFS[x]; render(); toast(t('Saved')); break;
-        case 'setresetall': Object.keys(DEFS).forEach(function (k) { cfg[k] = DEFS[k]; }); render(); toast(t('All settings are back to the defaults.')); break;
-        case 'msgreset': BC.messages = BC.defaultMessages(); render(); toast(t('Saved')); break;
+        case 'setresetall':
+          UI.confirm({ title: t('Reset all settings?'), body: t('Fees, rules, class name and Zalo number go back to the defaults. Students, payments and scores are not touched.'), ok: t('Reset all'), cancel: t('Keep it'), danger: true }).then(function (yes) {
+            if (!yes) return; Object.keys(DEFS).forEach(function (k) { cfg[k] = DEFS[k]; }); render(); toast(t('All settings are back to the defaults.'));
+          }); break;
+        case 'msgreset':
+          UI.confirm({ title: t('Reset the messages?'), body: t('Your own wording is replaced by the defaults.'), ok: t('Reset'), cancel: t('Keep it'), danger: true }).then(function (yes) {
+            if (!yes) return; BC.messages = BC.defaultMessages(); render(); toast(t('Saved'));
+          }); break;
         case 'qrpick': $('#qr-file').click(); break;
         case 'logopick': UI.pickImage(256, function (d) { UI.pics.set('logo', d); UI.applyFavicon(); render(); UI.toast(t('Picture saved.')); }); break;
         case 'logoreset': UI.pics.del('logo'); UI.applyFavicon(); render(); UI.toast(t('Picture saved.')); break;
